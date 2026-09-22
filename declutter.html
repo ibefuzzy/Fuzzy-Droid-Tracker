@@ -213,7 +213,22 @@
     '</div>';
   }
 
-  const GRID_COLS = 2;
+  // Dynamic column count — same fix and same reasoning as
+  // rebirth-requirements-overlay.html's pickCols() (added 2026-09-22 after
+  // that panel's icons were measured collapsing to 4px tall at a full
+  // 43-droid list): more columns means fewer rows means more height left per
+  // row for the icon, once this panel's fixed height is divided up. Safe to
+  // Retire's lists are usually short — a handful of Legendary/Mythic droids
+  // at a time — so this rarely climbs above the base 2 columns. It's here so
+  // a cycle that happens to free up a lot of droids at once can't reproduce
+  // the same collapse bug, not because it's a problem today.
+  function pickCols(count){
+    if(count <= 18) return 2;
+    if(count <= 27) return 3;
+    if(count <= 36) return 4;
+    if(count <= 45) return 5;
+    return 6;
+  }
 
   function render(){
     const gridEl = document.getElementById('grid');
@@ -231,7 +246,9 @@
     // rows size themselves from content and overflow. Cells — and the icons
     // inside them, which stretch via flex:1 in the CSS above — shrink as
     // the count grows, but everything always fits without a scrollbar.
-    const rows = Math.max(1, Math.ceil(list.length / GRID_COLS));
+    const cols = pickCols(list.length);
+    const rows = Math.max(1, Math.ceil(list.length / cols));
+    gridEl.style.gridTemplateColumns = 'repeat(' + cols + ', 1fr)';
     gridEl.style.gridTemplateRows = 'repeat(' + rows + ', 1fr)';
     gridEl.innerHTML = list.map(cellHtml).join('');
   }

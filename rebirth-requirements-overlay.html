@@ -213,7 +213,25 @@
     '</div>';
   }
 
-  const GRID_COLS = 3;
+  // Dynamic column count so a long list (a fresh cycle can have 43-48 droids
+  // at once, per the worst case noted above) never crushes the icon down to
+  // nothing. This panel's height is fixed and divided into exactly as many
+  // rows as the count needs (rows = ceil(count/cols)) — more columns means
+  // fewer rows means more height left per row for the icon. Verified
+  // 2026-09-22 against this panel's actual default size (384x367 on a
+  // 1920x1080 display): at the fixed 3 columns this used to be, a fresh
+  // cycle's full 43-droid list measured out to a 4px-tall icon — not low
+  // quality, just gone. These tiers were checked directly at that same size:
+  // 3 columns stays legible up to ~27 droids (9 rows); past that, add a
+  // column at a time so row count never climbs back into collapsed
+  // territory. 5 columns handles the real worst case (43 droids) with every
+  // name still fitting unclipped and the icon small but genuinely visible.
+  function pickCols(count){
+    if(count <= 27) return 3;
+    if(count <= 36) return 4;
+    if(count <= 45) return 5;
+    return 6;
+  }
 
   function render(){
     const gridEl = document.getElementById('grid');
@@ -245,8 +263,12 @@
     // grid's own fixed height into exactly as many equal rows as the
     // still-needed count requires. The icon-size cap above keeps the now-
     // common case (a short list, once most of the cycle is covered) from
-    // blowing up the way declutter's list originally did.
-    const rows = Math.max(1, Math.ceil(nks.length / GRID_COLS));
+    // blowing up the way declutter's list originally did. Column count is
+    // picked per the current droid count (see pickCols() above) so a long,
+    // many-row list doesn't crush the icon back down instead.
+    const cols = pickCols(nks.length);
+    const rows = Math.max(1, Math.ceil(nks.length / cols));
+    gridEl.style.gridTemplateColumns = 'repeat(' + cols + ', 1fr)';
     gridEl.style.gridTemplateRows = 'repeat(' + rows + ', 1fr)';
     gridEl.innerHTML = nks.map(nk=>cellHtml(nk, ceilings[nk])).join('');
   }
