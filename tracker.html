@@ -388,6 +388,7 @@
   }
 
   .rl-manual{display:inline-flex;align-items:center;gap:6px;margin:0 4px;}
+  .rl-manual-label{font-size:11px;color:var(--text-dim);white-space:nowrap;}
   .rl-level-display{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--accent);min-width:44px;text-align:center;}
   .rl-manual .btn{padding:4px 10px;}
 
@@ -480,6 +481,12 @@
     <button class="btn" id="pipBtn" hidden title="Pop this panel into a small always-on-top window">⧉ Pop out</button>
     <button class="btn" id="liveBtn" hidden title="Watch your screen and suggest what to log as you play">🔴 Live Detect</button>
     <button class="btn" id="rebirthLevelBtn" hidden title="Read your current rebirth level from the screen automatically, to drive the overlay HUD">🔢 Draw Rebirth<br>Level Box</button>
+    <span class="rl-manual" id="rlManualToolbar" title="Set your current rebirth level — drives which upcoming levels the overlay HUD shows">
+      <span class="rl-manual-label">Rebirth Lvl</span>
+      <button class="btn" id="rlDec">−</button>
+      <span id="rlLevelDisplay" class="rl-level-display">Lvl 0</span>
+      <button class="btn" id="rlInc">+</button>
+    </span>
     <button class="btn" id="rebirthScreenBtn" hidden title="Open the in-game Rebirth menu, then click this to read it and mark everything up to that point as owned">📸 Read Rebirth Screen</button>
     <button class="btn" id="rebirthScreenRecalibBtn" hidden title="Redraw the box around the Rank number (only needed once, or if it starts reading wrong)">↺</button>
     <button class="btn" id="editToggle" title="Click a name to fix a misread, or rename it to match another droid to merge them">✎ Rename</button>
@@ -685,15 +692,15 @@
   </div>
 </div>
 
+<!-- The −/Lvl N/+ manual stepper used to live here too (this strip is the
+     only thing that ever showed it) — moved to its own always-visible
+     #rlManualToolbar control up in the toolbar so it stays reachable now
+     that this strip only ever appears if REBIRTH_LEVEL_DETECT_ENABLED is
+     flipped back to true in rebirth-level-detect.js. -->
 <div class="live-strip" id="rlStrip" style="display:none;">
   <span class="live-dot"></span>
   <span class="live-label">Rebirth Level Detect running</span>
   <span class="live-guess" id="rlGuess">watching…</span>
-  <span class="rl-manual">
-    <button class="btn" id="rlDec">−</button>
-    <span id="rlLevelDisplay" class="rl-level-display">Lvl 0</span>
-    <button class="btn" id="rlInc">+</button>
-  </span>
   <button class="btn" id="rlRecalib">Redraw box</button>
   <button class="btn" id="rlStop">Stop</button>
 </div>

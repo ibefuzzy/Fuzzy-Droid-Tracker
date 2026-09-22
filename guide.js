@@ -32,11 +32,10 @@
     {
       title: 'Tell it your rebirth level',
       body: `
-        <p>The overlay needs to know your current level. Three ways — pick whichever's easiest, and you can switch anytime:</p>
-        <p><b>Manual</b> — a −/Level N/+ stepper. Always works, one click per rebirth.</p>
-        <p><b>🔢 Draw Rebirth Level Box</b> — reads your rebirth badge in the background, continuously.</p>
-        <p><b>📸 Read Rebirth Screen</b> — open the in-game Rebirth menu and read it in one shot. Bigger text, the more reliable of the two auto methods.</p>
-        <p><b>For either auto method:</b> the first time you use it, you'll draw a box around just the number — not the icon, not the glow around it, just the digits. A loose or wrong box is the #1 reason a reading comes out wrong. You only draw it once; it's remembered after that.</p>
+        <p>The overlay needs to know your current level. Two ways — pick whichever's easiest, and you can switch anytime:</p>
+        <p><b>Manual</b> — the Rebirth Lvl −/+ control in the toolbar. Always available, one click per rebirth.</p>
+        <p><b>📸 Read Rebirth Screen</b> — open the in-game Rebirth menu and read it in one shot. It also catches you up in bulk: it marks every droid at the levels you've passed as owned, not just the level number.</p>
+        <p>First time you use Read Rebirth Screen, you'll draw a box around just the number after "Rank" — not the icon, not the glow around it, just the digits. A loose or wrong box is the #1 reason a reading comes out wrong. You only draw it once; it's remembered after that.</p>
       `
     },
     {

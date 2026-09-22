@@ -29,9 +29,30 @@
    runs any of its own code.
 --------------------------------------------------------------------------- */
 (function(){
+  // Continuous auto-detect retired 2026-09-22 at the user's request — a real
+  // resource cost (a live screen-capture stream plus a full Tesseract OCR
+  // pass roughly every 1.2s, indefinitely, competing with Fortnite for the
+  // same GPU/CPU — see SAMPLE_MS below) for something Manual + Read Rebirth
+  // Screen already cover between them: Manual is free and instant, and Read
+  // Rebirth Screen already does the heavier lifting (bulk-marks droids
+  // owned) whenever you're on that screen anyway. Flip this back to `true`
+  // to bring the 🔢 Draw Rebirth Level Box button and its whole flow back —
+  // nothing else in the app depends on it running or even existing.
+  //
+  // The manual −/Lvl N/+ stepper (setLevel, rlDec/rlInc) is NOT gated by
+  // this flag and stays wired unconditionally below. It used to only be
+  // reachable by first opening this feature's own calibration flow (it
+  // lived inside #rlStrip, shown only once auto-detect actually started) —
+  // which would have made the manual override unreachable too the moment
+  // this got disabled. It's now its own always-visible toolbar control
+  // (#rlManualToolbar in tracker.html) instead, independent of whether
+  // auto-detect exists at all.
+  const REBIRTH_LEVEL_DETECT_ENABLED = false;
+
   const rlBtn = document.getElementById('rebirthLevelBtn');
-  if(!(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia)) return; // stays hidden
-  rlBtn.hidden = false;
+  const mediaSupported = !!(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia);
+  const autoDetectAvailable = REBIRTH_LEVEL_DETECT_ENABLED && mediaSupported;
+  if(autoDetectAvailable) rlBtn.hidden = false; // stays hidden otherwise
 
   const SAMPLE_MS = 1200;
   const UPSCALE = 8;        // enlarge the tiny badge crop before OCR gets it
@@ -269,23 +290,29 @@
     const strip = getEl('rlStrip'); if(strip) strip.style.display = 'none';
   }
 
-  rlBtn.addEventListener('click', async ()=>{
-    if(rlStream){ stopRebirthLevelDetect(); return; }
-    // rlStream is only assigned once getDisplayMedia() resolves, so without
-    // this a second click landing while the picker dialog is still up (the
-    // custom in-app picker window doesn't block interaction with this one)
-    // would start a second, overlapping capture/worker-setup pass.
-    if(rlStarting) return;
-    rlStarting = true;
-    try{ await startRebirthLevelDetect(); }
-    finally{ rlStarting = false; }
-  });
-  getEl('rlStop').addEventListener('click', stopRebirthLevelDetect);
-  getEl('rlRecalib').addEventListener('click', ()=>{
-    if(rlTimer){ clearInterval(rlTimer); rlTimer = null; }
-    getEl('rlStrip').style.display = 'none';
-    openRlCalibration(); // explicit redraw request — always shows the box UI, saved region or not
-  });
+  if(autoDetectAvailable){
+    rlBtn.addEventListener('click', async ()=>{
+      if(rlStream){ stopRebirthLevelDetect(); return; }
+      // rlStream is only assigned once getDisplayMedia() resolves, so without
+      // this a second click landing while the picker dialog is still up (the
+      // custom in-app picker window doesn't block interaction with this one)
+      // would start a second, overlapping capture/worker-setup pass.
+      if(rlStarting) return;
+      rlStarting = true;
+      try{ await startRebirthLevelDetect(); }
+      finally{ rlStarting = false; }
+    });
+    getEl('rlStop').addEventListener('click', stopRebirthLevelDetect);
+    getEl('rlRecalib').addEventListener('click', ()=>{
+      if(rlTimer){ clearInterval(rlTimer); rlTimer = null; }
+      getEl('rlStrip').style.display = 'none';
+      openRlCalibration(); // explicit redraw request — always shows the box UI, saved region or not
+    });
+  }
+
+  // Manual override: always wired, whether or not auto-detect exists — see
+  // the header comment above for why this can't just be gated the same way
+  // Live Detect's single-flag/early-return pattern gates that feature.
   getEl('rlDec').addEventListener('click', ()=> setLevel(Math.max(0, currentLevel-1), 'manual'));
   getEl('rlInc').addEventListener('click', ()=> setLevel(Math.min(35, currentLevel+1), 'manual'));
 
@@ -293,6 +320,6 @@
     currentLevel = (await storeGet('rebirth-currentLevel')) || 0;
     const disp = getEl('rlLevelDisplay');
     if(disp) disp.textContent = 'Lvl ' + currentLevel;
-    savedRegion = (await storeGet(REGION_KEY)) || null;
+    if(autoDetectAvailable) savedRegion = (await storeGet(REGION_KEY)) || null;
   })();
 })();

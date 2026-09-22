@@ -64,9 +64,10 @@ wire up screen sharing to anything by default; it needs the main process to
 explicitly hand it off, and that piece was missing. Fixed in `main.js` (a
 `setDisplayMediaRequestHandler` that grabs your screen via Electron's own
 `desktopCapturer`, with a small picker window if you have more than one
-monitor). This one fix covers Live Detect, Rebirth Level Detect, and Read
-Rebirth Screen — they all hit the same missing plumbing. If you still see
-this error after updating, you're on an old copy of `main.js`.
+monitor). This one fix covers Live Detect, Rebirth Level Detect (currently
+disabled by default — see `rebirth-level-detect.js`), and Read Rebirth
+Screen — they all hit the same missing plumbing. If you still see this
+error after updating, you're on an old copy of `main.js`.
 
 **Overlays are invisible in-game, but show up fine when you tab out (or in
 windowed mode)** — this means Fortnite is set to exclusive **Fullscreen**,
@@ -95,34 +96,12 @@ what you already logged in the browser version: open that tab, click
 
 The HUD needs to know which level you're on. Two ways, and you can use both:
 
-### 🔢 Rebirth Level Detect (automatic)
+### Manual
 
-Click **🔢 Draw Rebirth Level Box** in the toolbar → share your screen → a calibration
-window appears with a screenshot of your capture. **Draw one tight box
-around just the number** in your rebirth-count badge (not the recycle icon,
-not the glow around it — just the digits). Confirm, and it starts reading
-that spot roughly every 1.2 seconds, requiring the same reading twice in a
-row before it commits — so one blurry frame can't make the HUD jump around.
+A **− / Lvl N / +** stepper, always visible in the toolbar. One click per
+rebirth — instant, no screen share, no OCR involved, and always correct.
 
-Be honest with yourself about this one: reading a small stylized number off
-a game HUD is a genuinely harder problem than the icon-matching Live Detect
-already does (that compares against exact reference images; this is asking a
-generic text-recognition model to read a tiny custom font it's never seen).
-It may work great, it may need a bigger/tighter calibration box, or it may
-struggle. The status strip shows exactly what it's reading each cycle
-("reading: 7") so you can see it working — or not — in real time.
-
-First time you use it, it needs internet once to download its language data
-(~15MB, cached after that).
-
-### Manual override (always available)
-
-Right in that same status strip: a **− / Lvl N / +** stepper. Works whether
-or not Detect is running, and is the honest fallback if OCR isn't reading
-your badge reliably — one click per rebirth is not a big ask, and it's
-guaranteed correct.
-
-### 📸 Read Rebirth Screen (recommended — bigger, clearer OCR target)
+### 📸 Read Rebirth Screen (recommended)
 
 Open the in-game **Rebirth** menu (the "REBIRTH Rank N" screen with the
 credits/multiplier/EXP cards and the NEED checklist) and click **📸 Read
@@ -132,15 +111,18 @@ your screen once, draw a box around just the number after "Rank," and it
 reads it — one frame, not continuous, and the screen share stops
 immediately after.
 
-That text is large, bold, and high-contrast, which is a meaningfully easier
-read for OCR than the tiny always-on HUD badge. It then shows you what it
-detected (editable, in case it's off) and exactly what applying it will do:
-"Rank 4" means rebirths 1-3 are complete, so it marks every droid at those
-3 levels as owned and sets the current level to 3 — for whichever cycle is
-selected in the tracker right now, so double-check that's the right one
-before hitting Apply. This is the better fix for "I'm sometimes late logging
-droids": open this screen whenever you rebirth (you're already there to
-click the Rebirth button anyway) and one read catches your whole log up.
+That text is large, bold, and high-contrast, which makes for a reliable OCR
+read. It then shows you what it detected (editable, in case it's off) and
+exactly what applying it will do: "Rank 4" means rebirths 1-3 are complete,
+so it marks every droid at those 3 levels as owned and sets the current
+level to 3 — for whichever cycle is selected in the tracker right now, so
+double-check that's the right one before hitting Apply. This is the better
+fix for "I'm sometimes late logging droids": open this screen whenever you
+rebirth (you're already there to click the Rebirth button anyway) and one
+read catches your whole log up.
+
+First time you use it, it needs internet once to download its OCR language
+data (~15MB, cached after that).
 
 Safe to run repeatedly as you keep progressing — it only ever raises
 ownership, never lowers it.
@@ -151,9 +133,7 @@ no redraw. Click the little **↺** next to the button (or **"Box was wrong —
 redraw"** on the confirm screen) any time you want to redo it, and it'll
 also ask you to redraw automatically if your screen resolution changes
 (a different monitor, a different in-game resolution) since the old box
-wouldn't line up with the new pixels anymore. Same behavior now applies to
-🔢 Rebirth Level Detect's badge box below — draw it once, reuse it every
-time, "Redraw box" whenever you need to fix it.
+wouldn't line up with the new pixels anymore.
 
 ## Diagonal split colors — owned vs. required
 
@@ -217,10 +197,9 @@ the next?"**
 This only fires the moment a mark you make is the one that completes the
 cycle you're currently on — not repeatedly every time you click around in
 an already-finished cycle. It only resets what you've logged in this
-tracker; it doesn't touch the rebirth-level counter from **🔢 Rebirth
-Level Detect** or **Manual override** above, since that's reading the
-game's own on-screen counter and will pick up your actual in-game rebirth
-on its own.
+tracker; it doesn't touch the rebirth-level counter from **📸 Read Rebirth
+Screen** or **Manual** above, since that's reading the game's own
+on-screen counter and will pick up your actual in-game rebirth on its own.
 
 ## ⏱ Timer banners (Stellar / Mythic / Galactic / Mission countdowns)
 
@@ -514,7 +493,9 @@ and testing everything above:
   default position" handler.
 - `preload.js` — the only bridge between the pages and Node/IPC.
 - `tracker.html` — your original tracker, functionally unchanged, plus the
-  Overlay toolbar controls and the Rebirth Level Detect button/strip.
+  Overlay toolbar controls, the always-visible Manual rebirth-level stepper,
+  and Read Rebirth Screen. (Rebirth Level Detect's old button/strip markup
+  is still here too, just hidden — see the flag in rebirth-level-detect.js.)
 - `overlay.html` — the HUD: 4 level-blocks, each with its 3 droids as
   portrait cards (see the Rebirth Requirements overlay section above for
   why the card style changed).
