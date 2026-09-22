@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Fuzzy's Droid Tracker — Rebirth Requirements</title>
+<style>
+  :root{
+    --r-base: #9aa39d;
+    --r-gold: #e8c04a;
+    --r-diamond: #4fd3e8;
+    --r-rainbow1: #ff6ec7;
+    --r-rainbow2: #6ecbff;
+    --r-beskar: #b9c2cc;
+    --r-galactic: #c96bf2;
+    --r-stellar: #e08a3c;
+    --accent: #5ef2a6;
+  }
+  html,body{
+    margin:0; padding:0; background:transparent; overflow:hidden;
+    font-family:-apple-system,'Segoe UI',system-ui,sans-serif;
+    -webkit-user-select:none; user-select:none;
+    width:100%; height:100%;
+  }
+  .panel{
+    display:flex; flex-direction:column; gap:6px;
+    width:100%; height:100%; box-sizing:border-box;
+    padding:6px;
+  }
+  .drag-handle{
+    display:none;
+    -webkit-app-region: drag;
+    align-items:center; justify-content:space-between;
+    background:rgba(94,242,166,0.22);
+    border:1px solid rgba(94,242,166,0.55);
+    border-radius:6px;
+    padding:4px 8px;
+    font-size:11px;
+    color:#eafff3;
+    letter-spacing:.02em;
+  }
+  body.unlocked .drag-handle{ display:flex; }
+  .drag-handle button{
+    -webkit-app-region: no-drag;
+    background:var(--accent); color:#08130d; border:none; border-radius:4px;
+    font-size:11px; font-weight:700; padding:3px 9px; cursor:pointer;
+  }
+  .card{
+    flex:1; min-height:0; display:flex; flex-direction:column; gap:6px;
+    background:rgba(10,14,12,0.62);
+    border:1px solid rgba(255,255,255,0.14);
+    border-top:3px solid var(--accent);
+    border-radius:10px;
+    padding:8px 9px;
+    box-sizing:border-box;
+    overflow:hidden;
+  }
+  .card h1{
+    margin:0; font-size:11px; font-weight:800; letter-spacing:.05em;
+    color:#eafff3; text-transform:uppercase;
+    text-shadow:0 1px 2px rgba(0,0,0,0.9);
+    display:flex; align-items:center; justify-content:space-between;
+    gap:6px;
+  }
+  .card h1 .tags{ display:flex; align-items:center; gap:5px; flex:0 0 auto; }
+  .card h1 .cycle-tag{
+    font-size:9.5px; font-weight:700; color:#dfe8e2;
+    background:rgba(255,255,255,0.12); border-radius:999px;
+    padding:1px 7px; letter-spacing:0; text-transform:none;
+  }
+  .card h1 .count{
+    font-size:10px; font-weight:700; color:#08130d;
+    background:var(--accent); border-radius:999px;
+    padding:1px 7px; letter-spacing:0;
+  }
+  /* ---------------------------------------------------------------------
+     Same card language as declutter.html (Safe to Retire), including the
+     icon-size cap that file's own 2026-09-20 fix introduced. This list
+     shows only the droids still needed this cycle — anything already owned
+     at its required (ceiling) rarity is filtered out in render(), see
+     below — but a freshly-started cycle with nothing logged yet can still
+     show the full roster (43-48 droids across all 7 rarity tiers), so it
+     uses 3 columns instead of declutter's 2 to keep that worst case
+     fitting without ever scrolling. The icon-size cap is what keeps the
+     common case (a short list, once most of the cycle is already owned)
+     from blowing up the way declutter's list originally did. Sorted
+     lowest-to-highest required rarity so the parts of the list you'll
+     clear first stay together, matching the tracker's own Rebirth
+     Requirements panel order. */
+  .grid{
+    display:grid; grid-template-columns:repeat(3, 1fr); gap:3px;
+    overflow:hidden; flex:1; min-height:0;
+  }
+  .d-cell{
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px;
+    min-width:0; min-height:0; overflow:hidden;
+  }
+  .d-icon-wrap{
+    position:relative; width:100%; flex:1; min-height:0;
+    max-width:118px; max-height:118px;
+    border-radius:6px;
+    background:rgba(255,255,255,0.06);
+    border:2px solid var(--rc, var(--r-base));
+    box-shadow:0 0 6px -1px var(--rc, transparent);
+    display:flex; align-items:center; justify-content:center;
+    overflow:hidden;
+  }
+  .d-icon-wrap img{
+    width:100%; height:100%; object-fit:contain;
+    transform:scale(1.3);
+  }
+  .d-name{
+    font-size:8.5px; font-weight:700; color:#f2f6f4; text-align:center;
+    text-shadow:0 1px 2px rgba(0,0,0,0.9);
+    line-height:1.1;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;
+    flex:0 0 auto;
+  }
+  .d-owned{
+    font-size:7px; font-weight:600; text-align:center;
+    text-shadow:0 1px 2px rgba(0,0,0,0.9);
+    opacity:0.85;
+    flex:0 0 auto;
+  }
+  .empty-msg{
+    flex:1; display:flex; align-items:center; justify-content:center;
+    color:#dfe8e2; font-size:11.5px; text-align:center; line-height:1.4;
+    padding:8px;
+  }
+</style>
+</head>
+<body>
+  <div class="panel">
+    <div class="drag-handle" id="dragHandle">
+      <span>Drag to position, then Lock</span>
+      <button id="lockBtn">Lock</button>
+    </div>
+    <div class="card">
+      <h1>
+        <span>🧬 Rebirth Requirements</span>
+        <span class="tags"><span class="cycle-tag" id="cycleTag">Cycle 1</span><span class="count" id="countTag">0</span></span>
+      </h1>
+      <div class="grid" id="grid"></div>
+    </div>
+  </div>
+
+<script src="icons-data.js"></script>
+<script src="droid-data.js"></script>
+<script src="requirements.js"></script>
+<script>
+(function(){
+  if(!window.overlayAPI){
+    document.body.innerHTML = '<div style="color:#fff;padding:10px;font:12px sans-serif;">Open this file through the Fuzzy\'s Droid Tracker app, not directly in a browser.</div>';
+    return;
+  }
+
+  /* ---------------------------------------------------------------------------
+     A standalone, always-on-top "what do I still need" checklist for the
+     active cycle's Rebirth Requirements, added 2026-09-20 so it's reachable
+     with a hotkey while in-game, without alt-tabbing to the tracker window.
+     cycleCeilings() (from requirements.js — the exact same function the
+     tracker's own 🧬 side panel is built from) gives each droid's highest
+     required rarity this cycle; render() below filters that down to only
+     droids NOT YET owned at that rarity, so a droid drops off the instant
+     you log it at (or above) what this cycle needs, and only reappears if
+     the active cycle changes to one with a higher requirement than what you
+     currently own. (The first shipped version showed the whole roster,
+     owned and unowned together, dimming the owned ones instead of hiding
+     them — fixed same-day after real testing showed that wasn't the point
+     of the overlay.) Rendering + the live-update wiring below follows the
+     same pattern as declutter.html.
+  --------------------------------------------------------------------------- */
+
+  const DOT_COLOR = { B:'var(--r-base)', G:'var(--r-gold)', D:'var(--r-diamond)', R:'var(--r-rainbow2)', K:'var(--r-beskar)', X:'var(--r-galactic)', S:'var(--r-stellar)' };
+
+  let currentCycle = 1;
+  let ownedRankLocal = {};
+
+  async function loadIndexData(){
+    nameMerges = (await window.overlayAPI.storeGet('rebirth-nameMerges')) || {};
+    displayOverrides = (await window.overlayAPI.storeGet('rebirth-displayOverrides')) || {};
+    buildIndex();
+  }
+
+  async function loadProgress(){
+    currentCycle = (await window.overlayAPI.storeGet('rebirth-activeCycle')) || 1;
+    ownedRankLocal = (await window.overlayAPI.storeGet('rebirth-ownedRank-v2')) || {};
+  }
+
+  // Only ever called with droids render() has already filtered to "still
+  // needed" (owned rank below this cycle's ceiling rank for that droid), so
+  // there's no owned/covered cell state to render here — every card shown
+  // is something still on the list. ownedCode/haveText still matters for a
+  // partially-progressed droid (e.g. cycle wants Stellar, you already have
+  // Beskar): that's still needed, but "Have: Beskar" is useful progress info.
+  function cellHtml(nk, info){
+    const entry = DROID_INDEX[nk];
+    const display = entry ? entry.display : nk;
+    const rank = info.rank;
+    const code = RARITY_ORDER[rank];
+    const reqColor = DOT_COLOR[code] || 'var(--r-base)';
+    const owned = ownedRankLocal[nk];
+    const ownedCode = (owned !== undefined) ? RARITY_ORDER[owned] : null;
+    const ownedColor = ownedCode ? (DOT_COLOR[ownedCode] || 'var(--r-base)') : 'rgba(255,255,255,0.5)';
+    const haveText = ownedCode ? ('Have: ' + RNAME[ownedCode]) : 'Not owned';
+    const iconKey = info.cycle + '-' + info.level + '-' + info.slot;
+    const src = (typeof ICONS !== 'undefined' && ICONS[iconKey]) ? ('data:image/webp;base64,' + ICONS[iconKey]) : '';
+    const imgTag = src ? ('<img src="' + src + '" alt="' + display + '" loading="lazy">') : '';
+    const title = display + ' — need ' + RNAME[code] + ' — ' + (ownedCode ? ('you have ' + RNAME[ownedCode]) : 'not logged yet');
+    return '<div class="d-cell" title="' + title + '">' +
+      '<div class="d-icon-wrap" style="--rc:' + reqColor + ';">' + imgTag + '</div>' +
+      '<div class="d-name">' + display + '</div>' +
+      '<div class="d-owned" style="color:' + ownedColor + '">' + haveText + '</div>' +
+    '</div>';
+  }
+
+  const GRID_COLS = 3;
+
+  function render(){
+    const gridEl = document.getElementById('grid');
+    const countTag = document.getElementById('countTag');
+    const cycleTag = document.getElementById('cycleTag');
+    cycleTag.textContent = 'Cycle ' + currentCycle;
+
+    const ceilings = cycleCeilings(currentCycle);
+    // Still-needed only: drop any droid already owned at (or above) the
+    // rarity this cycle requires it at. Fixed 2026-09-20 — the first
+    // shipped version showed the whole cycle roster, owned droids included.
+    const nks = Object.keys(ceilings).filter(nk=>{
+      const owned = ownedRankLocal[nk];
+      return owned === undefined || owned < ceilings[nk].rank;
+    }).sort((a,b)=>{
+      const ra = ceilings[a].rank, rb = ceilings[b].rank;
+      if(ra !== rb) return ra - rb;
+      const da = DROID_INDEX[a] ? DROID_INDEX[a].display : a;
+      const db = DROID_INDEX[b] ? DROID_INDEX[b].display : b;
+      return da.localeCompare(db);
+    });
+    countTag.textContent = String(nks.length);
+    if(!nks.length){
+      gridEl.style.gridTemplateRows = '';
+      gridEl.innerHTML = '<div class="empty-msg" style="grid-column:1/-1">Every droid this cycle needs is already covered 🎉</div>';
+      return;
+    }
+    // Same "never scroll, always fits" trick as declutter.html: divide the
+    // grid's own fixed height into exactly as many equal rows as the
+    // still-needed count requires. The icon-size cap above keeps the now-
+    // common case (a short list, once most of the cycle is covered) from
+    // blowing up the way declutter's list originally did.
+    const rows = Math.max(1, Math.ceil(nks.length / GRID_COLS));
+    gridEl.style.gridTemplateRows = 'repeat(' + rows + ', 1fr)';
+    gridEl.innerHTML = nks.map(nk=>cellHtml(nk, ceilings[nk])).join('');
+  }
+
+  async function fullReload(){
+    await loadIndexData();
+    await loadProgress();
+    render();
+  }
+
+  window.overlayAPI.onStoreChanged(({ key, value })=>{
+    if(key === 'rebirth-ownedRank-v2'){ ownedRankLocal = value || {}; render(); }
+    else if(key === 'rebirth-activeCycle'){ currentCycle = value || 1; render(); }
+    else if(key === 'rebirth-nameMerges' || key === 'rebirth-displayOverrides'){ fullReload(); }
+  });
+
+  function applySettings(settings){
+    document.body.classList.toggle('unlocked', !settings.rebirthReqLocked);
+  }
+  window.overlayAPI.onSettingsChanged(applySettings);
+
+  document.getElementById('lockBtn').addEventListener('click', ()=>{
+    window.overlayAPI.setRebirthReqLocked(true);
+  });
+
+  (async function init(){
+    const settings = await window.overlayAPI.getSettings();
+    applySettings(settings);
+    await fullReload();
+  })();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Fuzzy's Droid Tracker — Declutter List</title>
+<style>
+  :root{
+    --r-base: #9aa39d;
+    --r-gold: #e8c04a;
+    --r-diamond: #4fd3e8;
+    --r-rainbow1: #ff6ec7;
+    --r-rainbow2: #6ecbff;
+    --r-beskar: #b9c2cc;
+    --r-galactic: #c96bf2;
+    --r-stellar: #e08a3c;
+    --rarity-legendary: #f4a93b;
+    --rarity-mythic: #ff4d6d;
+    --accent: #5ef2a6;
+  }
+  html,body{
+    margin:0; padding:0; background:transparent; overflow:hidden;
+    font-family:-apple-system,'Segoe UI',system-ui,sans-serif;
+    -webkit-user-select:none; user-select:none;
+    width:100%; height:100%;
+  }
+  .panel{
+    display:flex; flex-direction:column; gap:6px;
+    width:100%; height:100%; box-sizing:border-box;
+    padding:6px;
+  }
+  .drag-handle{
+    display:none;
+    -webkit-app-region: drag;
+    align-items:center; justify-content:space-between;
+    background:rgba(94,242,166,0.22);
+    border:1px solid rgba(94,242,166,0.55);
+    border-radius:6px;
+    padding:4px 8px;
+    font-size:11px;
+    color:#eafff3;
+    letter-spacing:.02em;
+  }
+  body.unlocked .drag-handle{ display:flex; }
+  .drag-handle button{
+    -webkit-app-region: no-drag;
+    background:var(--accent); color:#08130d; border:none; border-radius:4px;
+    font-size:11px; font-weight:700; padding:3px 9px; cursor:pointer;
+  }
+  .card{
+    flex:1; min-height:0; display:flex; flex-direction:column; gap:6px;
+    background:rgba(10,14,12,0.62);
+    border:1px solid rgba(255,255,255,0.14);
+    border-top:3px solid var(--accent);
+    border-radius:10px;
+    padding:8px 9px;
+    box-sizing:border-box;
+    overflow:hidden;
+  }
+  .card h1{
+    margin:0; font-size:11px; font-weight:800; letter-spacing:.05em;
+    color:#eafff3; text-transform:uppercase;
+    text-shadow:0 1px 2px rgba(0,0,0,0.9);
+    display:flex; align-items:center; justify-content:space-between;
+    gap:6px;
+  }
+  .card h1 .count{
+    font-size:10px; font-weight:700; color:#08130d;
+    background:var(--accent); border-radius:999px;
+    padding:1px 7px; letter-spacing:0;
+  }
+  .grid{
+    display:grid; grid-template-columns:repeat(2, 1fr); gap:4px;
+    overflow:hidden; flex:1; min-height:0;
+  }
+  .d-cell{
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px;
+    min-width:0; min-height:0; overflow:hidden;
+  }
+  .d-icon-wrap{
+    /* Capped 2026-09-20: the grid below divides its fixed height into exactly
+       enough equal rows to fit however many droids are currently listed (see
+       the `rows` comment in render()), which is what lets the list "just
+       fit" with no scrolling regardless of count — but with only 1-2 droids,
+       each row's full 1fr share of that fixed height could be enormous, and
+       flex:1 happily stretched this icon to fill all of it (reported: "when
+       the first few droids become ready to retire, their images are very
+       large"). Capping the icon's own size keeps it a sane, consistent size
+       no matter how few rows there are; any leftover row space just becomes
+       empty margin around a centered cell (.d-cell is justify-content:center
+       now, not flex-start) instead of an oversized image. Doesn't affect the
+       many-droids case at all — real rows are already smaller than this cap
+       once there are more than a handful of entries.
+       */
+    position:relative; width:100%; flex:1; min-height:0;
+    max-width:118px; max-height:118px;
+    border-radius:6px;
+    background:rgba(255,255,255,0.06);
+    border:2px solid var(--rc, var(--r-base));
+    box-shadow:0 0 6px -1px var(--rc, transparent);
+    display:flex; align-items:center; justify-content:center;
+    overflow:hidden;
+  }
+  .d-icon-wrap img{
+    width:100%; height:100%; object-fit:contain;
+    /* Most of these icons have a lot of transparent margin baked in around
+       the actual droid art (a uniform icon-grid asset convention), which
+       reads as wasted space at this small a size. Zooming in and letting
+       the wrapper's own overflow:hidden crop the excess trims that margin
+       without touching the source image data — safer than reprocessing
+       ~175 individual icons, and just as effective visually. */
+    transform:scale(1.3);
+  }
+  .d-icon-wrap.legendary{ --rc: var(--rarity-legendary); }
+  .d-icon-wrap.mythic{ --rc: var(--rarity-mythic); }
+  .d-rarity-dot{
+    position:absolute; top:2px; right:2px;
+    width:8px; height:8px; border-radius:50%;
+    background:var(--rc, var(--r-base));
+    border:1px solid rgba(0,0,0,0.5);
+  }
+  .d-name{
+    font-size:9px; font-weight:700; color:#f2f6f4; text-align:center;
+    text-shadow:0 1px 2px rgba(0,0,0,0.9);
+    line-height:1.15;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;
+    flex:0 0 auto;
+  }
+  .d-owned{
+    font-size:7.5px; font-weight:600; text-align:center;
+    text-shadow:0 1px 2px rgba(0,0,0,0.9);
+    opacity:0.85;
+    flex:0 0 auto;
+  }
+  .empty-msg{
+    flex:1; display:flex; align-items:center; justify-content:center;
+    color:#dfe8e2; font-size:11.5px; text-align:center; line-height:1.4;
+    padding:8px;
+  }
+</style>
+</head>
+<body>
+  <div class="panel">
+    <div class="drag-handle" id="dragHandle">
+      <span>Drag to position, then Lock</span>
+      <button id="lockBtn">Lock</button>
+    </div>
+    <div class="card">
+      <h1><span>♻ Safe to Retire</span><span class="count" id="countTag">0</span></h1>
+      <div class="grid" id="grid"></div>
+    </div>
+  </div>
+
+<script src="icons-data.js"></script>
+<script src="droid-data.js"></script>
+<script src="requirements.js"></script>
+<script>
+(function(){
+  if(!window.overlayAPI){
+    document.body.innerHTML = '<div style="color:#fff;padding:10px;font:12px sans-serif;">Open this file through the Fuzzy\'s Droid Tracker app, not directly in a browser.</div>';
+    return;
+  }
+
+  /* ---------------------------------------------------------------------------
+     Legendary/Mythic droids you've logged as owned whose last-needed level in
+     the ACTIVE cycle has already been passed — i.e. nothing left in this
+     cycle's requirement table will ever ask for them again, so whatever copy
+     you're holding is safe to sell/dismantle/retire in-game. All of the real
+     logic (which droid, which level, which rarity class) lives in
+     getDeclutterList() in requirements.js so it can be verified once against
+     the actual CYCLES data rather than duplicated here; this file is purely
+     rendering + the same store-driven live-update pattern every other window
+     in this app already uses.
+
+     Scoped to whichever cycle is currently active (matching the Rebirth Reqs
+     panel and the main HUD) — moving to a different cycle recomputes this
+     list from scratch for that cycle, since each cycle has its own
+     requirement table.
+  --------------------------------------------------------------------------- */
+
+  let currentCycle = 1;
+  let currentLevel = 0;
+  let ownedRankLocal = {};
+
+  async function loadIndexData(){
+    nameMerges = (await window.overlayAPI.storeGet('rebirth-nameMerges')) || {};
+    displayOverrides = (await window.overlayAPI.storeGet('rebirth-displayOverrides')) || {};
+    buildIndex();
+  }
+
+  async function loadProgress(){
+    currentCycle = (await window.overlayAPI.storeGet('rebirth-activeCycle')) || 1;
+    currentLevel = (await window.overlayAPI.storeGet('rebirth-currentLevel')) || 0;
+    ownedRankLocal = (await window.overlayAPI.storeGet('rebirth-ownedRank-v2')) || {};
+  }
+
+  function cellHtml(item){
+    const src = (typeof ICONS !== 'undefined' && item.iconKey && ICONS[item.iconKey]) ? ('data:image/webp;base64,' + ICONS[item.iconKey]) : '';
+    const imgTag = src ? ('<img src="' + src + '" alt="' + item.display + '" loading="lazy">') : '';
+    const rarityClass = item.rarityClass === 'Mythic' ? 'mythic' : 'legendary';
+    const ownedColorVar = 'var(--r-' + (
+      item.ownedCode === 'B' ? 'base' :
+      item.ownedCode === 'G' ? 'gold' :
+      item.ownedCode === 'D' ? 'diamond' :
+      item.ownedCode === 'R' ? 'rainbow2' :
+      item.ownedCode === 'K' ? 'beskar' :
+      item.ownedCode === 'X' ? 'galactic' : 'stellar'
+    ) + ')';
+    const title = item.display + ' — ' + item.rarityClass + ' — you have ' + RNAME[item.ownedCode] + ' — not needed again this cycle';
+    return '<div class="d-cell" title="' + title + '">' +
+      '<div class="d-icon-wrap ' + rarityClass + '">' + imgTag + '<span class="d-rarity-dot"></span></div>' +
+      '<div class="d-name">' + item.display + '</div>' +
+      '<div class="d-owned" style="color:' + ownedColorVar + '">' + RNAME[item.ownedCode] + '</div>' +
+    '</div>';
+  }
+
+  const GRID_COLS = 2;
+
+  function render(){
+    const gridEl = document.getElementById('grid');
+    const countTag = document.getElementById('countTag');
+    const list = getDeclutterList(currentCycle, currentLevel, ownedRankLocal);
+    countTag.textContent = String(list.length);
+    if(!list.length){
+      gridEl.style.gridTemplateRows = '';
+      gridEl.innerHTML = '<div class="empty-msg" style="grid-column:1/-1">Nothing to retire yet — Legendary/Mythic droids show up here once this cycle no longer needs them.</div>';
+      return;
+    }
+    // This box never scrolls: however many rows the current count needs,
+    // explicitly divide the grid's own fixed height into exactly that many
+    // equal rows (CSS's 1fr does the actual division) instead of letting
+    // rows size themselves from content and overflow. Cells — and the icons
+    // inside them, which stretch via flex:1 in the CSS above — shrink as
+    // the count grows, but everything always fits without a scrollbar.
+    const rows = Math.max(1, Math.ceil(list.length / GRID_COLS));
+    gridEl.style.gridTemplateRows = 'repeat(' + rows + ', 1fr)';
+    gridEl.innerHTML = list.map(cellHtml).join('');
+  }
+
+  async function fullReload(){
+    await loadIndexData();
+    await loadProgress();
+    render();
+  }
+
+  window.overlayAPI.onStoreChanged(({ key, value })=>{
+    if(key === 'rebirth-ownedRank-v2'){ ownedRankLocal = value || {}; render(); }
+    else if(key === 'rebirth-activeCycle'){ currentCycle = value || 1; render(); }
+    else if(key === 'rebirth-currentLevel'){ currentLevel = value || 0; render(); }
+    else if(key === 'rebirth-nameMerges' || key === 'rebirth-displayOverrides'){ fullReload(); }
+  });
+
+  function applySettings(settings){
+    document.body.classList.toggle('unlocked', !settings.declutterLocked);
+  }
+  window.overlayAPI.onSettingsChanged(applySettings);
+
+  document.getElementById('lockBtn').addEventListener('click', ()=>{
+    window.overlayAPI.setDeclutterLocked(true);
+  });
+
+  (async function init(){
+    const settings = await window.overlayAPI.getSettings();
+    applySettings(settings);
+    await fullReload();
+  })();
+})();
+</script>
+</body>
+</html>

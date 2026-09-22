@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Fuzzy's Droid Tracker — Timers</title>
+<style>
+  :root{
+    /* Stellar and Galactic re-matched 2026-09-19 against real in-game
+       screenshots of both the droid glow and the blueprint card border for
+       each rarity (Mythic left as-is — no reference shots for it this
+       round). Stellar was a plain orange before; both the droid and its
+       blueprint card agreed closely on a warm gold instead. Galactic's
+       blueprint border reads as a blue-violet purple while the droid's own
+       glow runs warmer/more magenta — this splits the difference so it
+       reads unmistakably purple without drifting into Mythic's red-pink. */
+    --stellar: #edb142;
+    --rarity-mythic: #ff4d6d;
+    --galactic: #d95cf2;
+    --mission: #5ef2a6;
+  }
+  html,body{
+    margin:0; padding:0; background:transparent; overflow:hidden;
+    font-family:-apple-system,'Segoe UI',system-ui,sans-serif;
+    -webkit-user-select:none; user-select:none;
+    width:100%; height:100%;
+  }
+  .panel{
+    display:flex; flex-direction:column; gap:5px;
+    width:100%; height:100%; box-sizing:border-box;
+    padding:5px;
+  }
+  .drag-handle{
+    display:none;
+    -webkit-app-region: drag;
+    align-items:center; justify-content:space-between;
+    background:rgba(94,242,166,0.22);
+    border:1px solid rgba(94,242,166,0.55);
+    border-radius:6px;
+    padding:4px 8px;
+    font-size:11px;
+    color:#eafff3;
+    letter-spacing:.02em;
+  }
+  body.unlocked .drag-handle{ display:flex; }
+  .drag-handle button{
+    -webkit-app-region: no-drag;
+    background:#5ef2a6; color:#08130d; border:none; border-radius:4px;
+    font-size:11px; font-weight:700; padding:3px 9px; cursor:pointer;
+  }
+  .banners{
+    display:flex; flex-direction:row; gap:5px; flex:1; min-height:0;
+  }
+  .banner{
+    /* Padding/gap trimmed a little 2026-09-19 (all four share this one rule,
+       so they always shrink together and stay matched to each other —
+       Mythic's own colors are untouched, just its box size along with the
+       rest). */
+    flex:1; min-width:0;
+    display:flex; flex-direction:row; align-items:center; justify-content:center;
+    gap:6px;
+    background:
+      radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--accent-color, #9aa39d) 22%, transparent), transparent 60%),
+      rgba(10,14,12,0.68);
+    border:1px solid color-mix(in srgb, var(--accent-color, #9aa39d) 45%, rgba(255,255,255,0.14));
+    border-top:3px solid var(--accent-color, #9aa39d);
+    border-radius:9px;
+    padding:4px 7px;
+    box-sizing:border-box;
+    box-shadow:0 2px 10px -2px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.03);
+    transition:box-shadow 0.3s ease;
+  }
+  .banner.mission{
+    border-radius:999px;
+    border-top:1px solid color-mix(in srgb, var(--accent-color, #9aa39d) 45%, rgba(255,255,255,0.14));
+    border-left:4px solid var(--accent-color, #9aa39d);
+  }
+  /* Imminent state — added by render() once a banner's countdown drops under
+     10s, so a glance catches "something's about to happen" without having
+     to read the actual numbers. Pure CSS pulse, no JS animation loop. */
+  .banner.imminent{
+    box-shadow:0 0 0 1px var(--accent-color), 0 0 14px 1px var(--accent-color), inset 0 0 0 1px rgba(255,255,255,0.05);
+    animation:pulse-glow 1s ease-in-out infinite;
+  }
+  @keyframes pulse-glow{
+    0%,100%{ filter:brightness(1); }
+    50%{ filter:brightness(1.35); }
+  }
+  .b-icon{
+    flex:0 0 auto;
+    width:23px; height:23px;
+    border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    background:radial-gradient(circle at 32% 28%, color-mix(in srgb, var(--accent-color) 85%, white 15%), var(--accent-color) 70%);
+    box-shadow:0 0 6px -1px var(--accent-color), inset 0 -2px 3px rgba(0,0,0,0.25);
+    color:#0b0f0d;
+  }
+  .b-icon svg{ width:14px; height:14px; }
+  .b-icon img{ width:16px; height:16px; object-fit:contain; }
+  .b-body{
+    display:flex; flex-direction:column; align-items:flex-start; justify-content:center;
+    gap:0; min-width:0;
+  }
+  .banner .b-label{
+    font-size:9.5px; font-weight:700; letter-spacing:.06em;
+    color:#f2f6f4; text-transform:uppercase;
+    text-shadow:0 1px 2px rgba(0,0,0,0.9);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;
+  }
+  .banner .b-time{
+    font-size:17px; font-weight:800; font-variant-numeric:tabular-nums;
+    color:#ffffff;
+    text-shadow:0 1px 3px rgba(0,0,0,0.95), 0 0 6px rgba(0,0,0,0.5);
+  }
+  .banner.stellar{ --accent-color: var(--stellar); }
+  .banner.mythic{ --accent-color: var(--rarity-mythic); }
+  .banner.galactic{ --accent-color: var(--galactic); }
+  .banner.mission{ --accent-color: var(--mission); }
+</style>
+</head>
+<body>
+  <div class="panel">
+    <div class="drag-handle" id="dragHandle">
+      <span>Drag to position, then Lock</span>
+      <button id="lockBtn">Lock</button>
+    </div>
+    <div class="banners" id="banners">
+      <div class="banner stellar" id="stellarBanner">
+        <div class="b-icon" title="Stellar Blueprint">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1.5 L14.7 9.3 L22.5 12 L14.7 14.7 L12 22.5 L9.3 14.7 L1.5 12 L9.3 9.3 Z"/></svg>
+        </div>
+        <div class="b-body">
+          <span class="b-label">Stellar Blueprint</span>
+          <span class="b-time" id="stellarTime">--:--</span>
+        </div>
+      </div>
+      <div class="banner mythic" id="mythicBanner">
+        <div class="b-icon" title="Mythic Blueprint">
+          <svg viewBox="0 0 24 24"><path d="M12 2 L19.5 9 L12 22 L4.5 9 Z" fill="currentColor"/><path d="M4.5 9 L19.5 9 L12 2 Z" fill="rgba(255,255,255,0.4)"/></svg>
+        </div>
+        <div class="b-body">
+          <span class="b-label">Mythic Blueprint</span>
+          <span class="b-time" id="mythicTime">--:--</span>
+        </div>
+      </div>
+      <div class="banner galactic" id="galacticBanner">
+        <div class="b-icon" title="Galactic Blueprint">
+          <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.3" fill="currentColor"/><ellipse cx="12" cy="12" rx="10.5" ry="3.3" stroke="currentColor" stroke-width="1.7" transform="rotate(-20 12 12)"/></svg>
+        </div>
+        <div class="b-body">
+          <span class="b-label">Galactic Blueprint</span>
+          <span class="b-time" id="galacticTime">--:--</span>
+        </div>
+      </div>
+      <div class="banner mission" id="missionBanner">
+        <div class="b-icon" title="Next Mission">
+          <img id="missionIcon" src="mission-icons/stormtrooper.png" alt="">
+        </div>
+        <div class="b-body">
+          <span class="b-label" id="missionLabel">Next: —</span>
+          <span class="b-time" id="missionTime">--:--</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  if(!window.overlayAPI){
+    document.body.innerHTML = '<div style="color:#fff;padding:10px;font:12px sans-serif;">Open this file through the Fuzzy\'s Droid Tracker app, not directly in a browser.</div>';
+    return;
+  }
+
+  /* ---------------- timer math ----------------
+     All four timers are pure wall-clock arithmetic against the system clock —
+     nothing here reads the screen or touches Fortnite in any way. Each
+     "next___" function returns the next Date a banner's event fires; render()
+     re-runs this every second and just formats the remaining time. */
+
+  function nextStellar(now){
+    // Every hour, on the hour exactly (1:00, 2:00, 3:00, ...).
+    const next = new Date(now);
+    next.setMinutes(0, 0, 0);
+    if(next <= now) next.setHours(next.getHours() + 1);
+    return next;
+  }
+
+  function nextMythic(now){
+    // Every hour, at :55 (1:55, 2:55, 3:55, ...).
+    const next = new Date(now);
+    next.setMinutes(55, 0, 0);
+    if(next <= now) next.setHours(next.getHours() + 1);
+    return next;
+  }
+
+  function nextGalactic(now){
+    // Every 30 minutes, starting 15 minutes after the hour (:15 and :45).
+    const candidates = [];
+    for(let h = 0; h <= 1; h++){
+      const a = new Date(now); a.setHours(a.getHours() + h, 15, 0, 0); candidates.push(a);
+      const b = new Date(now); b.setHours(b.getHours() + h, 45, 0, 0); candidates.push(b);
+    }
+    candidates.sort((a, b) => a - b);
+    return candidates.find(d => d > now);
+  }
+
+  // Missions were originally described as 45 minutes apart (10:50, 11:35,
+  // 12:20, 1:05, ...), but each one then stays LIVE/active for a fixed
+  // 5-minute window before the next one can start — so the real time from
+  // one mission's start to the next is 45 + 5 = 50 minutes, not 45. (An
+  // earlier version of this code only added those 5 minutes once, as a
+  // one-time shift to the very first mark — that undercounted every single
+  // cycle afterward by exactly 5 minutes, which is why the mismatch kept
+  // reappearing each time a mission passed. The buffer has to be part of
+  // the RECURRING period, not a one-off epoch nudge.)
+  //
+  // The mission name advances in lockstep around a repeating 4-item cycle.
+  // Everything below is computed from one FIXED reference instant
+  // (MISSION_NAME_EPOCH_MS) using pure elapsed-time arithmetic, never
+  // "today's own 10:55am" recomputed fresh each call — because 50 minutes
+  // does not evenly divide a 24-hour day (1440 / 50 = 28.8, not a whole
+  // number, unlike the old 45-minute period's tidy 1440/45 = 32), so
+  // resetting the reference to "today" would silently misalign the name
+  // cycle across midnight. Elapsed-time-from-one-fixed-instant sidesteps
+  // that failure mode entirely: it's correct for any period, on any day,
+  // forever, since the grid extends infinitely in both directions from
+  // that one instant regardless of which calendar day it happens to fall
+  // on relative to "now."
+  //
+  // The exact clock time is still a best guess, though — small real-world
+  // drift is possible. Rather than keep hand-tuning that guess, "Sync
+  // mission timer" in the tracker app lets the player type in exactly what
+  // the game's own countdown shows right now; that's stored as an exact
+  // instant (missionSyncEpochMs) and used ONLY to sharpen the countdown
+  // TARGET in nextMission() below. The NAME cycle is deliberately kept
+  // anchored to the fixed MISSION_NAME_EPOCH_MS in
+  // missionNameForOccurrence() no matter what — the player could sync
+  // while any of the 4 missions is showing, not necessarily the first one,
+  // so letting a sync shift the name-to-slot mapping would risk relabeling
+  // every future mission. Both epochs sit on the same real 50-minute grid
+  // (sync only ever corrects sub-minute drift, never a whole slot), so
+  // Math.round() below always lands on the one correct name regardless of
+  // which epoch produced the occurrence being named.
+  const MISSION_CYCLE = ['Stormtrooper', 'Fishing', 'D-0', 'Mining'];
+
+  // Real in-game icon crops, keyed off the same names used in MISSION_CYCLE.
+  // Each source image had a flat, uniform (35,31,29) background tile behind
+  // a white icon silhouette — chroma-keyed out to transparent, then
+  // recolored to the same dark (#0b0f0d) used by the other three banners'
+  // currentColor icons, so all four badges read consistently (a dark icon
+  // on top of their own bright accent-colored circle).
+  const MISSION_ICONS = {
+    'Stormtrooper': 'mission-icons/stormtrooper.png',
+    'Fishing': 'mission-icons/fishing.png',
+    'D-0': 'mission-icons/d0.png',
+    'Mining': 'mission-icons/mining.png',
+  };
+  const MISSION_COUNTDOWN_MS = 45 * 60 * 1000;
+  const MISSION_RUN_DURATION_MS = 5 * 60 * 1000; // each mission stays live/active for 5 minutes before the next countdown starts
+  const MISSION_PERIOD_MS = MISSION_COUNTDOWN_MS + MISSION_RUN_DURATION_MS; // 50 minutes, start-to-start
+
+  // A confirmed Stormtrooper (cycle index 0) instant, fixing only the NAME
+  // cycle's phase — any correct reference instant works equally well since
+  // the grid repeats forever in both directions.
+  //
+  // Re-derived 2026-09-19 from a real, precisely-timestamped in-game
+  // reading: at 14:00:00 local the "NEXT MISSION" HUD showed Mining with
+  // 40:20 remaining (go-live 14:40:20 local), with D-0 confirmed as the
+  // mission that had just run before it — matching this cycle's own
+  // D-0 -> Mining order, so only the phase (not the order) was ever wrong.
+  // Mining is index 3, so Stormtrooper (index 0) falls exactly 3 periods
+  // (150 min) earlier: 2026-09-19 12:10:20 local. The previous anchor
+  // (2026-01-01 10:55:00, from an earlier, less precise report) is
+  // superseded by this one rather than patched further.
+  const MISSION_NAME_EPOCH_MS = new Date(2026, 8, 19, 12, 10, 20, 0).getTime();
+
+  let missionSyncEpochMs = null; // set via "Sync mission timer"; an exact confirmed live-mission instant, used ONLY for the countdown target
+  let lastMissionIconName = null; // only touch the <img> when the upcoming mission actually changes
+
+  function missionStepIndex(occurrenceMs, epochMs){
+    const steps = Math.round((occurrenceMs - epochMs) / MISSION_PERIOD_MS);
+    return ((steps % MISSION_CYCLE.length) + MISSION_CYCLE.length) % MISSION_CYCLE.length;
+  }
+
+  function nextMission(now){
+    const epochMs = (missionSyncEpochMs != null) ? missionSyncEpochMs : MISSION_NAME_EPOCH_MS;
+    const nowMs = now.getTime();
+    const k = Math.floor((nowMs - epochMs) / MISSION_PERIOD_MS) + 1;
+    let nextMs = epochMs + k * MISSION_PERIOD_MS;
+    if(nextMs <= nowMs) nextMs += MISSION_PERIOD_MS;
+    return new Date(nextMs);
+  }
+
+  function missionNameForOccurrence(occurrence){
+    const idx = missionStepIndex(occurrence.getTime(), MISSION_NAME_EPOCH_MS); // always the fixed nominal epoch, never the synced one
+    return MISSION_CYCLE[idx];
+  }
+
+  function fmtRemaining(ms){
+    if(ms < 0) ms = 0;
+    const totalSec = Math.floor(ms / 1000);
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    const pad = (n) => String(n).padStart(2, '0');
+    return h > 0 ? (h + ':' + pad(m) + ':' + pad(s)) : (pad(m) + ':' + pad(s));
+  }
+
+  // A banner pulses via .imminent once its own countdown drops under this
+  // threshold — matches the ".banner.imminent" comment/animation in <style>.
+  const IMMINENT_THRESHOLD_MS = 10 * 1000;
+
+  function setImminent(bannerEl, remainingMs){
+    bannerEl.classList.toggle('imminent', remainingMs >= 0 && remainingMs < IMMINENT_THRESHOLD_MS);
+  }
+
+  function render(){
+    const now = new Date();
+
+    const stellarRemaining = nextStellar(now) - now;
+    const mythicRemaining = nextMythic(now) - now;
+    const galacticRemaining = nextGalactic(now) - now;
+
+    document.getElementById('stellarTime').textContent = fmtRemaining(stellarRemaining);
+    document.getElementById('mythicTime').textContent = fmtRemaining(mythicRemaining);
+    document.getElementById('galacticTime').textContent = fmtRemaining(galacticRemaining);
+
+    setImminent(document.getElementById('stellarBanner'), stellarRemaining);
+    setImminent(document.getElementById('mythicBanner'), mythicRemaining);
+    setImminent(document.getElementById('galacticBanner'), galacticRemaining);
+
+    const missionAt = nextMission(now);
+    const missionName = missionNameForOccurrence(missionAt);
+    const missionRemaining = missionAt - now;
+    document.getElementById('missionLabel').textContent = 'Next: ' + missionName;
+    document.getElementById('missionTime').textContent = fmtRemaining(missionRemaining);
+    setImminent(document.getElementById('missionBanner'), missionRemaining);
+
+    if(missionName !== lastMissionIconName){
+      const iconEl = document.getElementById('missionIcon');
+      iconEl.src = MISSION_ICONS[missionName] || iconEl.src;
+      iconEl.alt = missionName;
+      lastMissionIconName = missionName;
+    }
+  }
+
+  function applySettings(settings){
+    document.body.classList.toggle('unlocked', !settings.timersLocked);
+    missionSyncEpochMs = (settings.missionSyncEpochMs != null) ? settings.missionSyncEpochMs : null;
+  }
+  window.overlayAPI.onSettingsChanged(applySettings);
+
+  document.getElementById('lockBtn').addEventListener('click', ()=>{
+    window.overlayAPI.setTimersLocked(true);
+  });
+
+  (async function init(){
+    const settings = await window.overlayAPI.getSettings();
+    applySettings(settings);
+    render();
+    setInterval(render, 1000);
+  })();
+})();
+</script>
+</body>
+</html>

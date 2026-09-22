@@ -1,0 +1,36 @@
+{
+  "name": "fuzzys-droid-tracker",
+  "version": "1.5.0",
+  "description": "Fuzzy's Droid Tracker — a Droid Tycoon rebirth tracker with an always-on-top requirements HUD",
+  "main": "main.js",
+  "author": "Fuzzy",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder"
+  },
+  "dependencies": {
+    "tesseract.js": "^5.1.0"
+  },
+  "devDependencies": {
+    "electron": "^32.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "build": {
+    "appId": "com.fuzzy.droidtracker",
+    "productName": "Fuzzy's Droid Tracker",
+    "files": [
+      "**/*",
+      "!_orig.html"
+    ],
+    "win": {
+      "target": "portable"
+    },
+    "mac": {
+      "target": "dmg"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  }
+}

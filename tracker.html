@@ -1,0 +1,1898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fuzzy's Droid Tracker — Keep or Let Go</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0b0f0d;
+    --panel: #121815;
+    --panel2: #161d19;
+    --line: #26332c;
+    --line-bright: #38493f;
+    --text: #dfe8e2;
+    --text-dim: #8fa199;
+    --accent: #5ef2a6;
+    --accent-dim: #2c6b4a;
+    --amber: #f2b95e;
+    --red: #ef5b5b;
+
+    --r-base: #9aa39d;
+    --r-gold: #e8c04a;
+    --r-diamond: #4fd3e8;
+    --r-rainbow1: #ff6ec7;
+    --r-rainbow2: #6ecbff;
+    --r-beskar: #b9c2cc;
+    --r-galactic: #c96bf2;
+    --r-stellar: #e08a3c;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;}
+  body{
+    background-image:
+      radial-gradient(ellipse at 20% -10%, rgba(94,242,166,0.07), transparent 45%),
+      radial-gradient(ellipse at 100% 0%, rgba(94,150,242,0.05), transparent 40%);
+    padding-bottom:60px;
+  }
+  .wrap{max-width:980px;margin:0 auto;padding:26px 20px 0;position:relative;z-index:2;}
+
+  #bgLayer{
+    position:fixed;inset:0;z-index:0;
+    background-size:cover;background-position:center center;background-repeat:no-repeat;
+  }
+  #bgScrim{
+    position:fixed;inset:0;z-index:1;
+    background:rgba(11,15,13,0.72);
+    transition:background-color .2s ease;
+  }
+  .bg-controls{display:flex;align-items:center;gap:8px;}
+  .bg-controls[hidden]{display:none;}
+  .bg-controls input[type="range"]{
+    width:90px;accent-color:var(--accent);vertical-align:middle;cursor:pointer;
+  }
+  .bg-dim-label{font-size:11px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;white-space:nowrap;}
+
+  header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px;border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:18px;}
+  .title-block h1{
+    font-family:'Rajdhani',sans-serif;font-weight:700;font-size:34px;letter-spacing:0.5px;
+    margin:0 0 5px 0; color:var(--text); display:flex; align-items:center; gap:11px;
+  }
+  .title-block h1 .glyph{color:var(--accent); font-size:27px; transform:translateY(-1px); display:inline-block;}
+  .title-block h1 .app-version{
+    font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600;
+    color:var(--text-dim); background:var(--panel2); border:1px solid var(--line);
+    border-radius:999px; padding:2px 9px; letter-spacing:0.02em;
+  }
+  .title-block p{margin:0;color:var(--text-dim);font-size:14.5px;max-width:50ch;line-height:1.45;}
+  .overall{text-align:right;min-width:180px;}
+  .overall .num{font-family:'IBM Plex Mono',monospace;font-size:28px;color:var(--accent);font-weight:600;}
+  .overall .lbl{font-size:11.5px;color:var(--text-dim);letter-spacing:.03em;}
+  .bar{height:7px;border-radius:4px;background:var(--panel2);overflow:hidden;margin-top:7px;border:1px solid var(--line);}
+  .bar > div{height:100%;background:linear-gradient(90deg,var(--accent-dim),var(--accent));transition:width .35s ease;}
+
+  .legend{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:16px;font-size:12.5px;color:var(--text-dim);align-items:center;position:sticky;top:0;background:var(--bg);z-index:5;padding:9px 0;}
+  .legend .item{display:flex;align-items:center;gap:6px;}
+  .legend .dot{width:10px;height:10px;border-radius:3px;flex:0 0 10px;}
+
+  .toolbar{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin-bottom:16px;}
+  .spacer{flex:1;}
+  .searchbox{position:relative;flex:1;min-width:180px;max-width:320px;}
+  .searchbox input{
+    background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:7px;
+    padding:9px 14px 9px 33px;font-size:15px;width:100%;font-family:'Inter',sans-serif;
+  }
+  .searchbox input:focus{outline:none;border-color:var(--accent-dim);}
+  .searchbox::before{content:'⌕';position:absolute;left:11px;top:7px;color:var(--text-dim);font-size:16px;}
+
+  .btn{
+    background:var(--panel);border:1px solid var(--line);color:var(--text-dim);border-radius:7px;
+    padding:9px 14px;font-size:14px;cursor:pointer;font-family:'Inter',sans-serif;transition:.15s;white-space:nowrap;
+  }
+  .btn:hover{color:var(--text);border-color:var(--line-bright);}
+  .btn.on{color:var(--accent);border-color:var(--accent-dim);background:rgba(94,242,166,0.08);}
+  .btn[hidden]{display:none;}
+  #rebirthLevelBtn{white-space:normal;text-align:center;line-height:1.25;padding-top:6px;padding-bottom:6px;}
+
+  /* ---- content row: main list + optional rebirth-requirements side panel ---- */
+  .content-row{display:flex;gap:22px;align-items:flex-start;}
+  .content-row .main-col{flex:1;min-width:0;}
+  .wrap.with-rebirth{max-width:1300px;}
+
+  .rebirth-panel{
+    display:none;flex:0 0 300px;background:var(--panel);border:1px solid var(--line);
+    border-radius:10px;padding:14px;
+    position:sticky;top:58px;max-height:calc(100vh - 78px);overflow-y:auto;
+  }
+  .rebirth-panel.show{display:block;}
+  .rebirth-panel-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;}
+  .rebirth-panel-head h3{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:17px;margin:0;color:var(--accent);letter-spacing:.02em;}
+  .rebirth-panel-head .btn{padding:4px 9px;font-size:12px;}
+  .rebirth-cycle-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+  .rebirth-cycle-row label{font-size:11.5px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;letter-spacing:.03em;}
+  .rb-cycle-select{
+    background:var(--panel2);border:1px solid var(--line);color:var(--text);
+    border-radius:6px;padding:5px 9px;font-size:13.5px;font-family:'Rajdhani',sans-serif;
+    font-weight:600;cursor:pointer;flex:1;
+  }
+  .rb-cycle-select:focus{outline:none;border-color:var(--accent-dim);}
+  .rebirth-sub{font-size:11.5px;color:var(--text-dim);line-height:1.45;margin:0 0 14px;}
+  .rebirth-tier-block{margin-bottom:16px;}
+  .rebirth-tier-block:last-child{margin-bottom:0;}
+  .rebirth-tier-label{
+    font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;
+    letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px;
+  }
+  .rebirth-tier-label.B{color:var(--r-base);}
+  .rebirth-tier-label.G{color:var(--r-gold);}
+  .rebirth-tier-label.D{color:var(--r-diamond);}
+  .rebirth-tier-label.R{color:var(--r-rainbow2);}
+  .rebirth-tier-label.K{color:var(--r-beskar);}
+  .rebirth-tier-label.X{color:var(--r-galactic);}
+  .rebirth-tier-label.S{color:var(--r-stellar);}
+  .rebirth-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+  .rb-cell{display:flex;flex-direction:column;align-items:center;gap:5px;padding:7px 4px;border-radius:8px;cursor:pointer;transition:.12s;text-align:center;}
+  .rb-cell:hover{background:rgba(255,255,255,0.05);}
+  .rb-cell.covered{opacity:.4;}
+  .rb-cell.covered .rb-name{text-decoration:line-through;}
+  .rb-name{font-size:11px;font-weight:500;line-height:1.25;word-break:break-word;}
+  .rb-name.B{color:var(--r-base);}
+  .rb-name.G{color:var(--r-gold);}
+  .rb-name.D{color:var(--r-diamond);}
+  .rb-name.R{color:var(--r-rainbow1);}
+  .rb-name.K{color:var(--r-beskar);}
+  .rb-name.X{color:var(--r-galactic);}
+  .rb-name.S{color:var(--r-stellar);}
+
+  @media (max-width:900px){
+    .content-row{flex-direction:column;}
+    .rebirth-panel{flex:1 1 auto;width:100%;position:static;max-height:none;overflow-y:visible;}
+    .wrap.with-rebirth{max-width:980px;}
+  }
+
+  /* ---- quick panel: the by-droid keep/let-go list ---- */
+  .quick-panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px;}
+  .dq-empty{padding:26px;text-align:center;color:var(--text-dim);font-size:14.5px;}
+  .dq-row{display:flex;align-items:center;gap:14px;padding:11px 10px;border-radius:8px;transition:.12s;}
+  .dq-row:hover{background:rgba(255,255,255,0.03);}
+  .dq-row.maxed{opacity:.5;}
+  .dq-row + .dq-row{border-top:1px solid var(--line);}
+
+  .icon-badge{
+    position:relative; flex:0 0 48px; width:48px; height:48px; border-radius:10px;
+    display:flex; align-items:center; justify-content:center; overflow:hidden;
+    border:1px solid rgba(255,255,255,0.08); box-shadow:inset 0 0 0 1px rgba(0,0,0,0.25);
+  }
+  .icon-badge img{width:88%;height:88%;object-fit:contain;position:relative;z-index:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.5));}
+
+  .rarity-base{background:linear-gradient(160deg,#20272c,#171c1f 70%);}
+  .rarity-gold{background:linear-gradient(155deg,#8a641c 0%,#f0c04e 38%,#fff3c4 50%,#e8ab2e 62%,#7a5615 100%);}
+  .rarity-diamond{background:linear-gradient(155deg,#3f7f92 0%,#8fe3f5 35%,#f2feff 50%,#8fe3f5 65%,#2f6373 100%);}
+  .rarity-rainbow{background:linear-gradient(135deg,#ff6ec7,#ffd76e 25%,#6ef7c1 50%,#6ecbff 75%,#c96bf2 100%);}
+  .rarity-beskar{background:linear-gradient(155deg,#6b7178 0%,#c9ced3 35%,#f5f7f8 50%,#aab0b6 65%,#4c5157 100%);}
+  .rarity-galactic{background:linear-gradient(155deg,#3d1a63 0%,#9b4de0 38%,#e2c3ff 50%,#8536d6 62%,#2c0f4d 100%);}
+  .rarity-stellar{background:linear-gradient(155deg,#7a3d0a 0%,#e2841f 30%,#ffe2a6 48%,#ffb545 58%,#c9670f 75%,#5c2a05 100%);}
+  .icon-badge.rarity-beskar::before, .icon-badge.rarity-stellar::before{
+    content:'';position:absolute;inset:0;z-index:0;
+    background:linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.55) 46%, transparent 58%);
+    mix-blend-mode:overlay;
+  }
+  .icon-badge.rarity-stellar::before{background:linear-gradient(115deg, transparent 25%, rgba(255,255,255,0.75) 44%, transparent 56%);}
+
+  /* Rebirth Reqs panel only: each badge split diagonally — upper-left half
+     shows the rarity you've actually logged for that droid, lower-right half
+     shows this cycle's highest required rarity. The two halves use the same
+     rarity-* foil gradients as everywhere else, so a fully-caught-up droid's
+     halves match and the seam all but disappears. */
+  .icon-badge-split{background:none;}
+  .badge-half{position:absolute;inset:0;z-index:0;}
+  .badge-half-owned{clip-path:polygon(0 0, 100% 0, 0 100%);}
+  .badge-half-req{clip-path:polygon(100% 0, 100% 100%, 0 100%);}
+  .badge-half.rarity-beskar::after, .badge-half.rarity-stellar::after{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.55) 46%, transparent 58%);
+    mix-blend-mode:overlay;
+  }
+  .badge-half.rarity-stellar::after{background:linear-gradient(115deg, transparent 25%, rgba(255,255,255,0.75) 44%, transparent 56%);}
+  .icon-badge-split::after{
+    content:'';position:absolute;inset:0;z-index:0;pointer-events:none;
+    background:linear-gradient(to bottom right, transparent calc(50% - 0.75px), rgba(255,255,255,0.5) 50%, transparent calc(50% + 0.75px));
+  }
+  .rarity-unowned{background:#12161a;} /* distinct flat "nothing logged yet" — not the same as owning Base */
+
+  .dq-name-wrap{flex:1;min-width:0;}
+  .dq-name{font-size:17px;font-weight:500;line-height:1.3;}
+  .dq-name[contenteditable="true"]{outline:1px dashed var(--accent-dim); padding:1px 4px; border-radius:3px; cursor:text;}
+  .dq-sub{font-size:10.5px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;margin-top:2px;letter-spacing:.02em;}
+
+  .sort-toggle{display:flex;gap:5px;}
+
+  .level-note{font-size:12.5px;color:var(--text-dim);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:14px;line-height:1.45;}
+
+  .level-group{margin-bottom:4px;}
+  .level-group + .level-group{margin-top:16px;}
+  .level-group-header{
+    font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--text-dim);
+    letter-spacing:.06em;margin:0 0 6px 3px;text-transform:uppercase;
+  }
+  .dq-row.dimmed{opacity:.3;}
+
+  .cycle-picker-row{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
+  .cycle-select{
+    background:var(--panel);border:1px solid var(--line);color:var(--text);
+    border-radius:7px;padding:9px 13px;font-size:16.5px;font-family:'Rajdhani',sans-serif;
+    font-weight:600;cursor:pointer;
+  }
+  .cycle-select:focus{outline:none;border-color:var(--accent-dim);}
+  .cycle-progress-label{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--text-dim);}
+
+  .cycle-section{margin-bottom:8px;}
+  .cycle-section-header{
+    font-family:'Rajdhani',sans-serif;font-weight:700;font-size:19px;color:var(--accent);
+    letter-spacing:.03em;margin:0 0 12px;
+  }
+
+  .level-table{border-collapse:collapse;width:100%;font-size:16px;}
+  .level-table td{padding:11px 13px;border-bottom:1px solid var(--line);}
+  .level-table td.lv-num{
+    font-family:'IBM Plex Mono',monospace;color:var(--text-dim);font-size:13.5px;
+    width:36px;text-align:right;padding-right:14px;white-space:nowrap;cursor:pointer;transition:.12s;
+  }
+  .level-table td.lv-num:hover{color:var(--accent);background:rgba(94,242,166,0.08);}
+  .droid-cell{cursor:pointer;font-weight:500;transition:.12s;}
+  .droid-cell:hover{background:rgba(255,255,255,0.04);}
+  .droid-cell.covered{opacity:.35;text-decoration:line-through;}
+  .cell-flex{display:flex;align-items:center;gap:10px;}
+  .icon-badge-sm{flex:0 0 34px;width:34px;height:34px;border-radius:8px;}
+  .cell-name{flex:1;min-width:0;font-size:16px;}
+  .sell-tag{
+    display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;
+    letter-spacing:.04em;color:#0b0f0d;background:var(--accent);border-radius:4px;
+    padding:2px 6px;margin-left:7px;vertical-align:middle;
+  }
+  .droid-cell.B{color:var(--r-base);}
+  .droid-cell.G{color:var(--r-gold);}
+  .droid-cell.D{color:var(--r-diamond);}
+  .droid-cell.R{color:var(--r-rainbow1);}
+  .droid-cell.K{color:var(--r-beskar);}
+  .droid-cell.X{color:var(--r-galactic);}
+  .droid-cell.S{color:var(--r-stellar);}
+
+  .pip-row{display:flex;gap:6px;align-items:center;flex:0 0 auto;}
+  .pip{
+    width:17px;height:17px;border-radius:50%;cursor:pointer;flex:0 0 17px;
+    border:1.5px solid var(--line-bright);background:var(--panel2);transition:.12s;
+  }
+  .pip:hover{transform:scale(1.25);}
+  .pip.filled{border-color:transparent;}
+  .pip.filled.B{background:var(--r-base);}
+  .pip.filled.G{background:var(--r-gold);}
+  .pip.filled.D{background:var(--r-diamond);}
+  .pip.filled.R{background:linear-gradient(90deg,var(--r-rainbow1),var(--r-rainbow2));}
+  .pip.filled.K{background:var(--r-beskar);}
+  .pip.filled.X{background:var(--r-galactic);}
+  .pip.filled.S{background:var(--r-stellar);}
+  .pip.next{box-shadow:0 0 0 2px var(--amber);border-color:var(--amber);}
+
+  .status-badge{
+    font-family:'IBM Plex Mono',monospace;font-size:12px;padding:5px 10px;border-radius:6px;
+    white-space:nowrap;flex:0 0 auto;letter-spacing:.02em;
+  }
+  .status-badge.maxed{background:rgba(94,242,166,0.12);color:var(--accent);border:1px solid var(--accent-dim);}
+  .status-badge.need{background:rgba(242,185,94,0.1);color:var(--amber);border:1px solid rgba(242,185,94,0.35);}
+
+  /* ---- reference panel (reused from v1) ---- */
+  .ref{margin-top:30px;border-top:1px solid var(--line);padding-top:18px;}
+  .ref h2{font-family:'Rajdhani',sans-serif;font-size:19px;margin:0 0 13px;color:var(--text);cursor:pointer;user-select:none;display:flex;align-items:center;gap:8px;}
+  .ref h2::before{content:'▸';color:var(--accent);transition:.15s;font-size:14px;}
+  .ref.open h2::before{transform:rotate(90deg);}
+  .ref-body{display:none;}
+  .ref.open .ref-body{display:block;}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;margin-bottom:16px;}
+  th,td{border:1px solid var(--line);padding:7px 11px;text-align:center;font-family:'IBM Plex Mono',monospace;}
+  th{background:var(--panel2);color:var(--text-dim);font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.03em;}
+  td.rn{text-align:left;font-weight:600;}
+
+  footer{text-align:center;color:var(--text-dim);font-size:12px;margin-top:34px;line-height:1.65;}
+
+  .toast{
+    position:fixed;bottom:18px;left:50%;transform:translateX(-50%) translateY(10px);
+    background:var(--panel);border:1px solid var(--accent-dim);color:var(--text);
+    padding:9px 16px;border-radius:8px;font-size:12.5px;opacity:0;pointer-events:none;
+    transition:.2s;z-index:50;box-shadow:0 4px 16px rgba(0,0,0,.4);max-width:90vw;text-align:center;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  .calib-overlay{
+    position:fixed;inset:0;background:rgba(5,8,7,0.88);z-index:80;
+    display:flex;align-items:center;justify-content:center;padding:24px;
+  }
+  .calib-box{background:var(--panel);border:1px solid var(--line-bright);border-radius:12px;padding:22px;max-width:820px;width:100%;max-height:88vh;overflow:auto;}
+  .calib-box h3{font-family:'Rajdhani',sans-serif;font-size:20px;margin:0 0 8px;color:var(--text);}
+  .calib-box p{color:var(--text-dim);font-size:13.5px;margin:0 0 12px;line-height:1.5;}
+  .calib-canvas-wrap canvas{
+    width:100%;height:auto;display:block;border-radius:8px;border:1px solid var(--line);
+    cursor:crosshair;background:#000;
+  }
+  .calib-actions{display:flex;align-items:center;gap:8px;margin-top:12px;flex-wrap:wrap;}
+  .calib-region-info{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--text-dim);margin-right:auto;}
+
+  /* ---- first-launch walkthrough (guide.js) ---- */
+  .guide-overlay{
+    position:fixed;inset:0;background:rgba(5,8,7,0.88);z-index:90;
+    display:flex;align-items:center;justify-content:center;padding:24px;
+  }
+  .guide-overlay[hidden]{display:none;}
+  .guide-box{background:var(--panel);border:1px solid var(--line-bright);border-radius:12px;padding:26px;max-width:560px;width:100%;max-height:88vh;overflow:auto;}
+  .guide-progress{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;color:var(--text-dim);letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px;}
+  .guide-box h3{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:22px;margin:0 0 14px;color:var(--accent);}
+  .guide-body{color:var(--text);font-size:14px;line-height:1.6;}
+  .guide-body p{margin:0 0 12px;}
+  .guide-body p:last-child{margin-bottom:0;}
+  .guide-body b{color:var(--text);}
+  .guide-tag{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;margin-right:7px;letter-spacing:.02em;vertical-align:1px;}
+  .guide-tag.new{background:rgba(94,242,166,0.12);color:var(--accent);border:1px solid var(--accent-dim);}
+  .guide-tag.vet{background:rgba(242,185,94,0.14);color:var(--amber);border:1px solid rgba(242,185,94,0.4);}
+  .guide-actions{display:flex;align-items:center;gap:8px;margin-top:22px;}
+
+  .live-strip{
+    position:fixed;top:14px;right:14px;z-index:60;background:var(--panel);border:1px solid var(--accent-dim);
+    border-radius:10px;padding:8px 12px;display:flex;align-items:center;gap:10px;box-shadow:0 6px 20px rgba(0,0,0,.5);
+    max-width:92vw;flex-wrap:wrap;
+  }
+  .live-dot{width:9px;height:9px;border-radius:50%;background:var(--red);flex:0 0 9px;animation:livepulse 1.4s infinite;}
+  @keyframes livepulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+  .live-label{font-size:12px;color:var(--text-dim);white-space:nowrap;}
+  .live-previews{display:flex;gap:4px;}
+  .live-previews canvas{width:30px;height:30px;border-radius:6px;border:1px solid var(--line);image-rendering:pixelated;background:#000;}
+  .live-guess{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--text);white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis;}
+
+  .suggest-banner{
+    position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:70;
+    background:var(--panel);border:1px solid var(--accent);border-radius:12px;padding:10px 14px;
+    display:flex;align-items:center;gap:12px;box-shadow:0 8px 28px rgba(0,0,0,.55);max-width:94vw;
+  }
+  .suggest-text{display:flex;flex-direction:column;}
+  .suggest-name{font-size:15px;font-weight:600;color:var(--text);}
+  .suggest-sub{font-size:11.5px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;}
+
+  @media (max-width:600px){
+    .title-block h1{font-size:23px;}
+    .overall{text-align:left;}
+    header{flex-direction:column;align-items:flex-start;}
+    .searchbox{max-width:none;}
+  }
+
+  /* ---- Electron overlay settings panel ---- */
+  .overlay-panel{
+    display:flex;flex-direction:column;gap:8px;
+    background:var(--panel);border:1px solid var(--line);border-radius:8px;
+    padding:12px 14px;margin-bottom:16px;
+  }
+  .overlay-panel[hidden]{display:none;}
+  .overlay-panel-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .overlay-panel-label{font-size:12.5px;color:var(--text-dim);min-width:96px;font-family:'IBM Plex Mono',monospace;}
+  .overlay-panel-hint{font-size:11.5px;color:var(--text-dim);}
+  .overlay-panel-heading{
+    font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--accent);padding-top:10px;margin-top:2px;border-top:1px solid rgba(255,255,255,0.08);
+  }
+  .overlay-panel-heading:first-child{padding-top:0;margin-top:0;border-top:none;}
+  .overlay-panel-row input[type="range"]{accent-color:var(--accent);width:160px;}
+  #hideAllHotkeyBtn.capturing, #overlayHotkeyBtn.capturing, #timersHotkeyBtn.capturing, #hotkeyListHotkeyBtn.capturing, #declutterHotkeyBtn.capturing, #rebirthReqHotkeyBtn.capturing, #rebirthScreenHotkeyBtn.capturing{color:var(--accent);border-color:var(--accent-dim);background:rgba(94,242,166,0.1);}
+  .ms-sync-input{
+    width:46px;background:var(--panel2);border:1px solid var(--line);color:var(--text);
+    border-radius:6px;padding:6px 4px;font-size:13px;font-family:'IBM Plex Mono',monospace;text-align:center;
+  }
+
+  .rl-manual{display:inline-flex;align-items:center;gap:6px;margin:0 4px;}
+  .rl-level-display{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--accent);min-width:44px;text-align:center;}
+  .rl-manual .btn{padding:4px 10px;}
+
+  .rs-confirm-row{display:flex;align-items:center;gap:10px;margin-top:10px;}
+  .rs-confirm-row label{font-size:12.5px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;}
+  .rs-confirm-row input[type="number"]{
+    width:70px;background:var(--panel2);border:1px solid var(--line);color:var(--text);
+    border-radius:6px;padding:6px 8px;font-size:14px;font-family:'IBM Plex Mono',monospace;
+  }
+  .rs-confirm-row input[type="text"]{
+    width:220px;background:var(--panel2);border:1px solid var(--line);color:var(--text);
+    border-radius:6px;padding:6px 8px;font-size:14px;font-family:'Rajdhani',sans-serif;
+  }
+  .rs-confirm-row select{
+    background:var(--panel2);border:1px solid var(--line);color:var(--text);
+    border-radius:6px;padding:6px 8px;font-size:13.5px;font-family:'Rajdhani',sans-serif;cursor:pointer;
+  }
+  .cb-debug-row{display:flex;gap:14px;margin:4px 0 6px;flex-wrap:wrap;}
+  .cb-debug-preview{flex:1 1 200px;min-width:160px;max-width:320px;}
+  .cb-debug-label{font-size:10.5px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;margin-top:4px;text-align:center;}
+  .cb-debug-actions{display:flex;gap:14px;flex-wrap:wrap;margin:0 0 10px;}
+  .cb-debug-actions .btn{flex:1 1 200px;min-width:160px;max-width:320px;font-size:11.5px;}
+  .cb-suggest-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:2px 0 8px;}
+  .cb-suggest-row .cb-suggest-label{font-size:11.5px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;}
+  .cb-suggest-chip{
+    background:rgba(94,242,166,0.08);border:1px solid var(--accent-dim);color:var(--accent);
+    border-radius:14px;padding:4px 11px;font-size:12px;cursor:pointer;font-family:'Rajdhani',sans-serif;font-weight:600;
+  }
+  .cb-suggest-chip:hover{background:rgba(94,242,166,0.18);}
+
+  /* Right-click context menu (main grid cells, A-Z pips, and the Rebirth
+     Reqs panel all use this) to set an exact owned colorway — left-click
+     keeps its original quick "claim the top tier or undo" behavior. Reuses
+     setOwned(), so a pick that matches the current tier undoes it and a
+     lower pick than what's on record is a safe no-op, same rules as
+     everywhere else. This menu is also the one reliable way to clear a
+     droid that's logged at a higher tier somewhere you're not currently
+     looking at (2026-09-21 fix — see setOwned()'s else-branch comment). */
+  .rb-context-menu{
+    position:fixed;z-index:100;background:var(--panel);border:1px solid var(--line-bright);
+    border-radius:8px;padding:4px;box-shadow:0 10px 30px rgba(0,0,0,0.5);min-width:150px;
+  }
+  .rb-context-item{
+    display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:5px;
+    cursor:pointer;font-size:13px;color:var(--text);
+  }
+  .rb-context-item:hover{background:rgba(255,255,255,0.07);}
+  .rb-context-item.current{background:rgba(94,242,166,0.14);}
+  .rb-context-swatch{width:12px;height:12px;border-radius:3px;flex:0 0 auto;}
+  .rb-context-check{margin-left:auto;color:var(--accent);font-weight:700;}
+</style>
+</head>
+<body>
+<div id="bgLayer"></div>
+<div id="bgScrim"></div>
+<div class="wrap" id="wrapEl">
+
+  <header>
+    <div class="title-block">
+      <h1><span class="glyph">⟳</span>FUZZY'S DROID TRACKER — Keep or Let Go<span class="app-version" id="appVersionTag" hidden title="Build version — after unzipping a new copy, check this changed so you know you're actually on it"></span></h1>
+      <p>Tap a droid's rarity dots to log what you own. Amber ring = the next upgrade worth chasing — anything at or below your best is safe to let go of.</p>
+    </div>
+    <div class="overall">
+      <div class="num" id="overallNum">0 / 0</div>
+      <div class="lbl">DROIDS MAXED</div>
+      <div class="bar"><div id="overallBar" style="width:0%"></div></div>
+    </div>
+  </header>
+
+  <div class="legend" id="legend"></div>
+  <div class="level-note" id="levelNote" style="display:none;">Three droids per line, one line per level, all 35 levels for the cycle you've picked below. Click a name to log it — dimmed names are already covered by a higher rarity you own.</div>
+  <div class="cycle-picker-row" id="cyclePickerRow" style="display:none;">
+    <select class="cycle-select" id="cycleSelect">
+      <option value="1">Cycle 1</option>
+      <option value="2">Cycle 2</option>
+      <option value="3">Cycle 3</option>
+      <option value="4">Cycle 4</option>
+      <option value="5">Cycle 5</option>
+    </select>
+    <span class="cycle-progress-label" id="cycleProgress"></span>
+  </div>
+
+  <div class="toolbar">
+    <div class="searchbox" id="searchBoxWrap"><input id="search" type="text" placeholder="Search a droid…"></div>
+    <div class="sort-toggle" id="sortToggleWrap">
+      <button class="btn on" data-sort="alpha" title="Needs-work first, then A–Z">A–Z</button>
+      <button class="btn" data-sort="level" title="Grouped in trios by the level they unlock at, for whichever cycle is selected">By Rebirth Level</button>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn" id="pipBtn" hidden title="Pop this panel into a small always-on-top window">⧉ Pop out</button>
+    <button class="btn" id="liveBtn" hidden title="Watch your screen and suggest what to log as you play">🔴 Live Detect</button>
+    <button class="btn" id="rebirthLevelBtn" hidden title="Read your current rebirth level from the screen automatically, to drive the overlay HUD">🔢 Draw Rebirth<br>Level Box</button>
+    <button class="btn" id="rebirthScreenBtn" hidden title="Open the in-game Rebirth menu, then click this to read it and mark everything up to that point as owned">📸 Read Rebirth Screen</button>
+    <button class="btn" id="rebirthScreenRecalibBtn" hidden title="Redraw the box around the Rank number (only needed once, or if it starts reading wrong)">↺</button>
+    <button class="btn" id="editToggle" title="Click a name to fix a misread, or rename it to match another droid to merge them">✎ Rename</button>
+    <button class="btn" id="reqPanelToggle" title="Show a side panel of the droids needed for rebirth 35, at the rarity each cycle requires">🧬 Rebirth Reqs</button>
+    <button class="btn" id="bgBtn" title="Set a custom background image">🖼 Background</button>
+    <div class="bg-controls" id="bgControls" hidden>
+      <span class="bg-dim-label">Dim</span>
+      <input type="range" id="bgDimRange" min="0.2" max="0.92" step="0.02" value="0.72">
+      <button class="btn" id="bgClearBtn" title="Remove custom background">✕</button>
+    </div>
+    <button class="btn" id="guideOpenBtn" hidden title="Replay the first-launch tour of the app's tools">❔ Guide</button>
+    <button class="btn" id="overlayToggleBtn" hidden title="Show or hide the in-game HUD (toggle with the hotkey too)">🎯 Upcoming RB Req's: On</button>
+    <button class="btn" id="overlaySettingsBtn" hidden title="Overlay hotkey, opacity, and position">⚙ Overlay Settings</button>
+    <button class="btn" id="timersToggleBtn" hidden title="Show or hide the Stellar/Mythic/Galactic/Mission countdown banners (toggle with the hotkey too)">⏱ Timers: On</button>
+    <button class="btn" id="hotkeyListToggleBtn" hidden title="Show or hide the on-screen hotkey reference list (toggle with the hotkey too, shown automatically on launch)">⌨ Hotkeys: On</button>
+    <button class="btn" id="declutterToggleBtn" hidden title="Show or hide the on-screen list of Legendary/Mythic droids you can safely retire this cycle (toggle with the hotkey too)">♻ Declutter: On</button>
+    <button class="btn" id="rebirthReqToggleBtn" hidden title="Show or hide the standalone Rebirth Requirements overlay — every droid this cycle needs, in-game (toggle with the hotkey too)">🧬 Rebirth Req Overlay: On</button>
+    <button class="btn" id="exportBtn">Export</button>
+    <button class="btn" id="importBtn">Import</button>
+    <button class="btn" id="resetBtn">Reset all</button>
+    <input type="file" id="importFile" accept="application/json" style="display:none">
+    <input type="file" id="bgFile" accept="image/*" style="display:none">
+  </div>
+
+  <div class="overlay-panel" id="overlaySettingsPanel" hidden>
+    <div class="overlay-panel-heading">⌨ Hotkeys</div>
+    <div class="overlay-panel-row">
+      <span class="overlay-panel-label">Hide ALL Overlays</span>
+      <button class="btn" id="hideAllHotkeyBtn">Control+Shift+1</button>
+      <span class="overlay-panel-hint">One-way only — instantly hides every overlay below (including this app's own hotkey list). Doesn't toggle them back on; bring them back individually when ready.</span>
+    </div>
+    <div class="overlay-panel-row">
+      <span class="overlay-panel-label">Toggle Current Rebirth Requirements</span>
+      <button class="btn" id="overlayHotkeyBtn">Alt+Shift+D</button>
+      <span class="overlay-panel-hint" id="overlayHotkeyHint"></span>
+    </div>
+    <div class="overlay-panel-row">
+      <span class="overlay-panel-label">Toggle Timers</span>
+      <button class="btn" id="timersHotkeyBtn">Alt+Shift+T</button>
+      <span class="overlay-panel-hint">Shows/hides the Stellar/Mythic/Galactic/Mission countdown banners.</span>
+    </div>
+    <div class="overlay-panel-row">
+      <span class="overlay-panel-label">Toggle Hotkey List</span>
+      <button class="btn" id="hotkeyListHotkeyBtn">Control+Shift+2</button>
+      <span class="overlay-panel-hint">Shows/hides the on-screen hotkey reference list (it's also shown automatically each time the app launches).</span>
+    </div>
+    <div class="overlay-panel-row">
+      <span class="overlay-panel-label">Toggle Declutter List</span>
+      <button class="btn" id="declutterHotkeyBtn">Control+Shift+3</button>
+      <span class="overlay-panel-hint">Shows/hides the "safe to retire" Legendary/Mythic droid list.</span>
+    </div>
+    <div class="overlay-panel-row">
+      <span class="overlay-panel-label">Toggle Rebirth Requirements Overlay</span>
+      <button class="btn" id="rebirthReqHotkeyBtn">Control+Shift+4</button>
+      <span class="overlay-panel-hint">Shows/hides the standalone overlay listing every droid this cycle needs (same data as the 🧬 Rebirth Reqs panel below).</span>
+    </div>
+    <div class="overlay-panel-row">
+      <span class="overlay-panel-label">Trigger Read Rebirth Screen</span>
+      <button class="btn" id="rebirthScreenHotkeyBtn">Control+Shift+5</button>
+      <span class="overlay-panel-hint">Fires the 📸 Read Rebirth Screen button without alt-tabbing out of the game.</span>
+    </div>
+
+    <div class="overlay-panel-heading">Display &amp; Position</div>
+    <div class="overlay-panel-row">
+      <span class="overlay-panel-label">Panel opacity</span>
+      <input type="range" id="overlayOpacityRange" min="0.2" max="0.92" step="0.02" value="0.55">
+    </div>
+    <div class="overlay-panel-row">
+      <span class="overlay-panel-label">Reposition Current Rebirth Requirements</span>
+      <button class="btn" id="overlayRepositionBtn">🎯 Drag into place</button>
+      <button class="btn" id="overlayResetPosBtn" title="Snap the HUD back to its default position">↺ Reset</button>
+      <span class="overlay-panel-hint">Unlocks the HUD so you can drag it, then click the HUD's own Lock button.</span>
+    </div>
+    <div class="overlay-panel-row">
+      <span class="overlay-panel-label">Reposition Timers</span>
+      <button class="btn" id="timersRepositionBtn">🎯 Drag into place</button>
+      <button class="btn" id="timersResetPosBtn" title="Snap the timer banners back to their default position">↺ Reset</button>
+      <span class="overlay-panel-hint">Unlocks the timer banners so you can drag them, then click their own Lock button.</span>
+    </div>
+    <div class="overlay-panel-row">
+      <span class="overlay-panel-label">Reposition Declutter List</span>
+      <button class="btn" id="declutterRepositionBtn">🎯 Drag into place</button>
+      <button class="btn" id="declutterResetPosBtn" title="Snap the declutter list back to its default position">↺ Reset</button>
+      <span class="overlay-panel-hint">Unlocks the declutter list so you can drag it under your in-game player counter, then click its own Lock button.</span>
+    </div>
+    <div class="overlay-panel-row">
+      <span class="overlay-panel-label">Reposition Rebirth Requirements Overlay</span>
+      <button class="btn" id="rebirthReqRepositionBtn">🎯 Drag into place</button>
+      <button class="btn" id="rebirthReqResetPosBtn" title="Snap the Rebirth Requirements overlay back to its default position">↺ Reset</button>
+      <span class="overlay-panel-hint">Defaults to the exact same spot as the Declutter List, so drag it if you want the two apart before showing them together.</span>
+    </div>
+    <div class="overlay-panel-row">
+      <span class="overlay-panel-label">Sync mission timer</span>
+      <input type="number" class="ms-sync-input" id="missionSyncMin" min="0" max="44" placeholder="mm">
+      <span>:</span>
+      <input type="number" class="ms-sync-input" id="missionSyncSec" min="0" max="59" placeholder="ss">
+      <button class="btn" id="missionSyncBtn">🔄 Sync</button>
+      <span class="overlay-panel-hint">Type the mm:ss shown right now on the game's own "NEXT MISSION" banner and click Sync — locks our countdown to the real one exactly instead of guessing.</span>
+    </div>
+  </div>
+
+  <div class="content-row">
+    <div class="main-col" id="quickPanelHome">
+      <div class="quick-panel" id="quickPanel">
+        <div id="dqList"></div>
+      </div>
+    </div>
+    <div class="rebirth-panel" id="rebirthPanel">
+      <div class="rebirth-panel-head">
+        <h3>Rebirth Requirements</h3>
+        <button class="btn" id="reqPanelClose" title="Hide this panel">✕</button>
+      </div>
+      <div class="rebirth-cycle-row">
+        <label for="reqCycleSelect">Cycle</label>
+        <select class="rb-cycle-select" id="reqCycleSelect">
+          <option value="1">Cycle 1</option>
+          <option value="2">Cycle 2</option>
+          <option value="3">Cycle 3</option>
+          <option value="4">Cycle 4</option>
+          <option value="5">Cycle 5</option>
+        </select>
+      </div>
+      <p class="rebirth-sub">Every droid this cycle calls for, grouped low to high (Base → Stellar) — the highest variety needed per droid. Tap one to log it (marks every lower variety of that droid in the list on the left too).</p>
+      <div id="rebirthList"></div>
+    </div>
+  </div>
+
+  <div class="ref" id="refCosts">
+    <h2>Upgrade chip costs</h2>
+    <div class="ref-body">
+      <table>
+        <tr><th>Rarity</th><th>Common</th><th>Rare</th><th>Epic</th><th>Legendary</th><th>Mythic</th></tr>
+        <tr><td class="rn" style="color:var(--r-gold)">Gold</td><td>10</td><td>30</td><td>120</td><td>400</td><td>4,000</td></tr>
+        <tr><td class="rn" style="color:var(--r-diamond)">Diamond</td><td>25</td><td>60</td><td>180</td><td>1,200</td><td>8,000</td></tr>
+        <tr><td class="rn" style="color:var(--r-rainbow2)">Rainbow</td><td>40</td><td>100</td><td>240</td><td>2,500</td><td>14,000</td></tr>
+        <tr><td class="rn" style="color:var(--r-beskar)">Beskar</td><td>80</td><td>250</td><td>2,000</td><td>6,000</td><td>30,000</td></tr>
+        <tr><td class="rn" style="color:var(--r-galactic)">Galactic</td><td>120</td><td>400</td><td>5,000</td><td>16,000</td><td>60,000</td></tr>
+        <tr><td class="rn" style="color:var(--r-stellar)">Stellar</td><td>180</td><td>750</td><td>8,000</td><td>24,000</td><td>90,000</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <footer>v2 — tracks the highest rarity you own per droid, not every individual pull. If two rows are really the same droid, rename one to match the other's spelling and they'll merge.<br>Made for you, with head-pats gratefully accepted.</footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="guide-overlay" id="guideOverlay" hidden>
+  <div class="guide-box">
+    <div class="guide-progress" id="guideProgress"></div>
+    <h3 id="guideStepTitle"></h3>
+    <div class="guide-body" id="guideStepBody"></div>
+    <div class="guide-actions">
+      <button class="btn" id="guideSkipBtn">Skip</button>
+      <span class="spacer"></span>
+      <button class="btn" id="guideBackBtn">← Back</button>
+      <button class="btn on" id="guideNextBtn">Next →</button>
+    </div>
+  </div>
+</div>
+
+<div class="calib-overlay" id="calibOverlay" style="display:none;">
+  <div class="calib-box">
+    <h3>Set up Live Detect</h3>
+    <p id="calibStep1">Starting screen share…</p>
+    <div class="calib-canvas-wrap" id="calibCanvasWrap" style="display:none;">
+      <p>The belt's cards have a frame, a portrait, and a name plate — draw your box around <b>just the portrait</b> for each slot (skip the frame and the name text below it). One drag per slot.</p>
+      <canvas id="calibCanvas"></canvas>
+      <div class="calib-actions">
+        <span id="calibRegionInfo" class="calib-region-info"></span>
+        <button class="btn" id="calibUndo">Undo last box</button>
+        <button class="btn" id="calibRedo">Clear all</button>
+        <button class="btn on" id="calibConfirm" disabled>Start watching</button>
+        <button class="btn" id="calibCancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="live-strip" id="liveStrip" style="display:none;">
+  <span class="live-dot"></span>
+  <span class="live-label">Live Detect running</span>
+  <div class="live-previews" id="livePreviews"></div>
+  <span class="live-guess" id="liveGuess">watching…</span>
+  <button class="btn" id="liveRecalib">Redraw regions</button>
+  <button class="btn" id="liveStop">Stop</button>
+</div>
+
+<div class="calib-overlay" id="rlCalibOverlay" style="display:none;">
+  <div class="calib-box">
+    <h3>Set up Rebirth Level Detect</h3>
+    <p id="rlCalibStep1">Starting screen share…</p>
+    <div class="calib-canvas-wrap" id="rlCalibCanvasWrap" style="display:none;">
+      <p>Draw one tight box around just the <b>number</b> in your rebirth counter badge — skip the recycle icon and any glow around it.</p>
+      <canvas id="rlCalibCanvas"></canvas>
+      <div class="calib-actions">
+        <span id="rlCalibRegionInfo" class="calib-region-info"></span>
+        <button class="btn" id="rlCalibRedo">Redraw</button>
+        <button class="btn on" id="rlCalibConfirm" disabled>Start watching</button>
+        <button class="btn" id="rlCalibCancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="live-strip" id="rlStrip" style="display:none;">
+  <span class="live-dot"></span>
+  <span class="live-label">Rebirth Level Detect running</span>
+  <span class="live-guess" id="rlGuess">watching…</span>
+  <span class="rl-manual">
+    <button class="btn" id="rlDec">−</button>
+    <span id="rlLevelDisplay" class="rl-level-display">Lvl 0</span>
+    <button class="btn" id="rlInc">+</button>
+  </span>
+  <button class="btn" id="rlRecalib">Redraw box</button>
+  <button class="btn" id="rlStop">Stop</button>
+</div>
+
+<div class="calib-overlay" id="rsCalibOverlay" style="display:none;">
+  <div class="calib-box">
+    <h3>Read the Rebirth screen</h3>
+    <p id="rsCalibStep1">Starting screen share…</p>
+    <div class="calib-canvas-wrap" id="rsCalibCanvasWrap" style="display:none;">
+      <p>Open the in-game Rebirth menu first (the "REBIRTH Rank N" screen). Then draw a tight box around just the number after "Rank".</p>
+      <canvas id="rsCalibCanvas"></canvas>
+      <div class="calib-actions">
+        <span id="rsCalibRegionInfo" class="calib-region-info"></span>
+        <button class="btn" id="rsCalibRedo">Redraw</button>
+        <button class="btn on" id="rsCalibConfirm" disabled>Read it</button>
+        <button class="btn" id="rsCalibCancel">Cancel</button>
+      </div>
+    </div>
+    <div class="rs-confirm" id="rsConfirmStep" style="display:none;">
+      <p>Detected <b>Rank <span id="rsDetectedRank"></span></b> for <b id="rsConfirmCycleLabel"></b>.</p>
+      <p class="rebirth-sub">That means rebirths 1 through <span id="rsThroughLevel">?</span> are complete — every droid at those levels gets marked owned, and the current level is set to <span id="rsThroughLevel2">?</span>. Fix the number below first if it looks wrong.</p>
+      <div class="rs-confirm-row">
+        <label for="rsManualRank">Rank</label>
+        <input type="number" id="rsManualRank" min="1" max="35">
+        <button class="btn on" id="rsApply">Apply</button>
+        <button class="btn" id="rsRecalib">Box was wrong — redraw</button>
+        <button class="btn" id="rsCancelApply">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<div class="suggest-banner" id="suggestBanner" style="display:none;">
+  <div class="icon-badge" id="suggestIcon"></div>
+  <div class="suggest-text">
+    <div class="suggest-name" id="suggestName"></div>
+    <div class="suggest-sub" id="suggestSub"></div>
+  </div>
+  <button class="btn on" id="suggestYes">Log it</button>
+  <button class="btn" id="suggestNo">Not this</button>
+</div>
+
+<script src="icons-data.js"></script>
+<script src="droid-data.js"></script>
+<script>
+/* ---------------- DATA ---------------- */
+const COSTS = ["10K","150K","975K","2.95M","5.35M","9.85M","14.5M","36M","89M","220M",
+"550M","1.36B","3.4B","8.45B","21B","52B","130B","325B","810B","2T",
+"3T","4.5T","6T","9T","13.5T","21T","32T","45T","68T","100T",
+"150T","230T","345T","520T","778T"];
+
+const MULT = {21:["x92","+189%","+920%"],22:["x106","+221%","+1060%"],23:["x121","+242%","+1210%"],
+24:["x137","+274%","+1370%"],25:["x154","+308%","+1540%"],26:["x172","+344%","+1720%"],
+27:["x191","+382%","+1910%"],28:["x211","+422%","+2110%"],29:["x232","+464%","+2320%"],
+30:["x254","+508%","+2540%"],31:["x277","+554%","+2770%"],32:["x301","+602%","+3010%"],
+33:["x326","+652%","+3260%"],34:["x352","+704%","+3520%"],35:["x379","+758%","+3790%"]};
+
+/* ---------------- STORAGE ----------------
+   In the Electron build, preload.js exposes window.overlayAPI — route through the
+   main-process JSON store so the tracker window and the overlay window (and any
+   future window) always agree on state, and broadcast changes to the overlay live.
+   Outside Electron (plain browser), falls back to the original cloud/localStorage path. */
+const hasOverlayBridge = !!(window.overlayAPI && window.overlayAPI.storeGet);
+const hasCloud = !!(window.storage && window.storage.get);
+async function storeGet(key){
+  try{
+    if(hasOverlayBridge){ return await window.overlayAPI.storeGet(key); }
+    if(hasCloud){ const r = await window.storage.get(key,false); return r ? JSON.parse(r.value) : null; }
+    const v = localStorage.getItem(key); return v ? JSON.parse(v) : null;
+  }catch(e){ return null; }
+}
+async function storeSet(key,value){
+  // Returns true/false rather than throwing: every existing caller that
+  // just does `await storeSet(...)` and ignores the result keeps working
+  // exactly as before, but a caller that actually needs to know whether
+  // the save landed (e.g. the background-image picker below, which used
+  // to wrap this in a try/catch that could never fire since every failure
+  // here was already being swallowed) now has a way to find out.
+  try{
+    if(hasOverlayBridge){ await window.overlayAPI.storeSet(key, value); return true; }
+    if(hasCloud){ await window.storage.set(key, JSON.stringify(value), false); return true; }
+    localStorage.setItem(key, JSON.stringify(value));
+    return true;
+  }catch(e){ console.error("storage failed", e); return false; }
+}
+
+/* ---------------- DOCUMENT-AWARE DOM HELPERS ----------------
+   Pop-out moves several elements into a second Document (the PiP window).
+   Plain document.getElementById/querySelectorAll only search ONE document,
+   so every lookup that can run after a pop-out has to check both. */
+function getEl(id){
+  let el = document.getElementById(id);
+  if(el) return el;
+  const pipWin = window.documentPictureInPicture && window.documentPictureInPicture.window;
+  return pipWin ? pipWin.document.getElementById(id) : null;
+}
+function qsa(sel){
+  let results = Array.from(document.querySelectorAll(sel));
+  const pipWin = window.documentPictureInPicture && window.documentPictureInPicture.window;
+  if(pipWin) results = results.concat(Array.from(pipWin.document.querySelectorAll(sel)));
+  return results;
+}
+
+/* ---------------- NAME NORMALIZATION / MERGES ---------------- */
+function normKey(name){
+  return name.toLowerCase().replace(/[^a-z0-9]/g,'');
+}
+let nameMerges = {};        // rawName (as it appears in CYCLES) -> canonical display name
+let displayOverrides = {};  // normKey -> preferred display name
+function canonicalName(rawName){
+  return nameMerges[rawName] || rawName;
+}
+
+/* ---------------- BUILD DROID INDEX FROM CYCLES ---------------- */
+let DROID_INDEX = {};  // normKey -> {display, entries:[{cycle,level,slot,code,rank}], ceilingRank}
+let RAW_GROUPS = {};   // normKey -> {names:{rawName:count}, entries:[...]}  (kept for merge lookups)
+
+function buildIndex(){
+  const groups = {};
+  for(let c=1;c<=5;c++){
+    for(let l=1;l<=35;l++){
+      const row = CYCLES[c][l-1];
+      row.forEach((d,i)=>{
+        const code = d[0], rawName = d[1];
+        const canon = canonicalName(rawName);
+        const nk = normKey(canon);
+        if(!groups[nk]) groups[nk] = { names:{}, entries:[] };
+        groups[nk].names[canon] = (groups[nk].names[canon]||0)+1;
+        groups[nk].entries.push({cycle:c, level:l, slot:i, code:code, rank:rankOf(code)});
+      });
+    }
+  }
+  const idx = {};
+  Object.keys(groups).forEach(nk=>{
+    const g = groups[nk];
+    let display = displayOverrides[nk];
+    if(!display){
+      display = Object.keys(g.names).sort((a,b)=>g.names[b]-g.names[a])[0];
+    }
+    let ceilingRank = 0;
+    let minLevel = null, minLevelCycle = null;
+    g.entries.forEach(e=>{
+      if(e.rank > ceilingRank) ceilingRank = e.rank;
+      if(minLevel === null || e.level < minLevel || (e.level === minLevel && e.cycle < minLevelCycle)){
+        minLevel = e.level; minLevelCycle = e.cycle;
+      }
+    });
+    idx[nk] = { display:display, entries:g.entries, ceilingRank:ceilingRank, minLevel:minLevel, minLevelCycle:minLevelCycle };
+  });
+  DROID_INDEX = idx;
+  RAW_GROUPS = groups;
+}
+
+/* ---------------- OWNERSHIP ---------------- */
+let ownedRank = {}; // normKey -> highest rarity rank owned
+
+function droidStatus(nk){
+  const entry = DROID_INDEX[nk];
+  const owned = ownedRank[nk];
+  const maxed = owned !== undefined && owned >= entry.ceilingRank;
+  let nextRank = null;
+  if(!maxed){
+    const ranksHere = Array.from(new Set(entry.entries.map(e=>e.rank))).sort((a,b)=>a-b);
+    for(let i=0;i<ranksHere.length;i++){
+      if(owned === undefined || ranksHere[i] > owned){ nextRank = ranksHere[i]; break; }
+    }
+  }
+  return { maxed:maxed, owned:owned, nextRank:nextRank };
+}
+
+async function setOwned(nk, rank){
+  const current = ownedRank[nk];
+  const coveredBefore = cycleCoveredCount(activeCycle);
+  if(current === rank){
+    delete ownedRank[nk]; // clicking your current best again undoes it
+  } else if(current === undefined || rank > current){
+    ownedRank[nk] = rank; // new claim, or a genuine upgrade — cascades "covered" down to every lower variant automatically
+  } else {
+    // rank < current -> that variant is already covered by something higher.
+    // Never silently downgrade from a plain click (a stray click on an
+    // already-covered cell shouldn't erase real progress) — but don't leave
+    // the click looking like it just did nothing, either. A droid can recur
+    // at many rarities across 5 cycles, so "something higher" is often
+    // logged nowhere near the cell just clicked (e.g. BB9's only Stellar
+    // appearance is Cycle 1, Rebirth 35) and this used to be a dead end with
+    // zero explanation. Point at the fix instead of failing silently.
+    const entry = DROID_INDEX[nk];
+    const label = entry ? entry.display : nk;
+    showToast(label + ' is logged at ' + RNAME[RARITY_ORDER[current]] + ' — right-click any of its cells to change or clear that');
+    return;
+  }
+  await storeSet('rebirth-ownedRank-v2', ownedRank);
+  renderList(); renderStats();
+  maybeOfferCycleReset(activeCycle, coveredBefore);
+}
+
+function setOwnedAtLeast(nk, rank){
+  if(ownedRank[nk] === undefined || ownedRank[nk] < rank){ ownedRank[nk] = rank; }
+}
+
+async function markRowObtained(row, opts){
+  // opts.skipCycleCheck: used by bulk callers (e.g. rebirth-screen-read.js's
+  // "catch up through rebirth N", which calls this once per level in a
+  // loop) so the completion popup can't fire mid-batch on a stale cycle
+  // reference. Those callers do their own single before/after check
+  // wrapping the whole loop instead — see rebirth-screen-read.js.
+  const skipCycleCheck = !!(opts && opts.skipCycleCheck);
+  const coveredBefore = skipCycleCheck ? null : cycleCoveredCount(activeCycle);
+  row.forEach(d=>{
+    const nk = normKey(canonicalName(d[1]));
+    setOwnedAtLeast(nk, rankOf(d[0]));
+  });
+  await storeSet('rebirth-ownedRank-v2', ownedRank);
+  renderList(); renderStats();
+  if(!skipCycleCheck) maybeOfferCycleReset(activeCycle, coveredBefore);
+}
+
+/* ---------------- CYCLE COMPLETION: offer to reset + advance ----------------
+   "Covered" here means the same thing renderByLevel()'s "x / 105 covered"
+   counter shows: every one of a cycle's 35 levels x 3 slots has a droid
+   logged (anywhere, any cycle — ownedRank is global by name) at that slot's
+   required rarity or better. Once a mark-increasing action (a genuine
+   upgrade/new claim in setOwned, or markRowObtained's "mark all 3") pushes
+   that from something less than 105 up to exactly 105, offer to clear this
+   cycle's droids and roll over to the next one — never on an unmark, and
+   never again just from re-rendering an already-105 cycle (the
+   coveredBefore !== 105 guard below). Cycles wrap 5 -> 1.
+
+   Deliberately does NOT touch rebirth-currentLevel: that's the OCR/manual
+   rebirth counter owned entirely by rebirth-level-detect.js, and the game's
+   own on-screen counter is what actually resets it once the player rebirths
+   for real — this popup is about the tracker's droid marks, not that
+   counter, and stepping on it here would fight the OCR. */
+function cycleCoveredCount(cycle){
+  let covered = 0;
+  CYCLES[cycle].forEach(row=>{
+    row.forEach(d=>{
+      const nk = normKey(canonicalName(d[1]));
+      const owned = ownedRank[nk];
+      if(owned !== undefined && rankOf(d[0]) <= owned) covered++;
+    });
+  });
+  return covered;
+}
+
+function cycleDroidKeys(cycle){
+  const keys = new Set();
+  CYCLES[cycle].forEach(row=>{
+    row.forEach(d=>{ keys.add(normKey(canonicalName(d[1]))); });
+  });
+  return keys;
+}
+
+async function resetCycleAndAdvance(cycle){
+  cycleDroidKeys(cycle).forEach(nk=>{ delete ownedRank[nk]; });
+  await storeSet('rebirth-ownedRank-v2', ownedRank);
+  const next = (cycle >= 5) ? 1 : cycle + 1;
+  await setActiveCycle(next); // persists rebirth-activeCycle, syncs both selects, renderList()
+  renderStats();
+  showToast('Cycle ' + cycle + ' reset — now on Cycle ' + next);
+}
+
+function maybeOfferCycleReset(cycle, coveredBefore){
+  if(coveredBefore === 105) return; // was already fully marked before this action — don't re-nag on every subsequent click
+  if(cycleCoveredCount(cycle) !== 105) return; // not complete yet
+  const wantsReset = confirm('Would you like to reset progress for this cycle and open the next?');
+  if(wantsReset) resetCycleAndAdvance(cycle);
+  // "No" -> leave everything exactly as it is: fully marked, same cycle, nothing cleared.
+}
+
+/* ---------------- MIGRATION FROM V1 ---------------- */
+async function migrate(){
+  const existing = await storeGet('rebirth-ownedRank-v2');
+  if(existing){ ownedRank = existing; return; }
+  const legacyOwned = (await storeGet('rebirth-owned')) || {};
+  const legacyOverrides = (await storeGet('rebirth-overrides')) || {};
+  const rank = {};
+  for(let c=1;c<=5;c++){
+    for(let l=1;l<=35;l++){
+      const row = CYCLES[c][l-1];
+      row.forEach((d,i)=>{
+        const key = c+'-'+l+'-'+i;
+        if(!legacyOwned[key]) return;
+        const code = d[0];
+        const rawName = legacyOverrides[key] || d[1];
+        const nk = normKey(rawName);
+        const r = rankOf(code);
+        if(!(nk in rank) || rank[nk] < r) rank[nk] = r;
+      });
+    }
+  }
+  ownedRank = rank;
+  await storeSet('rebirth-ownedRank-v2', ownedRank);
+}
+
+/* ---------------- ONE-TIME DROID-NAME SPELLING FIXES ---------------- */
+// 2026-09-22: three CYCLES names were corrected from truncated/misspelled
+// versions to their real in-game names (Drk-i Probe -> DRK-1 PROBE,
+// Imperial Pro -> IMPERIAL PROBE, Senate Hover -> SENATE HOVERCAM). Unlike
+// the 3 typo fixes applied directly to CYCLES a round earlier (Sen-RTI,
+// Util-Tek, Tri-Tek — each a one-off misspelling alongside an
+// already-correct spelling elsewhere in the table), these 3 were the ONLY
+// spelling used for that droid everywhere it appears, so correcting them
+// changes what normKey() computes for every occurrence — any ownedRank
+// progress already logged for these droids is necessarily keyed under the
+// OLD (wrong) key and would silently look un-owned once CYCLES uses the
+// new spelling, unless it's moved. Runs once (version-flag guarded, same
+// pattern as main.js's migrateHotkeyLayout), keeps the higher rank if
+// both an old and new key somehow already have a value (mirrors
+// handleRename's own merge logic), and is a safe no-op on a fresh
+// install or on any run after the first.
+const DROID_SPELLING_FIXES_V1 = [
+  { oldKey: normKey('Drk-i Probe'),  newKey: normKey('DRK-1 PROBE') },
+  { oldKey: normKey('Imperial Pro'), newKey: normKey('IMPERIAL PROBE') },
+  { oldKey: normKey('Senate Hover'), newKey: normKey('SENATE HOVERCAM') },
+];
+async function migrateDroidSpellingFixesV1(){
+  if(await storeGet('rebirth-spellingFixV1')) return; // already ran
+  let changed = false;
+  DROID_SPELLING_FIXES_V1.forEach(({oldKey, newKey})=>{
+    if(oldKey === newKey) return; // defensive; shouldn't happen
+    if(ownedRank[oldKey] === undefined) return; // nothing logged under the old key
+    if(ownedRank[newKey] === undefined || ownedRank[oldKey] > ownedRank[newKey]){
+      ownedRank[newKey] = ownedRank[oldKey];
+    }
+    delete ownedRank[oldKey];
+    changed = true;
+  });
+  if(changed) await storeSet('rebirth-ownedRank-v2', ownedRank);
+  await storeSet('rebirth-spellingFixV1', true);
+}
+
+/* ---------------- TOAST ---------------- */
+let toastTimer = null;
+function showToast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{ el.classList.remove('show'); }, 2600);
+}
+
+/* ---------------- RENAME / MERGE ---------------- */
+async function handleRename(nk, newVal){
+  newVal = newVal.trim();
+  if(!newVal) return;
+  const newNk = normKey(newVal);
+  const isMerge = (newNk !== nk) && !!DROID_INDEX[newNk]; // newNk already existed as its own group
+  const rawNames = RAW_GROUPS[nk] ? Object.keys(RAW_GROUPS[nk].names) : [];
+  rawNames.forEach(rn=>{ nameMerges[rn] = newVal; });
+  if(newNk !== nk && ownedRank[nk] !== undefined){
+    if(ownedRank[newNk] === undefined || ownedRank[nk] > ownedRank[newNk]){
+      ownedRank[newNk] = ownedRank[nk];
+    }
+    delete ownedRank[nk];
+  }
+  displayOverrides[newNk] = newVal;
+  await storeSet('rebirth-nameMerges', nameMerges);
+  await storeSet('rebirth-displayOverrides', displayOverrides);
+  await storeSet('rebirth-ownedRank-v2', ownedRank);
+  buildIndex();
+  renderList(); renderStats();
+  if(isMerge){
+    const merged = DROID_INDEX[newNk];
+    const keptRank = ownedRank[newNk];
+    const keptLabel = keptRank !== undefined ? RNAME[RARITY_ORDER[keptRank]] : 'nothing owned yet';
+    showToast('Merged into ' + merged.display + ' — ' + merged.entries.length + ' entries, kept ' + keptLabel);
+  }
+}
+
+/* ---------------- RENDER: LEGEND ---------------- */
+function renderLegend(){
+  const order = ["B","G","D","R","K","X","S"];
+  const legendEl = getEl('legend');
+  legendEl.innerHTML = order.map(code=>{
+    return '<span class="item"><span class="dot ' + RCLASS[code] + '"></span>' + RNAME[code] + '</span>';
+  }).join('');
+}
+
+/* ---------------- RENDER: STATS ---------------- */
+function renderStats(){
+  const keys = Object.keys(DROID_INDEX);
+  let maxedCount = 0;
+  keys.forEach(nk=>{ if(droidStatus(nk).maxed) maxedCount++; });
+  document.getElementById('overallNum').textContent = maxedCount + ' / ' + keys.length;
+  const pct = keys.length ? (maxedCount/keys.length*100) : 0;
+  document.getElementById('overallBar').style.width = pct + '%';
+}
+
+/* ---------------- RENDER: LIST ---------------- */
+let filterText = '';
+let editMode = false;
+let sortMode = 'alpha'; // 'alpha' | 'level'
+let activeCycle = 1;
+
+function droidRowHtml(nk, occEntry, extraClass){
+  const entry = DROID_INDEX[nk];
+  const st = droidStatus(nk);
+  const ranksHere = Array.from(new Set(entry.entries.map(e=>e.rank))).sort((a,b)=>a-b);
+  const pips = ranksHere.map(r=>{
+    const code = RARITY_ORDER[r];
+    const filled = st.owned !== undefined && r <= st.owned;
+    const isNext = r === st.nextRank;
+    const cls = 'pip' + (filled ? ' filled ' + code : '') + (isNext ? ' next' : '');
+    return '<div class="' + cls + '" data-nk="' + nk + '" data-rank="' + r + '" title="' + RNAME[code] + (isNext?' — next upgrade':'') + ' — right-click to see/change the exact colorway on record' + '"></div>';
+  }).join('');
+  let iconEntry = occEntry;
+  if(!iconEntry){
+    iconEntry = entry.entries[0];
+    entry.entries.forEach(e=>{ if(e.rank===entry.ceilingRank) iconEntry = e; });
+  }
+  const iconKey = iconEntry.cycle + '-' + iconEntry.level + '-' + iconEntry.slot;
+  const src = (typeof ICONS !== 'undefined' && ICONS[iconKey]) ? ('data:image/webp;base64,' + ICONS[iconKey]) : '';
+  const imgTag = src ? ('<img src="' + src + '" alt="' + entry.display + '" loading="lazy">') : '';
+  const badgeClass = RCLASS[RARITY_ORDER[iconEntry.rank]];
+  const statusHtml = st.maxed
+    ? '<span class="status-badge maxed">MAXED</span>'
+    : '<span class="status-badge need">NEED · ' + RNAME[RARITY_ORDER[st.nextRank]] + '</span>';
+  const rowClass = 'dq-row' + (st.maxed?' maxed':'') + (extraClass?' '+extraClass:'');
+  return '<div class="' + rowClass + '">' +
+    '<div class="icon-badge ' + badgeClass + '">' + imgTag + '</div>' +
+    '<div class="dq-name-wrap">' +
+      '<div class="dq-name" data-nk="' + nk + '"' + (editMode?' contenteditable="true"':'') + '>' + entry.display + '</div>' +
+    '</div>' +
+    '<div class="pip-row">' + pips + '</div>' +
+    statusHtml +
+  '</div>';
+}
+
+function renderByAlpha(){
+  const q = filterText.trim().toLowerCase();
+  let keys = Object.keys(DROID_INDEX).filter(nk=>{
+    if(!q) return true;
+    return DROID_INDEX[nk].display.toLowerCase().indexOf(q) !== -1;
+  });
+  keys.sort((a,b)=>{
+    const sa = droidStatus(a), sb = droidStatus(b);
+    if(sa.maxed !== sb.maxed) return sa.maxed ? 1 : -1;
+    return DROID_INDEX[a].display.localeCompare(DROID_INDEX[b].display);
+  });
+  const listEl = getEl('dqList');
+  if(keys.length === 0){
+    listEl.innerHTML = '<div class="dq-empty">No droid matches that search.</div>';
+    return;
+  }
+  listEl.innerHTML = keys.map(nk=>droidRowHtml(nk)).join('');
+}
+
+function droidCellHtml(nk, occEntry){
+  const entry = DROID_INDEX[nk];
+  const owned = ownedRank[nk];
+  const covered = owned !== undefined && occEntry.rank <= owned;
+  const sellable = !entry.entries.some(e => e.cycle > occEntry.cycle || (e.cycle === occEntry.cycle && e.level > occEntry.level));
+  const code = RARITY_ORDER[occEntry.rank];
+  const cls = 'droid-cell ' + code + (covered ? ' covered' : '');
+  const iconKey = occEntry.cycle + '-' + occEntry.level + '-' + occEntry.slot;
+  const src = (typeof ICONS !== 'undefined' && ICONS[iconKey]) ? ('data:image/webp;base64,' + ICONS[iconKey]) : '';
+  const imgTag = src ? ('<img src="' + src + '" alt="" loading="lazy">') : '';
+  const badgeClass = RCLASS[code];
+  const sellTag = sellable ? '<span class="sell-tag">SELL</span>' : '';
+  const titleBits = [entry.display + ' — ' + RNAME[code]];
+  titleBits.push(covered ? 'already covered' : 'tap to log');
+  titleBits.push('right-click to see/change the exact colorway on record');
+  if(sellable) titleBits.push('not needed again at any later level or rebirth');
+  return '<td class="' + cls + '" data-nk="' + nk + '" data-rank="' + occEntry.rank + '" title="' + titleBits.join(' — ') + '">' +
+    '<div class="cell-flex">' +
+      '<div class="icon-badge icon-badge-sm ' + badgeClass + '">' + imgTag + '</div>' +
+      '<span class="cell-name">' + entry.display + sellTag + '</span>' +
+    '</div>' +
+  '</td>';
+}
+
+function renderByLevel(){
+  getEl('cycleSelect').value = String(activeCycle);
+  const covered = cycleCoveredCount(activeCycle);
+  getEl('cycleProgress').textContent = covered + ' / 105 covered';
+  const q = filterText.trim().toLowerCase();
+  let rowsHtml = '';
+  let anyVisible = false;
+  for(let l=1;l<=35;l++){
+    const row = CYCLES[activeCycle][l-1];
+    const nks = row.map(d=> normKey(canonicalName(d[1])) );
+    const matchesAny = !q || nks.some(nk=> DROID_INDEX[nk].display.toLowerCase().indexOf(q)!==-1 );
+    if(!matchesAny) continue; // whole line hidden if nothing on it matches
+    anyVisible = true;
+    const cellsHtml = row.map((d,i)=>{
+      const occEntry = { cycle:activeCycle, level:l, slot:i, code:d[0], rank:rankOf(d[0]) };
+      return droidCellHtml(nks[i], occEntry);
+    }).join('');
+    rowsHtml += '<tr><td class="lv-num" data-cycle="' + activeCycle + '" data-level="' + l + '" title="Mark all 3 as obtained">' + l + '</td>' + cellsHtml + '</tr>';
+  }
+
+  const listEl = getEl('dqList');
+  if(!anyVisible){
+    listEl.innerHTML = '<div class="dq-empty">No droid matches that search.</div>';
+    return;
+  }
+  listEl.innerHTML = '<div class="cycle-section">' +
+    '<div class="cycle-section-header">Cycle ' + activeCycle + '</div>' +
+    '<table class="level-table"><tbody>' + rowsHtml + '</tbody></table>' +
+  '</div>';
+}
+
+function wireRowEvents(){
+  const listEl = getEl('dqList');
+  listEl.querySelectorAll('.pip').forEach(p=>{
+    p.addEventListener('click', ()=>{
+      setOwned(p.dataset.nk, parseInt(p.dataset.rank, 10));
+    });
+    p.addEventListener('contextmenu', (e)=>{
+      e.preventDefault();
+      openRbContextMenu(p.dataset.nk, e.clientX, e.clientY);
+    });
+  });
+  listEl.querySelectorAll('.droid-cell').forEach(td=>{
+    td.addEventListener('click', ()=>{
+      setOwned(td.dataset.nk, parseInt(td.dataset.rank, 10));
+    });
+    td.addEventListener('contextmenu', (e)=>{
+      e.preventDefault();
+      openRbContextMenu(td.dataset.nk, e.clientX, e.clientY);
+    });
+  });
+  listEl.querySelectorAll('.lv-num').forEach(td=>{
+    td.addEventListener('click', ()=>{
+      const c = parseInt(td.dataset.cycle, 10);
+      const l = parseInt(td.dataset.level, 10);
+      markRowObtained(CYCLES[c][l-1]);
+    });
+  });
+  if(editMode){
+    listEl.querySelectorAll('.dq-name[contenteditable="true"]').forEach(el=>{
+      el.addEventListener('click', e=>e.stopPropagation());
+      el.addEventListener('blur', ()=>{
+        const nk = el.dataset.nk;
+        const val = el.textContent.trim();
+        if(val && val !== DROID_INDEX[nk].display){
+          handleRename(nk, val);
+        }
+      });
+    });
+  }
+}
+
+function renderList(){
+  getEl('levelNote').style.display = (sortMode === 'level') ? '' : 'none';
+  getEl('cyclePickerRow').style.display = (sortMode === 'level') ? '' : 'none';
+  if(sortMode === 'level'){ renderByLevel(); }
+  else { renderByAlpha(); }
+  wireRowEvents();
+  renderRebirthPanel();
+}
+
+/* ---------------- RENDER: REBIRTH REQUIREMENTS PANEL ----------------
+   For the cycle currently being watched, find every droid's highest-rarity
+   occurrence WITHIN THAT CYCLE ONLY (a droid can cap out higher in one
+   cycle than another), drop anything that only ever needs Base, and group
+   what's left from Gold up to Stellar. Marking one here calls the same
+   setOwned() the main list pips use, so it fills in every lower variety
+   of that droid on the left too. */
+function cycleCeilings(cycle){
+  const ceilings = {}; // nk -> {rank, cycle, level, slot, code}
+  for(let l=1;l<=35;l++){
+    const row = CYCLES[cycle][l-1];
+    row.forEach((d,i)=>{
+      const code = d[0];
+      const nk = normKey(canonicalName(d[1]));
+      const rank = rankOf(code);
+      if(!ceilings[nk] || rank > ceilings[nk].rank){
+        ceilings[nk] = { rank:rank, cycle:cycle, level:l, slot:i, code:code };
+      }
+    });
+  }
+  return ceilings;
+}
+
+function rebirthCellHtml(nk, info){
+  const entry = DROID_INDEX[nk];
+  if(!entry) return '';
+  const rank = info.rank; // this cycle's highest required rarity for this droid
+  const code = RARITY_ORDER[rank];
+  const owned = ownedRank[nk];
+  const covered = owned !== undefined && rank <= owned;
+  const reqClass = RCLASS[code];
+  const ownedCode = (owned !== undefined) ? RARITY_ORDER[owned] : null;
+  const ownedClass = ownedCode ? RCLASS[ownedCode] : 'rarity-unowned';
+  const iconKey = info.cycle + '-' + info.level + '-' + info.slot;
+  const src = (typeof ICONS !== 'undefined' && ICONS[iconKey]) ? ('data:image/webp;base64,' + ICONS[iconKey]) : '';
+  const imgTag = src ? ('<img src="' + src + '" alt="' + entry.display + '" loading="lazy">') : '';
+  const haveText = ownedCode ? ('you have ' + RNAME[ownedCode]) : "you haven't logged this one";
+  const titleBits = [entry.display + ' — need ' + RNAME[code], haveText, covered ? 'already covered' : 'tap to log the top tier', 'right-click to pick an exact colorway'];
+  return '<div class="rb-cell' + (covered ? ' covered' : '') + '" data-nk="' + nk + '" data-rank="' + rank + '" title="' + titleBits.join(' — ') + '">' +
+    '<div class="icon-badge icon-badge-split">' +
+      '<div class="badge-half badge-half-owned ' + ownedClass + '"></div>' +
+      '<div class="badge-half badge-half-req ' + reqClass + '"></div>' +
+      imgTag +
+    '</div>' +
+    '<div class="rb-name ' + code + '">' + entry.display + '</div>' +
+  '</div>';
+}
+
+function renderRebirthPanel(){
+  const listEl = getEl('rebirthList');
+  if(!listEl) return;
+  const sel = getEl('reqCycleSelect');
+  if(sel) sel.value = String(activeCycle);
+
+  const ceilings = cycleCeilings(activeCycle);
+  const tiers = {}; // rank -> [nk,...]  (every droid included now, Base through Stellar)
+  Object.keys(ceilings).forEach(nk=>{
+    const rank = ceilings[nk].rank;
+    if(!tiers[rank]) tiers[rank] = [];
+    tiers[rank].push(nk);
+  });
+
+  let html = '';
+  for(let rank=0; rank<=6; rank++){
+    const nks = tiers[rank];
+    if(!nks || !nks.length) continue;
+    nks.sort((a,b)=> DROID_INDEX[a].display.localeCompare(DROID_INDEX[b].display));
+    const code = RARITY_ORDER[rank];
+    const cellsHtml = nks.map(nk=>rebirthCellHtml(nk, ceilings[nk])).join('');
+    html += '<div class="rebirth-tier-block">' +
+      '<div class="rebirth-tier-label ' + code + '">' + RNAME[code] + '</div>' +
+      '<div class="rebirth-grid">' + cellsHtml + '</div>' +
+    '</div>';
+  }
+  listEl.innerHTML = html || '<div class="dq-empty" style="padding:16px 8px;">No droids found for this cycle.</div>';
+  listEl.querySelectorAll('.rb-cell').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      setOwned(el.dataset.nk, parseInt(el.dataset.rank, 10));
+    });
+    el.addEventListener('contextmenu', (e)=>{
+      e.preventDefault();
+      openRbContextMenu(el.dataset.nk, e.clientX, e.clientY);
+    });
+  });
+}
+
+/* ---------------- right-click "set exact colorway" menu ----------------
+   Originally built for the Rebirth Reqs panel, now also wired up on the
+   main grid's droid-cells and the A-Z list's pips (2026-09-21). Left-click
+   on any of them keeps its original behavior (claim that cell's tier, or
+   undo your current claim). Right-click opens a menu of all 7 colorways so
+   you can log — or clear — exactly what you have for that droid, no matter
+   which specific cell you right-clicked from. That last part matters: a
+   droid can recur at many rarities across all 5 cycles (e.g. BB9 is
+   Base..Galactic in several cycles but only ever Stellar once, at Cycle 1
+   Rebirth 35), and setOwned() never lets a plain left-click downgrade a
+   tier logged elsewhere. Before this menu reached the main grid, that made
+   it look like a lower-tier cell for an already-Stellar droid (Galactic
+   BB9 at Cycle 4 Rebirth 29, for instance) could never be unmarked — the
+   click wasn't broken, there was just no way to reach the actual tier on
+   record to undo it. Right-click here always can: picking the checked
+   (current) tier again undoes it, and picking something lower than what's
+   on record is a safe no-op, exactly like every other click-to-mark
+   control in this app. */
+let rbMenuEl = null;
+function closeRbContextMenu(){
+  if(rbMenuEl){ rbMenuEl.remove(); rbMenuEl = null; }
+  document.removeEventListener('mousedown', onRbMenuOutsideClick, true);
+  document.removeEventListener('keydown', onRbMenuEscape, true);
+}
+function onRbMenuOutsideClick(e){
+  if(rbMenuEl && !rbMenuEl.contains(e.target)) closeRbContextMenu();
+}
+function onRbMenuEscape(e){
+  if(e.key === 'Escape') closeRbContextMenu();
+}
+function openRbContextMenu(nk, x, y){
+  closeRbContextMenu();
+  const entry = DROID_INDEX[nk];
+  if(!entry) return;
+  const current = ownedRank[nk];
+  const menu = document.createElement('div');
+  menu.className = 'rb-context-menu';
+  menu.innerHTML = RARITY_ORDER.map((code, rank)=>{
+    const isCurrent = current === rank;
+    return '<div class="rb-context-item' + (isCurrent ? ' current' : '') + '" data-rank="' + rank + '">' +
+      '<span class="rb-context-swatch ' + RCLASS[code] + '"></span>' +
+      '<span>' + RNAME[code] + '</span>' +
+      (isCurrent ? '<span class="rb-context-check">✓</span>' : '') +
+    '</div>';
+  }).join('');
+  document.body.appendChild(menu);
+  const rect = menu.getBoundingClientRect();
+  menu.style.left = Math.max(4, Math.min(x, window.innerWidth - rect.width - 8)) + 'px';
+  menu.style.top = Math.max(4, Math.min(y, window.innerHeight - rect.height - 8)) + 'px';
+  menu.querySelectorAll('.rb-context-item').forEach(item=>{
+    item.addEventListener('click', ()=>{
+      setOwned(nk, parseInt(item.dataset.rank, 10));
+      closeRbContextMenu();
+    });
+  });
+  rbMenuEl = menu;
+  setTimeout(()=>{
+    document.addEventListener('mousedown', onRbMenuOutsideClick, true);
+    document.addEventListener('keydown', onRbMenuEscape, true);
+  }, 0);
+}
+
+let showReqPanel = false;
+function applyReqPanelVisibility(){
+  const panel = getEl('rebirthPanel');
+  const wrapEl = getEl('wrapEl');
+  const btn = getEl('reqPanelToggle');
+  if(panel) panel.classList.toggle('show', showReqPanel);
+  if(wrapEl) wrapEl.classList.toggle('with-rebirth', showReqPanel);
+  if(btn) btn.classList.toggle('on', showReqPanel);
+}
+async function toggleReqPanel(force){
+  showReqPanel = (force !== undefined) ? force : !showReqPanel;
+  applyReqPanelVisibility();
+  await storeSet('rebirth-showReqPanel', showReqPanel);
+}
+document.getElementById('reqPanelToggle').addEventListener('click', ()=> toggleReqPanel());
+document.getElementById('reqPanelClose').addEventListener('click', ()=> toggleReqPanel(false));
+
+/* ---------------- CONTROLS ---------------- */
+document.getElementById('search').addEventListener('input', e=>{
+  filterText = e.target.value; renderList();
+});
+qsa('.sort-toggle button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    sortMode = btn.dataset.sort;
+    qsa('.sort-toggle button').forEach(b=>{ b.classList.toggle('on', b===btn); });
+    storeSet('rebirth-sortMode', sortMode);
+    renderList();
+  });
+});
+async function setActiveCycle(c){
+  activeCycle = c;
+  await storeSet('rebirth-activeCycle', activeCycle);
+  const mainSel = getEl('cycleSelect');
+  if(mainSel) mainSel.value = String(activeCycle);
+  const reqSel = getEl('reqCycleSelect');
+  if(reqSel) reqSel.value = String(activeCycle);
+  renderList();
+}
+document.getElementById('cycleSelect').addEventListener('change', (e)=>{
+  setActiveCycle(parseInt(e.target.value, 10));
+});
+document.getElementById('reqCycleSelect').addEventListener('change', (e)=>{
+  setActiveCycle(parseInt(e.target.value, 10));
+});
+document.getElementById('editToggle').addEventListener('click', (e)=>{
+  editMode = !editMode;
+  e.target.classList.toggle('on', editMode);
+  e.target.textContent = editMode ? '✓ Editing (click a name to rename)' : '✎ Rename';
+  renderList();
+});
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  if(!confirm('Clear ALL tracked droid progress? This cannot be undone.')) return;
+  ownedRank = {};
+  storeSet('rebirth-ownedRank-v2', ownedRank);
+  renderList(); renderStats();
+});
+document.getElementById('exportBtn').addEventListener('click', ()=>{
+  const payload = { v:2, ownedRank:ownedRank, nameMerges:nameMerges, displayOverrides:displayOverrides };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'droid-tycoon-progress.json'; a.click();
+  URL.revokeObjectURL(url);
+});
+document.getElementById('importBtn').addEventListener('click', ()=> document.getElementById('importFile').click());
+document.getElementById('importFile').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  // Same reset the bgFile picker below does: a native <input type="file">
+  // doesn't fire 'change' again for a no-op re-selection of the same path,
+  // so without clearing this, re-importing the same file twice in a row
+  // (e.g. re-picking a backup after noticing a mistake) would silently do
+  // nothing the second time.
+  e.target.value = '';
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = async () => {
+    try{
+      const parsed = JSON.parse(reader.result);
+      ownedRank = parsed.ownedRank || {};
+      nameMerges = parsed.nameMerges || {};
+      displayOverrides = parsed.displayOverrides || {};
+      await storeSet('rebirth-ownedRank-v2', ownedRank);
+      await storeSet('rebirth-nameMerges', nameMerges);
+      await storeSet('rebirth-displayOverrides', displayOverrides);
+      buildIndex();
+      renderList(); renderStats();
+    }catch(err){ alert('Could not read that file.'); }
+  };
+  reader.readAsText(file);
+});
+document.getElementById('refCosts').querySelector('h2').addEventListener('click', function(){
+  this.parentElement.classList.toggle('open');
+});
+
+/* ---------------- CUSTOM BACKGROUND IMAGE ---------------- */
+let bgImageData = null;
+let bgDim = 0.72;
+
+function applyBackground(){
+  const layer = document.getElementById('bgLayer');
+  const scrim = document.getElementById('bgScrim');
+  const controls = document.getElementById('bgControls');
+  const bgBtn = document.getElementById('bgBtn');
+  const dimRange = document.getElementById('bgDimRange');
+  if(bgImageData){
+    layer.style.backgroundImage = `url("${bgImageData}")`;
+    scrim.style.background = `rgba(11,15,13,${bgDim})`;
+    controls.hidden = false;
+    bgBtn.classList.add('on');
+    bgBtn.textContent = '🖼 Change background';
+    dimRange.value = bgDim;
+  } else {
+    layer.style.backgroundImage = 'none';
+    scrim.style.background = 'transparent';
+    controls.hidden = true;
+    bgBtn.classList.remove('on');
+    bgBtn.textContent = '🖼 Background';
+  }
+}
+
+document.getElementById('bgBtn').addEventListener('click', ()=> document.getElementById('bgFile').click());
+
+document.getElementById('bgFile').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  e.target.value = '';
+  if(!file) return;
+  if(!file.type.startsWith('image/')){ alert('Please choose an image file.'); return; }
+  const reader = new FileReader();
+  reader.onload = () => {
+    const img = new Image();
+    img.onload = async () => {
+      // Downscale large photos so they fit comfortably in local storage.
+      const maxDim = 1920;
+      const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+      const w = Math.max(1, Math.round(img.width * scale));
+      const h = Math.max(1, Math.round(img.height * scale));
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      let dataUrl;
+      try{
+        dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      }catch(err){
+        alert('Could not process that image.'); return;
+      }
+      bgImageData = dataUrl;
+      applyBackground();
+      // storeSet() never throws (it always resolves, see its own comment)
+      // -- check its return value instead of a try/catch that could never
+      // actually fire, so a genuine save failure (e.g. too large) still
+      // reaches the user instead of failing completely silently.
+      const saved = await storeSet('rebirth-bgImage', dataUrl);
+      if(!saved){
+        alert('That image was too large to save. Try a smaller picture.');
+      }
+    };
+    img.onerror = () => alert('Could not read that image.');
+    img.src = reader.result;
+  };
+  reader.onerror = () => alert('Could not read that file.');
+  reader.readAsDataURL(file);
+});
+
+document.getElementById('bgClearBtn').addEventListener('click', async (e)=>{
+  e.stopPropagation();
+  bgImageData = null;
+  applyBackground();
+  await storeSet('rebirth-bgImage', null);
+});
+
+document.getElementById('bgDimRange').addEventListener('input', (e)=>{
+  bgDim = parseFloat(e.target.value);
+  document.getElementById('bgScrim').style.background = `rgba(11,15,13,${bgDim})`;
+});
+document.getElementById('bgDimRange').addEventListener('change', async (e)=>{
+  bgDim = parseFloat(e.target.value);
+  await storeSet('rebirth-bgDim', bgDim);
+});
+
+/* ---------------- POP OUT (Picture-in-Picture overlay) ---------------- */
+(function setupPip(){
+  const pipBtn = document.getElementById('pipBtn');
+  if(!('documentPictureInPicture' in window)) return; // stays hidden; main panel still fully usable
+  pipBtn.hidden = false;
+  const POPOUT_IDS = ['searchBoxWrap','sortToggleWrap','legend','levelNote','cyclePickerRow','quickPanel'];
+  pipBtn.addEventListener('click', async ()=>{
+    if(window.documentPictureInPicture.window){
+      window.documentPictureInPicture.window.close();
+      return;
+    }
+    const pipWin = await window.documentPictureInPicture.requestWindow({ width: 930, height: 990 });
+    const styleTag = document.querySelector('style');
+    pipWin.document.head.innerHTML =
+      '<meta charset="UTF-8">' +
+      '<link rel="preconnect" href="https://fonts.googleapis.com">' +
+      '<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">' +
+      '<style>' + styleTag.textContent + '</style>';
+    pipWin.document.body.style.margin = '0';
+    pipWin.document.body.style.padding = '18px';
+
+    const movedElements = [];
+    const placeholders = [];
+    POPOUT_IDS.forEach(id=>{
+      const el = document.getElementById(id);
+      if(!el) return;
+      const ph = document.createComment('popout-' + id);
+      el.replaceWith(ph);
+      placeholders.push(ph);
+      movedElements.push(el);
+      pipWin.document.body.appendChild(el);
+    });
+
+    pipWin.addEventListener('pagehide', ()=>{
+      movedElements.forEach((el, i)=>{ placeholders[i].replaceWith(el); });
+    }, { once:true });
+  });
+})();
+
+/* ---------------- LIVE DETECT (screen capture + icon matching) ---------------- */
+(function setupLiveDetect(){
+  // Retired 2026-09-19 at the user's request (wasn't reading reliably) —
+  // flip this back to `true` to bring the button and its whole flow back.
+  // Nothing else in the app depends on Live Detect running or even existing,
+  // so this one flag is the entire toggle; everything below is untouched.
+  const LIVE_DETECT_ENABLED = false;
+  const liveBtn = document.getElementById('liveBtn');
+  if(!LIVE_DETECT_ENABLED || !(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia)) return; // stays hidden; nothing else depends on this
+  liveBtn.hidden = false;
+
+  const REF_SIZE = 24;          // reference/sample thumbnail size used for comparison
+  const SAMPLE_MS = 800;        // how often each calibrated region is re-checked
+  const CHANGE_THRESHOLD = 0.06;// a region must differ this much from its last check to bother matching
+  const MATCH_THRESHOLD = 0.18; // best reference match must be at least this close to suggest it
+
+  let refThumbs = null;
+  let liveStream = null, liveVideo = null;
+  let liveRegions = [];     // one {x,y,w,h} per watched Sandcrawler slot
+  let lastSampleData = [];  // parallel array: last sampled pixels per region, for change detection
+  let sampleTimer = null;
+  let lastSuggestedKey = null, lastSuggestedAt = 0;
+
+  function loadImageFromDataUri(uri){
+    return new Promise((resolve, reject)=>{
+      const img = new Image();
+      img.onload = ()=>resolve(img);
+      img.onerror = reject;
+      img.src = uri;
+    });
+  }
+
+  async function buildReferenceThumbs(){
+    if(refThumbs) return refThumbs;
+    const off = document.createElement('canvas');
+    off.width = REF_SIZE; off.height = REF_SIZE;
+    const octx = off.getContext('2d', {willReadFrequently:true});
+    const thumbs = [];
+    for(let c=1;c<=5;c++){
+      for(let l=1;l<=35;l++){
+        const row = CYCLES[c][l-1];
+        for(let i=0;i<row.length;i++){
+          const key = c+'-'+l+'-'+i;
+          const b64 = (typeof ICONS!=='undefined') ? ICONS[key] : null;
+          if(!b64) continue;
+          try{
+            const img = await loadImageFromDataUri('data:image/webp;base64,'+b64);
+            octx.clearRect(0,0,REF_SIZE,REF_SIZE);
+            octx.drawImage(img, 0, 0, REF_SIZE, REF_SIZE);
+            const data = octx.getImageData(0,0,REF_SIZE,REF_SIZE).data;
+            thumbs.push({cycle:c, level:l, slot:i, code:row[i][0], name:row[i][1], data:data});
+          }catch(e){ /* one bad icon shouldn't sink the rest */ }
+        }
+      }
+    }
+    refThumbs = thumbs;
+    return thumbs;
+  }
+
+  function pixelDist(a, b){
+    let sum = 0;
+    const n = Math.min(a.length, b.length);
+    for(let i=0;i<n;i+=4){
+      sum += Math.abs(a[i]-b[i]) + Math.abs(a[i+1]-b[i+1]) + Math.abs(a[i+2]-b[i+2]);
+    }
+    return sum / ((n/4) * 3 * 255); // 0 = identical, 1 = maximally different
+  }
+
+  async function startLiveDetect(){
+    try{
+      liveStream = await navigator.mediaDevices.getDisplayMedia({ video:{ cursor:'never' }, audio:false });
+    }catch(err){
+      alert("Couldn't start screen sharing (" + err.message + "). Live Detect needs permission to share a window or your screen.");
+      return;
+    }
+    liveVideo = document.createElement('video');
+    liveVideo.srcObject = liveStream;
+    liveVideo.muted = true;
+    await liveVideo.play();
+    if(!liveVideo.videoWidth){
+      await new Promise(res=>{ liveVideo.addEventListener('loadedmetadata', res, {once:true}); });
+    }
+    liveStream.getVideoTracks()[0].addEventListener('ended', stopLiveDetect); // covers the browser's own "Stop sharing" control
+    openCalibration();
+  }
+
+  function openCalibration(){
+    getEl('calibOverlay').style.display = 'flex';
+    getEl('calibStep1').textContent = "Stand facing the belt so it won't move (these boxes are tied to camera position), then come back and draw one box per slot.";
+    getEl('calibCanvasWrap').style.display = '';
+    const canvas = getEl('calibCanvas');
+    canvas.width = liveVideo.videoWidth;
+    canvas.height = liveVideo.videoHeight;
+    const ctx = canvas.getContext('2d');
+
+    const regions = [];
+    let selStart = null, sel = null;
+
+    function redraw(){
+      ctx.drawImage(liveVideo, 0, 0, canvas.width, canvas.height);
+      ctx.lineWidth = Math.max(2, canvas.width/400);
+      regions.forEach((r, i)=>{
+        ctx.strokeStyle = '#5ef2a6';
+        ctx.strokeRect(r.x, r.y, r.w, r.h);
+        ctx.fillStyle = 'rgba(94,242,166,0.15)';
+        ctx.fillRect(r.x, r.y, r.w, r.h);
+        ctx.fillStyle = '#5ef2a6';
+        ctx.font = (canvas.width/70) + 'px monospace';
+        ctx.fillText(String(i+1), r.x+4, r.y+16);
+      });
+      if(sel){
+        ctx.strokeStyle = '#f2b95e';
+        ctx.strokeRect(sel.x, sel.y, sel.w, sel.h);
+      }
+    }
+    function coordsFromEvent(e){
+      const r = canvas.getBoundingClientRect();
+      return { x:(e.clientX-r.left)*(canvas.width/r.width), y:(e.clientY-r.top)*(canvas.height/r.height) };
+    }
+    function refreshInfo(){
+      getEl('calibRegionInfo').textContent = regions.length + (regions.length===1 ? ' slot marked' : ' slots marked');
+      getEl('calibConfirm').disabled = regions.length === 0;
+    }
+
+    canvas.onmousedown = e=>{ selStart = coordsFromEvent(e); };
+    canvas.onmousemove = e=>{
+      if(!selStart) return;
+      const c = coordsFromEvent(e);
+      sel = { x:Math.min(selStart.x,c.x), y:Math.min(selStart.y,c.y), w:Math.abs(c.x-selStart.x), h:Math.abs(c.y-selStart.y) };
+      redraw();
+    };
+    canvas.onmouseup = ()=>{
+      if(sel && sel.w > 8 && sel.h > 8) regions.push(sel);
+      sel = null; selStart = null;
+      redraw(); refreshInfo();
+    };
+
+    getEl('calibUndo').onclick = ()=>{ regions.pop(); redraw(); refreshInfo(); };
+    getEl('calibRedo').onclick = ()=>{ regions.length = 0; redraw(); refreshInfo(); };
+    getEl('calibCancel').onclick = stopLiveDetect;
+    getEl('calibConfirm').onclick = ()=>{
+      liveRegions = regions.slice();
+      getEl('calibOverlay').style.display = 'none';
+      beginSampling();
+    };
+
+    liveVideo.requestVideoFrameCallback ? liveVideo.requestVideoFrameCallback(()=>{ redraw(); refreshInfo(); }) : (()=>{ redraw(); refreshInfo(); })();
+  }
+
+  async function beginSampling(){
+    getEl('liveStrip').style.display = 'flex';
+    getEl('liveGuess').textContent = 'loading reference icons…';
+    await buildReferenceThumbs();
+    getEl('liveGuess').textContent = 'watching…';
+
+    const previewHost = getEl('livePreviews');
+    previewHost.innerHTML = '';
+    const previewCtxs = liveRegions.map(()=>{
+      const c = document.createElement('canvas');
+      c.width = 30; c.height = 30;
+      previewHost.appendChild(c);
+      return c.getContext('2d');
+    });
+
+    lastSampleData = liveRegions.map(()=>null);
+
+    const sampleCanvas = document.createElement('canvas');
+    sampleCanvas.width = REF_SIZE; sampleCanvas.height = REF_SIZE;
+    const sctx = sampleCanvas.getContext('2d', {willReadFrequently:true});
+
+    sampleTimer = setInterval(()=>{
+      if(!liveVideo || liveVideo.readyState < 2) return;
+      liveRegions.forEach((region, idx)=>{
+        sctx.clearRect(0,0,REF_SIZE,REF_SIZE);
+        sctx.drawImage(liveVideo, region.x, region.y, region.w, region.h, 0, 0, REF_SIZE, REF_SIZE);
+        const frame = sctx.getImageData(0,0,REF_SIZE,REF_SIZE).data;
+        if(previewCtxs[idx]) previewCtxs[idx].drawImage(sampleCanvas, 0, 0, 30, 30);
+
+        const prev = lastSampleData[idx];
+        lastSampleData[idx] = frame;
+        if(prev && pixelDist(frame, prev) < CHANGE_THRESHOLD) return; // this slot hasn't changed
+
+        let best = null, bestDist = Infinity;
+        refThumbs.forEach(t=>{
+          const d = pixelDist(frame, t.data);
+          if(d < bestDist){ bestDist = d; best = t; }
+        });
+        if(!best) return;
+        const guessEl = getEl('liveGuess');
+        if(guessEl) guessEl.textContent = 'slot ' + (idx+1) + ': ' + best.name + ' (' + RNAME[best.code] + ') · ' + Math.round((1-bestDist)*100) + '%';
+        if(bestDist < MATCH_THRESHOLD) suggestMatch(best, bestDist);
+      });
+    }, SAMPLE_MS);
+  }
+
+  function suggestMatch(t, dist){
+    const nk = normKey(canonicalName(t.name));
+    const rank = rankOf(t.code);
+    const key = nk + ':' + rank;
+    const now = Date.now();
+    if(key === lastSuggestedKey && now - lastSuggestedAt < 15000) return; // don't spam the same suggestion
+    lastSuggestedKey = key; lastSuggestedAt = now;
+
+    const iconKey = t.cycle + '-' + t.level + '-' + t.slot;
+    const src = (typeof ICONS !== 'undefined' && ICONS[iconKey]) ? ('data:image/webp;base64,' + ICONS[iconKey]) : '';
+    const iconEl = getEl('suggestIcon');
+    iconEl.className = 'icon-badge ' + RCLASS[t.code];
+    iconEl.innerHTML = src ? ('<img src="' + src + '" alt="">') : '';
+    const display = DROID_INDEX[nk] ? DROID_INDEX[nk].display : t.name;
+    getEl('suggestName').textContent = display;
+    getEl('suggestSub').textContent = RNAME[t.code] + ' — ' + Math.round((1-dist)*100) + '% match';
+    const banner = getEl('suggestBanner');
+    banner.style.display = 'flex';
+    getEl('suggestYes').onclick = ()=>{
+      setOwned(nk, rank);
+      banner.style.display = 'none';
+      showToast('Logged ' + display + ' — ' + RNAME[t.code]);
+    };
+    getEl('suggestNo').onclick = ()=>{ banner.style.display = 'none'; };
+  }
+
+  function stopLiveDetect(){
+    if(sampleTimer){ clearInterval(sampleTimer); sampleTimer = null; }
+    if(liveStream){ liveStream.getTracks().forEach(tr=>tr.stop()); liveStream = null; }
+    liveVideo = null; liveRegions = []; lastSampleData = [];
+    const overlay = getEl('calibOverlay'); if(overlay) overlay.style.display = 'none';
+    const strip = getEl('liveStrip'); if(strip) strip.style.display = 'none';
+    const banner = getEl('suggestBanner'); if(banner) banner.style.display = 'none';
+  }
+
+  liveBtn.addEventListener('click', ()=>{
+    if(liveStream){ stopLiveDetect(); return; }
+    startLiveDetect();
+  });
+  document.getElementById('liveStop').addEventListener('click', stopLiveDetect);
+  document.getElementById('liveRecalib').addEventListener('click', ()=>{
+    if(sampleTimer){ clearInterval(sampleTimer); sampleTimer = null; }
+    const strip = getEl('liveStrip'); if(strip) strip.style.display = 'none';
+    openCalibration();
+  });
+})();
+
+/* ---------------- INIT ---------------- */
+(async function init(){
+  nameMerges = (await storeGet('rebirth-nameMerges')) || {};
+  displayOverrides = (await storeGet('rebirth-displayOverrides')) || {};
+  sortMode = (await storeGet('rebirth-sortMode')) || 'alpha';
+  {
+    // Every other place activeCycle gets set (the cycle <select>, or
+    // resetCycleAndAdvance's 1-5 wraparound) already keeps it in range --
+    // this initial load is the only path that takes whatever the store
+    // handed back on faith. A value outside 1-5 (corrupted/hand-edited
+    // store) would make every CYCLES[activeCycle] lookup throw on
+    // undefined the moment anything tries to render, so fall back to 1
+    // instead of trusting it blindly.
+    const loadedCycle = await storeGet('rebirth-activeCycle');
+    activeCycle = (Number.isInteger(loadedCycle) && loadedCycle >= 1 && loadedCycle <= 5) ? loadedCycle : 1;
+  }
+  bgImageData = await storeGet('rebirth-bgImage');
+  bgDim = (await storeGet('rebirth-bgDim'));
+  if(bgDim === null || bgDim === undefined || isNaN(bgDim)) bgDim = 0.72;
+  applyBackground();
+  showReqPanel = !!(await storeGet('rebirth-showReqPanel'));
+  applyReqPanelVisibility();
+  qsa('.sort-toggle button').forEach(b=>{
+    b.classList.toggle('on', b.dataset.sort === sortMode);
+  });
+  buildIndex();
+  await migrate();
+  await migrateDroidSpellingFixesV1();
+  renderLegend();
+  renderStats();
+  renderList();
+})();
+</script>
+<script src="node_modules/tesseract.js/dist/tesseract.min.js"></script>
+<script src="rebirth-level-detect.js"></script>
+<script src="rebirth-screen-read.js"></script>
+<script src="overlay-controls.js"></script>
+<script src="guide.js"></script>
+</body>
+</html>
