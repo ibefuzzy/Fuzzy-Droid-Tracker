@@ -322,4 +322,25 @@
     if(disp) disp.textContent = 'Lvl ' + currentLevel;
     if(autoDetectAvailable) savedRegion = (await storeGet(REGION_KEY)) || null;
   })();
+
+  // Keep currentLevel in sync when 'rebirth-currentLevel' changes from
+  // somewhere OTHER than this file's own setLevel() — Read Rebirth Screen's
+  // bulk catch-up, or (if auto-detect is ever flipped back on) a second
+  // window's OCR. Without this, currentLevel only ever reflects whatever
+  // was in the store at page load, so the manual +/- stepper computes off
+  // a stale number and can silently regress real progress instead of
+  // adjusting from where the game actually is (e.g. Read Rebirth Screen
+  // sets level 6, then a single manual + click, still thinking it's at 0,
+  // sets it back down to 1). Mirrors the onStoreChanged pattern every
+  // overlay window already uses (see overlay.html) for the same reason,
+  // and — like a manual correction already does in setLevel() above —
+  // clears any OCR confirmation streak that was building toward a value
+  // this external change has now made stale.
+  window.overlayAPI.onStoreChanged(({ key, value })=>{
+    if(key !== 'rebirth-currentLevel') return;
+    currentLevel = value || 0;
+    const disp = getEl('rlLevelDisplay');
+    if(disp) disp.textContent = 'Lvl ' + currentLevel;
+    pendingValue = null; pendingCount = 0;
+  });
 })();

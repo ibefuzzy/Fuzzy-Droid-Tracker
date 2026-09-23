@@ -1113,16 +1113,27 @@ function wireIpc(){
 }
 
 /* ---------------- one-time userData migration (2026-09-22 rename) ----------------
-   Electron's userData folder is named after the app's productName, so
-   renaming "Droid Tycoon Overlay" to "Fuzzy's Droid Tracker" would silently
+   Electron's userData folder is named after the app's package.json `name`
+   field (NOT `productName` — that field only feeds electron-builder's own
+   installer/exe metadata, confirmed directly against the real folders this
+   app has actually created on disk), so renaming the old package.json
+   `name` "droid-tycoon-overlay" to "fuzzys-droid-tracker" would silently
    orphan every existing install's saved rebirth progress under the old
    folder unless something copies it forward first. Runs once: only when the
    new folder has no store file yet AND the old folder does, so it can never
    overwrite real progress already logged under the new name, and it's a
-   total no-op for a fresh install that never had the old folder. */
+   total no-op for a fresh install that never had the old folder.
+
+   CORRECTNESS NOTE (2026-09-23): this function originally checked for the
+   old folder under the wrong name — the capitalized `productName` string
+   ("Droid Tycoon Overlay") instead of the actual `name`-derived folder
+   Electron creates ("droid-tycoon-overlay") — so it silently found nothing
+   and copied nothing for every real upgrader, including the developer's own
+   install. Fixed here; see app-status project doc for the real-world impact
+   this had and how the affected install's data was recovered by hand. */
 function migrateUserDataFromOldAppName(){
   try{
-    const oldDir = path.join(app.getPath('appData'), 'Droid Tycoon Overlay');
+    const oldDir = path.join(app.getPath('appData'), 'droid-tycoon-overlay');
     const newDir = app.getPath('userData');
     if(fs.existsSync(STORE_PATH)) return; // already on the new name, nothing to bring over
     if(!fs.existsSync(oldDir)) return;    // fresh install, no old data exists

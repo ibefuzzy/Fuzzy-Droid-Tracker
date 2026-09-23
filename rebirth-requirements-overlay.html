@@ -78,9 +78,11 @@
      shows only the droids still needed this cycle — anything already owned
      at its required (ceiling) rarity is filtered out in render(), see
      below — but a freshly-started cycle with nothing logged yet can still
-     show the full roster (43-48 droids across all 7 rarity tiers), so it
-     uses 3 columns instead of declutter's 2 to keep that worst case
-     fitting without ever scrolling. The icon-size cap is what keeps the
+     show the full roster (43-49 droids depending on cycle, verified against
+     the real CYCLES data: Cycle 1=43, 2=44, 3=45, 4=43, 5=49 — Cycle 5 is
+     the true worst case), so it uses 3 columns instead of declutter's 2 to
+     keep that worst case fitting without ever scrolling. The icon-size cap
+     is what keeps the
      common case (a short list, once most of the cycle is already owned)
      from blowing up the way declutter's list originally did. Sorted
      lowest-to-highest required rarity so the parts of the list you'll
@@ -213,7 +215,7 @@
     '</div>';
   }
 
-  // Dynamic column count so a long list (a fresh cycle can have 43-48 droids
+  // Dynamic column count so a long list (a fresh cycle can have 43-49 droids
   // at once, per the worst case noted above) never crushes the icon down to
   // nothing. This panel's height is fixed and divided into exactly as many
   // rows as the count needs (rows = ceil(count/cols)) — more columns means
@@ -224,8 +226,11 @@
   // quality, just gone. These tiers were checked directly at that same size:
   // 3 columns stays legible up to ~27 droids (9 rows); past that, add a
   // column at a time so row count never climbs back into collapsed
-  // territory. 5 columns handles the real worst case (43 droids) with every
-  // name still fitting unclipped and the icon small but genuinely visible.
+  // territory. 5 columns covers up to 45; Cycle 5's real worst case (49,
+  // corrected 2026-09-23 — independently verified against the actual
+  // CYCLES data, not just the 43-droid sample this comment was originally
+  // checked against) falls through to the 6-column tier below, which still
+  // keeps every name fitting unclipped and the icon small but visible.
   function pickCols(count){
     if(count <= 27) return 3;
     if(count <= 36) return 4;
