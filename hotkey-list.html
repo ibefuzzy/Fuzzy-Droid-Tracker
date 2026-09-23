@@ -76,13 +76,18 @@
      re-renders whenever they change, so rebinding a hotkey in the tracker's
      settings panel updates this list immediately without needing a restart.
      Nothing here reads the screen or touches Fortnite. */
+  // Kept in ascending Ctrl+Shift+N order (1-6) so the card reads in the same
+  // order as the keys themselves, with the two hotkeys still outside that
+  // numbered family (timersHotkey) tacked on at the end — see the
+  // "convention" comment above DEFAULT_SETTINGS in main.js for why a future
+  // overlay's hotkey won't default to a number at all.
   const ROWS = [
     { key: 'hideAllHotkey', label: '🚫 Hide ALL overlays (one-way — won\'t turn them back on)' },
     { key: 'hotkeyListHotkey', label: 'Show / hide this hotkey list' },
-    { key: 'declutterHotkey', label: '♻ Show / hide declutter list' },
-    { key: 'rebirthReqOverlayHotkey', label: '🧬 Show / hide Rebirth Requirements overlay' },
-    { key: 'rebirthScreenHotkey', label: '📸 Read Rebirth Screen' },
     { key: 'hotkey', label: '🎯 Show / hide Current Rebirth Requirements' },
+    { key: 'declutterHotkey', label: '♻ Show / hide declutter list' },
+    { key: 'rebirthReqOverlayHotkey', label: '🧬 Show / hide Rebirth Requirements' },
+    { key: 'rebirthScreenHotkey', label: '📸 Read Rebirth Screen' },
     { key: 'timersHotkey', label: '⏱ Show / hide timer banners' }
   ];
 

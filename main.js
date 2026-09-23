@@ -46,7 +46,7 @@ const SETTINGS_PATH = path.join(app.getPath('userData'), 'overlay-settings.json'
 
 const DEFAULT_SETTINGS = {
   hideAllHotkey: 'Control+Shift+1', // one-way ONLY — hides every overlay below, never toggles them back on (new 2026-09-20, see migrateHotkeyLayout() below)
-  hotkey: 'Alt+Shift+D',   // toggles overlay show/hide, works even while Fortnite is focused
+  hotkey: 'Control+Shift+3',   // toggles the Current Rebirth Requirements HUD ("Upcoming RB Req's") show/hide, works even while Fortnite is focused (moved from Alt+Shift+D on 2026-09-23 — brought into the same Ctrl+Shift+N family as every other overlay hotkey instead of sitting on its own odd-one-out combo)
   // calibHotkey / craftBenchHotkey retired 2026-09-22 along with the whole
   // Read Crafting Bench feature (see crafting-bench-read.js's own header
   // comment for why) — deliberately no longer in DEFAULT_SETTINGS, so a
@@ -56,7 +56,7 @@ const DEFAULT_SETTINGS = {
   // affect that migration's correctness for anyone upgrading from an
   // older version.
   timersHotkey: 'Alt+Shift+T', // toggles the blueprint/mission countdown banners, same deal
-  rebirthScreenHotkey: 'Control+Shift+5', // fires the 📸 Read Rebirth Screen button, same deal (moved from Ctrl+Shift+6 on 2026-09-22 — Read Crafting Bench's removal freed up 5)
+  rebirthScreenHotkey: 'Control+Shift+6', // fires the 📸 Read Rebirth Screen button, same deal (moved from Ctrl+Shift+5 on 2026-09-23 — shifted down to make room for the new Ctrl+Shift+3 Upcoming RB Req's hotkey below)
   hotkeyListHotkey: 'Control+Shift+2', // toggles the on-screen hotkey reference list, same deal (moved from Ctrl+Shift+1 on 2026-09-20 — freed up for hideAllHotkey above)
   visible: true,
   opacity: 0.55,           // background opacity of the overlay panel, 0.2-0.92
@@ -66,11 +66,11 @@ const DEFAULT_SETTINGS = {
   timersLocked: true,
   timersPosition: null,
   missionSyncEpochMs: null, // exact timestamp (ms) of a confirmed live mission moment, set via "Sync mission timer"; null = use the built-in best-guess schedule
-  declutterHotkey: 'Control+Shift+3', // toggles the "safe to retire" Legendary/Mythic droid list, same deal (moved from Ctrl+Shift+2 on 2026-09-20)
+  declutterHotkey: 'Control+Shift+4', // toggles the "safe to retire" Legendary/Mythic droid list, same deal (moved from Ctrl+Shift+3 on 2026-09-23 — see hotkey above)
   declutterVisible: true,
   declutterLocked: true,
   declutterPosition: null,
-  rebirthReqOverlayHotkey: 'Control+Shift+4', // toggles the standalone Rebirth Requirements overlay, same deal (moved from Ctrl+Shift+3 on 2026-09-20)
+  rebirthReqOverlayHotkey: 'Control+Shift+5', // toggles the standalone Rebirth Requirements overlay, same deal (moved from Ctrl+Shift+4 on 2026-09-23 — see hotkey above)
   rebirthReqVisible: true,
   rebirthReqLocked: true,
   rebirthReqPosition: null,
@@ -78,8 +78,31 @@ const DEFAULT_SETTINGS = {
   hotkeyLayoutVersion: 0   // bumped by the migrations below; never hand-edit
 };
 
+/* ---------------- convention: hotkeys for FUTURE overlays (2026-09-23) ----
+   Every overlay toggle above launched with a pre-picked Ctrl+Shift+N combo,
+   which is exactly why they've needed four rounds of migration so far just
+   to make room for each new one (see below) — every existing user's saved
+   layout has to get reshuffled around a slot nobody asked them to give up.
+   From here on, a NEW overlay's hotkey defaults to an EMPTY string ('') in
+   DEFAULT_SETTINGS instead of a picked accelerator: it ships unbound, the
+   settings row shows "(none set)" (already the normal fallback display —
+   see applySettingsToUI() in overlay-controls.js), and the player picks
+   their own combo whenever they actually want one. No collision with an
+   existing binding is possible, and — just as important — no future round
+   ever needs another cascading migrateHotkeyLayout() step again just to
+   free up a slot for it. registerHotkeyFor() below already no-ops cleanly
+   on an empty accelerator (returns { ok:false, reason:'empty' } without
+   ever calling globalShortcut.register), and reportHotkeyRegistrationFailures()
+   deliberately excludes that reason so an intentionally-unbound hotkey
+   never produces a false "couldn't register" toast on launch. Wiring a new
+   overlay in fully still means touching the usual handful of spots: this
+   object, HOTKEY_HANDLERS/HOTKEY_LABELS/HOTKEY_SETTINGS_KEY below, a
+   wireHotkeyButton(...) call in overlay-controls.js, a row in
+   hotkey-list.html's ROWS array, and the README hotkey table — this just
+   changes what the DEFAULT_SETTINGS value should be when you do. */
+
 /* ---------------- one-time hotkey renumbering ----------------
-   Three rounds so far, all handled the same way: loadJson() (below) only
+   Four rounds so far, all handled the same way: loadJson() (below) only
    fills in a DEFAULT_SETTINGS key when it's completely ABSENT from the
    saved settings file, so an existing install that already has a concrete
    saved value for e.g. rebirthScreenHotkey never actually moves just
@@ -89,8 +112,8 @@ const DEFAULT_SETTINGS = {
    every other hotkey in this app never gets silently overwritten.
    hotkeyLayoutVersion gates each round so it only ever runs once per
    install, and the rounds cascade — a pre-1.2.0 install passes through
-   all three in a single launch, an already-1.2.1 install (already at
-   version 1) only needs the last two, and so on.
+   all four in a single launch, an already-1.2.1 install (already at
+   version 1) only needs the last three, and so on.
 
    v0 -> v1 (shipped in 1.2.0/1.2.1): Ctrl+Shift+3/4 used to be Read
    Crafting Bench / Read Rebirth Screen. They moved to 4/5 to free up
@@ -106,14 +129,24 @@ const DEFAULT_SETTINGS = {
    reasoning is why the v0->v1 step above writes literal v1 values instead
    of reading DEFAULT_SETTINGS.
 
-   v2 -> v3 (this round, 2026-09-22): Read Crafting Bench was removed
+   v2 -> v3 (shipped in 1.5.3): Read Crafting Bench was removed
    entirely, freeing Ctrl+Shift+5. Read Rebirth Screen moves down from
    Ctrl+Shift+6 to fill it, so 1/2/3/4/5 stay a contiguous block with
    nothing skipped. Ctrl+Shift+1-4 are untouched by this round. There's no
    new home for the old craftBenchHotkey/calibHotkey values to move to —
    the feature they controlled is gone — so an existing user who'd
    customized either just keeps an unused, harmless field in their saved
-   settings file; nothing reads it anymore. */
+   settings file; nothing reads it anymore.
+
+   v3 -> v4 (this round, 2026-09-23): the Current Rebirth Requirements HUD
+   ("Upcoming RB Req's") had a hotkey since the very start (Alt+Shift+D,
+   predating the whole Ctrl+Shift+N numbered scheme below) but had never
+   been given a slot in that scheme, which is what prompted this round.
+   Alt+Shift+D moves to Ctrl+Shift+3, and Ctrl+Shift+3/4/5 (declutter list /
+   Rebirth Req overlay / rebirth screen) each shift down one to 4/5/6 to
+   make room, so 1-6 are now a single contiguous block covering every
+   overlay. Same as every round before it: only a hotkey still sitting on
+   its exact old default moves — a custom rebind is left alone. */
 const PRE_MIGRATION_DEFAULTS = { craftBenchHotkey: 'Control+Shift+3', rebirthScreenHotkey: 'Control+Shift+4' };
 const V1_HOTKEY_DEFAULTS = {
   hotkeyListHotkey: 'Control+Shift+1',
@@ -136,7 +169,25 @@ const V2_HOTKEY_DEFAULTS = {
   craftBenchHotkey: 'Control+Shift+5',
   rebirthScreenHotkey: 'Control+Shift+6'
 };
-const LATEST_HOTKEY_LAYOUT_VERSION = 3;
+// Frozen record of what each key's default was once AT v3 (after the
+// v2->v3 step above finished, before this round's v3->v4 step) — same
+// role V1_HOTKEY_DEFAULTS/V2_HOTKEY_DEFAULTS play for the earlier steps.
+// "hotkey" (Alt+Shift+D) joins this cascade for the first time here — it
+// was never part of v0/v1/v2's Ctrl+Shift+N reshuffling, so it has no
+// earlier frozen-default entry to appear in above this point.
+const V3_HOTKEY_DEFAULTS = {
+  hotkey: 'Alt+Shift+D',
+  declutterHotkey: 'Control+Shift+3',
+  rebirthReqOverlayHotkey: 'Control+Shift+4',
+  rebirthScreenHotkey: 'Control+Shift+5'
+};
+const V4_HOTKEY_DEFAULTS = {
+  hotkey: 'Control+Shift+3',
+  declutterHotkey: 'Control+Shift+4',
+  rebirthReqOverlayHotkey: 'Control+Shift+5',
+  rebirthScreenHotkey: 'Control+Shift+6'
+};
+const LATEST_HOTKEY_LAYOUT_VERSION = 4;
 function migrateHotkeyLayout(){
   if(settings.hotkeyLayoutVersion >= LATEST_HOTKEY_LAYOUT_VERSION) return;
   if(settings.hotkeyLayoutVersion < 1){
@@ -163,6 +214,14 @@ function migrateHotkeyLayout(){
     // craftBenchHotkey/calibHotkey intentionally not migrated here — see
     // the v2->v3 note in the big comment above.
     settings.hotkeyLayoutVersion = 3;
+  }
+  if(settings.hotkeyLayoutVersion < 4){
+    Object.keys(V3_HOTKEY_DEFAULTS).forEach(key=>{
+      if(settings[key] === V3_HOTKEY_DEFAULTS[key]){
+        settings[key] = V4_HOTKEY_DEFAULTS[key]; // frozen v4 target, see comment above
+      }
+    });
+    settings.hotkeyLayoutVersion = 4;
   }
   persistSettingsNow();
 }
@@ -729,16 +788,18 @@ function hideAllOverlays(){
 /* ---------------- global hotkeys ----------------
    Seven independent named hotkeys share this same register/unregister
    logic: "hideAll" (turns every overlay off — never back on, see
-   hideAllOverlays() above, default Ctrl+Shift+1), "overlay" (the Current
-   Rebirth Requirements HUD, default Alt+Shift+D), "timers" (the
-   blueprint/mission countdown banners, default Alt+Shift+T), "hotkeyList"
-   (toggles the on-screen hotkey reference list, default Ctrl+Shift+2),
-   "declutter" (toggles the "safe to retire" Legendary/Mythic droid list,
-   default Ctrl+Shift+3), "rebirthReqOverlay" (the standalone Rebirth
-   Requirements overlay, default Ctrl+Shift+4), and "rebirthScreen" (fires
-   the 📸 Read Rebirth Screen button, default Ctrl+Shift+6 — Ctrl+Shift+5
-   is free since 2026-09-22, see DEFAULT_SETTINGS above). Each is tracked
-   by name so setting one never disturbs the others.
+   hideAllOverlays() above, default Ctrl+Shift+1), "hotkeyList" (toggles
+   the on-screen hotkey reference list, default Ctrl+Shift+2), "overlay"
+   (the Current Rebirth Requirements HUD, "Upcoming RB Req's", default
+   Ctrl+Shift+3), "declutter" (toggles the "safe to retire" Legendary/
+   Mythic droid list, default Ctrl+Shift+4), "rebirthReqOverlay" (the
+   standalone Rebirth Requirements overlay, default Ctrl+Shift+5),
+   "rebirthScreen" (fires the 📸 Read Rebirth Screen button, default
+   Ctrl+Shift+6), and "timers" (the blueprint/mission countdown banners,
+   default Alt+Shift+T — the one hotkey here still outside the Ctrl+Shift+N
+   block; see the "convention" comment above DEFAULT_SETTINGS if that ever
+   changes for a future overlay). Each is tracked by name so setting one
+   never disturbs the others.
 
    "rebirthScreen" can't just call a function here directly — the actual
    read logic (screen capture + OCR + confirm step) lives in the renderer,
@@ -784,7 +845,7 @@ const HOTKEY_LABELS = {
   rebirthScreen: 'Trigger Read Rebirth Screen',
   hotkeyList: 'Toggle Hotkey List',
   declutter: 'Toggle Declutter List',
-  rebirthReqOverlay: 'Toggle Rebirth Requirements Overlay'
+  rebirthReqOverlay: 'Toggle Rebirth Requirements' // "Overlay" dropped from the end 2026-09-23, see tracker.html/hotkey-list.html/README for the matching rename
 };
 const HOTKEY_SETTINGS_KEY = {
   hideAll: 'hideAllHotkey',
@@ -813,7 +874,13 @@ function registerAllHotkeys(){
 }
 
 function reportHotkeyRegistrationFailures(results){
-  const failedNames = Object.keys(results).filter(name => results[name] && !results[name].ok);
+  // reason 'empty' means the settings field is intentionally blank (see the
+  // "convention" comment above DEFAULT_SETTINGS) — the player just hasn't
+  // picked a combo for that overlay yet, not a real OS-level conflict, so it
+  // must NOT show the "couldn't register" toast below. Only 'in-use-or-invalid'
+  // (registerHotkeyFor actually tried and globalShortcut.register said no)
+  // counts as a failure worth surfacing.
+  const failedNames = Object.keys(results).filter(name => results[name] && !results[name].ok && results[name].reason !== 'empty');
   if(!failedNames.length) return;
   const parts = failedNames.map(name => HOTKEY_LABELS[name] + ' (' + (settings[HOTKEY_SETTINGS_KEY[name]] || 'none set') + ')');
   const plural = parts.length > 1;

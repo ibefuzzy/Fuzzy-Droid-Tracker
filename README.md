@@ -105,7 +105,7 @@ rebirth — instant, no screen share, no OCR involved, and always correct.
 
 Open the in-game **Rebirth** menu (the "REBIRTH Rank N" screen with the
 credits/multiplier/EXP cards and the NEED checklist) and click **📸 Read
-Rebirth Screen** in the toolbar — or press its hotkey, **Ctrl+Shift+5** by
+Rebirth Screen** in the toolbar — or press its hotkey, **Ctrl+Shift+6** by
 default, so you never have to alt-tab out of the game to click it. Share
 your screen once, draw a box around just the number after "Rank," and it
 reads it — one frame, not continuous, and the screen share stops
@@ -304,7 +304,7 @@ It updates live and automatically — the moment you log a droid, apply a
 Rebirth Screen read, or change your current level or active cycle anywhere
 else in the app, this list recomputes. No manual refresh, ever.
 
-Toggle it with **♻ Declutter** in the toolbar or its hotkey, **Ctrl+Shift+3**
+Toggle it with **♻ Declutter** in the toolbar or its hotkey, **Ctrl+Shift+4**
 by default. Reposition it the same way as the HUD and timers: **⚙ Overlay
 Settings → Reposition Declutter List → 🎯 Drag into place**, drag it under
 your player counter, then click **Lock** on the list itself.
@@ -352,8 +352,8 @@ Because it defaults to the same spot as the Declutter list, showing both at
 once will overlap — reposition one in **⚙ Overlay Settings** if you want them
 apart, or just toggle whichever one you're not using off.
 
-Toggle it with **🧬 Rebirth Req Overlay** in the toolbar or its hotkey,
-**Ctrl+Shift+4** by default.
+Toggle it with **🧬 Rebirth Req** in the toolbar or its hotkey,
+**Ctrl+Shift+5** by default.
 
 ## 🚫 Hide All Overlays (one-way — never toggles back on)
 
@@ -390,12 +390,12 @@ changeable from **⚙ Overlay Settings**:
 | Hotkey | Action | Default |
 |---|---|---|
 | Hide All Overlays | Turns every overlay off — one-way only, never toggles back on | `Ctrl+Shift+1` |
-| Toggle Current Rebirth Requirements | Show/hide the rebirth-requirements HUD | `Alt+Shift+D` |
+| Toggle Current Rebirth Requirements | Show/hide the rebirth-requirements HUD | `Ctrl+Shift+3` |
 | Toggle Timers | Show/hide the Stellar/Mythic/Galactic/Mission banners | `Alt+Shift+T` |
 | Toggle Hotkey List | Show/hide this reference card | `Ctrl+Shift+2` |
-| Toggle Declutter List | Show/hide the ♻ safe-to-retire droid list | `Ctrl+Shift+3` |
-| Toggle Rebirth Requirements Overlay | Show/hide the 🧬 still-needed overlay | `Ctrl+Shift+4` |
-| Trigger Read Rebirth Screen | Fires the 📸 Read Rebirth Screen button | `Ctrl+Shift+5` |
+| Toggle Declutter List | Show/hide the ♻ safe-to-retire droid list | `Ctrl+Shift+4` |
+| Toggle Rebirth Requirements | Show/hide the 🧬 still-needed overlay | `Ctrl+Shift+5` |
+| Trigger Read Rebirth Screen | Fires the 📸 Read Rebirth Screen button | `Ctrl+Shift+6` |
 
 The read-button hotkey doesn't do anything new under the hood — pressing it
 just clicks the real toolbar button for you, so the exact same
@@ -413,7 +413,7 @@ and testing everything above:
   like a code bug more than once (the mission-timer saga above is a direct
   example: a whole round of back-and-forth turned out to be an old build,
   not a bug).
-- **Hotkey conflict warning.** With nine global hotkeys now competing for
+- **Hotkey conflict warning.** With seven global hotkeys now competing for
   key combinations your OS or another app might already have claimed, a
   silent failure to register was a real risk that was never fully confirmed
   either way. If any hotkey fails to bind at launch, a toast names exactly
@@ -461,7 +461,7 @@ and testing everything above:
 
 ## Using the overlay
 
-- **Toggle Current Rebirth Requirements**: `Alt+Shift+D` by default, works
+- **Toggle Current Rebirth Requirements**: `Ctrl+Shift+3` by default, works
   even while Fortnite has focus. Change it from the tracker's
   **⚙ Overlay Settings** panel. See **⌨ Hotkey reference list** above for
   the full set of hotkeys.
@@ -483,14 +483,18 @@ and testing everything above:
   shared JSON store, the seven global hotkeys (registered together at
   launch via `registerAllHotkeys`, with any that fail to bind reported to
   the tracker window as a toast via `reportHotkeyRegistrationFailures`),
-  settings (including the three-step `migrateHotkeyLayout()` pass that
+  settings (including the four-step `migrateHotkeyLayout()` pass that
   moves an existing install's hotkey bindings forward — v0→v1 moved
   Ctrl+Shift+3/4 to 4/5, v1→v2 moved Ctrl+Shift+1/2/3/4/5 to 2/3/4/5/6 to
   make room for the new Hide All Overlays hotkey at Ctrl+Shift+1, v2→v3
   moved Read Rebirth Screen back down from Ctrl+Shift+6 to 5 once Read
-  Crafting Bench's removal freed it up — see its comment if a future
-  renumber needs the same trick), and each movable window's "reset to
-  default position" handler.
+  Crafting Bench's removal freed it up, v3→v4 moved the Current Rebirth
+  Requirements HUD's hotkey from Alt+Shift+D to Ctrl+Shift+3 and shifted
+  Declutter/Rebirth Req/Rebirth Screen down to 4/5/6 to make room — see its
+  comment if a future renumber needs the same trick; a future overlay's
+  hotkey shouldn't need this trick at all, see the "convention" comment
+  above `DEFAULT_SETTINGS`), and each movable window's "reset to default
+  position" handler.
 - `preload.js` — the only bridge between the pages and Node/IPC.
 - `tracker.html` — your original tracker, functionally unchanged, plus the
   Overlay toolbar controls, the always-visible Manual rebirth-level stepper,
@@ -539,4 +543,4 @@ and testing everything above:
   filter logic lives in `requirements.js`'s `getDeclutterList`, this file is
   purely rendering plus the same live store-driven update pattern every
   other window here already uses. Shown/hidden by `main.js` via the ♻
-  Declutter button or its own hotkey (`Ctrl+Shift+3` by default).
+  Declutter button or its own hotkey (`Ctrl+Shift+4` by default).

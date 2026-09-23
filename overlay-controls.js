@@ -75,7 +75,7 @@
 
   function setRebirthReqToggleLabel(visible){
     if(!rebirthReqToggleBtn) return;
-    rebirthReqToggleBtn.textContent = visible ? '🧬 Rebirth Req Overlay: On' : '🧬 Rebirth Req Overlay: Off';
+    rebirthReqToggleBtn.textContent = visible ? '🧬 Rebirth Req: On' : '🧬 Rebirth Req: Off';
     rebirthReqToggleBtn.classList.toggle('on', visible);
   }
 
@@ -239,7 +239,7 @@
   wireHotkeyButton(rebirthScreenHotkeyBtn, 'rebirthScreenHotkey', 'Trigger Read Rebirth Screen');
   wireHotkeyButton(hotkeyListHotkeyBtn, 'hotkeyListHotkey', 'Toggle Hotkey List');
   wireHotkeyButton(declutterHotkeyBtn, 'declutterHotkey', 'Toggle Declutter List');
-  wireHotkeyButton(rebirthReqHotkeyBtn, 'rebirthReqOverlayHotkey', 'Toggle Rebirth Requirements Overlay');
+  wireHotkeyButton(rebirthReqHotkeyBtn, 'rebirthReqOverlayHotkey', 'Toggle Rebirth Requirements');
 
   // Toast bridge for one-off messages the main process pushes (e.g. "boxes
   // weren't saved yet" from the crafting-bench guide-box toggle).
