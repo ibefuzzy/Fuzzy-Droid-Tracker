@@ -234,8 +234,8 @@ function getDeclutterList(cycle, currentLevel, ownedRank){
 /* ---------------- Sneak Preview (v1.6.1) ----------------
    What the NEXT cycle will ask for, restricted to Mythic-class droids, each
    at the highest variety that cycle ever requires of it — so a player who
-   just finished a cycle (and said "No" to resetting) can see what to hang
-   on to / start hunting before flipping over. Returns
+   just finished a cycle (and picked "Sneak Preview" in the cycle-complete
+   prompt) can see what to start hunting before flipping over. Returns
    [{nk, display, rank, code, ownedCode, iconKey}] sorted highest required
    variety first, then name. `cycle` is the CURRENT cycle; 5 wraps to 1. */
 function nextCycleOf(cycle){ return cycle >= 5 ? 1 : cycle + 1; }

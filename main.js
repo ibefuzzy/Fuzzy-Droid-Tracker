@@ -20,7 +20,7 @@
    window (or any overlay) shows up everywhere else immediately.
 --------------------------------------------------------------------------- */
 
-const { app, BrowserWindow, ipcMain, globalShortcut, screen, session, desktopCapturer } = require('electron');
+const { app, BrowserWindow, ipcMain, globalShortcut, screen, session, desktopCapturer, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -859,6 +859,30 @@ function pickScreenSource(sources){
   });
 }
 
+/* ---------------- sneak preview overlay ---------------- */
+function toggleSneakVisible(){ setSneakVisible(!settings.sneakVisible); }
+function setSneakVisible(visible){
+  settings.sneakVisible = !!visible;
+  persistSettingsNow();
+  if(!sneakWindow) return;
+  if(settings.sneakVisible) sneakWindow.showInactive();
+  else sneakWindow.hide();
+  broadcast('sneak:visibility-changed', settings.sneakVisible);
+}
+
+// The cycle-complete prompt's "Sneak Preview" choice: clear the stage for
+// it (it shares its default spot with Safe to Retire / Rebirth
+// Requirements), turning every other overlay off EXCEPT the timers banner,
+// then show it. Same setXVisible(false)/hideX() calls hideAllOverlays()
+// uses below, so the toolbar labels update the same way.
+function showSneakFocused(){
+  setOverlayVisible(false);
+  setDeclutterVisible(false);
+  setRebirthReqVisible(false);
+  hideHotkeyList();
+  setSneakVisible(true);
+}
+
 /* ---------------- hide all overlays (one-way only) ----------------
    Ctrl+Shift+1 by default. Deliberately NOT a toggle like every hotkey
    below — this one only ever turns overlays OFF, never back on, so a quick
@@ -871,17 +895,7 @@ function pickScreenSource(sources){
    free, same as if each had been switched off by hand. Covers every
    overlay window that can be on screen: the main Rebirth Requirements HUD,
    the timers banner, the declutter list, the standalone Rebirth
-   Requirements overlay, and the hotkey reference card. */
-function toggleSneakVisible(){ setSneakVisible(!settings.sneakVisible); }
-function setSneakVisible(visible){
-  settings.sneakVisible = !!visible;
-  persistSettingsNow();
-  if(!sneakWindow) return;
-  if(settings.sneakVisible) sneakWindow.showInactive();
-  else sneakWindow.hide();
-  broadcast('sneak:visibility-changed', settings.sneakVisible);
-}
-
+   Requirements overlay, the Sneak Preview, and the hotkey reference card. */
 function hideAllOverlays(){
   setOverlayVisible(false);
   setTimersVisible(false);
@@ -1190,9 +1204,32 @@ function wireIpc(){
   ipcMain.handle('rebirthReq:toggle', ()=>{ toggleRebirthReqVisible(); return settings.rebirthReqVisible; });
 
   ipcMain.handle('sneak:toggle', ()=>{ toggleSneakVisible(); return settings.sneakVisible; });
-  // Force-show (not toggle): tracker.html calls this when a cycle completes
-  // and the player answers "No" to the reset prompt.
-  ipcMain.handle('sneak:show', ()=>{ setSneakVisible(true); return settings.sneakVisible; });
+  // Force-show (not toggle), with every other overlay but the timers turned
+  // off: tracker.html calls this when a cycle completes and the player picks
+  // "Sneak Preview" in the prompt below (after it has reset that cycle).
+  ipcMain.handle('sneak:show', ()=>{ showSneakFocused(); return settings.sneakVisible; });
+
+  // Cycle-complete prompt (v1.7.1). A native box instead of the renderer's
+  // confirm() because confirm() can only say OK/Cancel. Both buttons reset
+  // the finished cycle (tracker.html does that part); they differ in what
+  // opens next. cancelId deliberately points PAST both buttons: on Windows
+  // the X and Esc always cancel and Electron returns cancelId as-is, and
+  // left unset it would default to one of the buttons — i.e. closing the
+  // box would silently reset progress. As set, closing it changes nothing.
+  ipcMain.handle('cycle:askComplete', async (evt)=>{
+    const opts = {
+      type: 'none',
+      title: "Fuzzy's Droid Tracker",
+      message: 'Would you like to reset progress for this cycle and open the next, or open the sneak preview window?',
+      buttons: ['Next Cycle', 'Sneak Preview'],
+      defaultId: 0,
+      cancelId: 2,
+      noLink: true // plain side-by-side buttons, not Windows command links
+    };
+    const win = BrowserWindow.fromWebContents(evt.sender);
+    const { response } = win ? await dialog.showMessageBox(win, opts) : await dialog.showMessageBox(opts);
+    return response === 0 ? 'next' : (response === 1 ? 'sneak' : 'none');
+  });
 
   ipcMain.handle('overlay:setLocked', (evt, locked)=>{
     settings.locked = !!locked;

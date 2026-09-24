@@ -251,8 +251,8 @@
       if(!n || n < 1 || n > 35){ alert('Enter a rank between 1 and 35.'); return; }
       const through = n - 1;
       // Check cycle completion once for the whole batch, not once per row:
-      // markRowObtained() can pop a blocking cycle-complete confirm() that
-      // resets ownedRank and advances activeCycle, and this loop is still
+      // markRowObtained() can pop the cycle-complete prompt, whose choices
+      // reset ownedRank and may advance activeCycle, and this loop is still
       // awaiting further iterations against its own closed-over `cycle` —
       // letting the popup fire mid-loop would check newly-advanced-cycle
       // completion against leftover writes from the OLD cycle's catch-up.

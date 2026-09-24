@@ -1,6 +1,6 @@
 {
   "name": "fuzzys-droid-tracker",
-  "version": "1.7.0",
+  "version": "1.7.1",
   "description": "Fuzzy's Droid Tracker — a Droid Tycoon rebirth tracker with an always-on-top requirements HUD",
   "main": "main.js",
   "author": "Fuzzy",
@@ -32,8 +32,13 @@
       "!src/**",
       "!build-log.txt",
       "!build-release.bat",
-      "!gh-check.*"
+      "!gh-check.*",
+      "!node_modules/**",
+      "node_modules/tesseract.js/LICENSE.md",
+      "node_modules/tesseract.js/dist/tesseract.min.js",
+      "node_modules/tesseract.js/dist/tesseract.min.js.LICENSE.txt"
     ],
+    "electronLanguages": ["en-US"],
     "win": {
       "target": "portable"
     },

@@ -1026,7 +1026,8 @@ async function markRowObtained(row, opts){
    required rarity or better. Once a mark-increasing action (a genuine
    upgrade/new claim in setOwned, or markRowObtained's "mark all 3") pushes
    that from something less than 105 up to exactly 105, offer to clear this
-   cycle's droids and roll over to the next one — never on an unmark, and
+   cycle's droids and then either roll over to the next one ("Next Cycle")
+   or open the Sneak Preview ("Sneak Preview") — never on an unmark, and
    never again just from re-rendering an already-105 cycle (the
    coveredBefore !== 105 guard below). Cycles wrap 5 -> 1.
 
@@ -1055,24 +1056,53 @@ function cycleDroidKeys(cycle){
   return keys;
 }
 
-async function resetCycleAndAdvance(cycle){
+function cycleAfter(cycle){ return (cycle >= 5) ? 1 : cycle + 1; }
+
+async function clearCycleMarks(cycle){
   cycleDroidKeys(cycle).forEach(nk=>{ delete ownedRank[nk]; });
   await storeSet('rebirth-ownedRank-v2', ownedRank);
-  const next = (cycle >= 5) ? 1 : cycle + 1;
+}
+
+async function resetCycleAndAdvance(cycle){
+  await clearCycleMarks(cycle);
+  const next = cycleAfter(cycle);
   await setActiveCycle(next); // persists rebirth-activeCycle, syncs both selects, renderList()
   renderStats();
   showToast('Cycle ' + cycle + ' reset — now on Cycle ' + next);
 }
 
-function maybeOfferCycleReset(cycle, coveredBefore){
+// "Sneak Preview" choice: the same reset, but the tracker STAYS on the
+// finished cycle — the preview always shows the cycle after the active one,
+// so advancing here would make it skip ahead to the one after next. Resetting
+// first is the whole point (v1.7.1): the preview's "✓ Have" marks come from
+// the global ownedRank, and before this they were still showing the finished
+// cycle's droids as owned.
+async function resetCycleForSneakPreview(cycle){
+  await clearCycleMarks(cycle);
+  renderList(); renderStats();
+  await window.overlayAPI.showSneakPreview(); // main.js also turns off every other overlay except the timers
+  showToast('Cycle ' + cycle + ' reset — Sneak Preview shows Cycle ' + cycleAfter(cycle) + '. Switch to it when you start it.');
+}
+
+let cyclePromptOpen = false;
+async function maybeOfferCycleReset(cycle, coveredBefore){
   if(coveredBefore === 105) return; // was already fully marked before this action — don't re-nag on every subsequent click
   if(cycleCoveredCount(cycle) !== 105) return; // not complete yet
-  const wantsReset = confirm('Would you like to reset progress for this cycle and open the next?');
-  if(wantsReset) resetCycleAndAdvance(cycle);
-  // "No" -> leave everything exactly as it is: fully marked, same cycle, nothing cleared.
-  // v1.7.0: and pop up the Sneak Preview overlay (next cycle's Mythic droids)
-  // so you can start working toward them. Desktop app only.
-  else if(window.overlayAPI && window.overlayAPI.showSneakPreview) window.overlayAPI.showSneakPreview();
+  if(cyclePromptOpen) return;
+  // Browser (no app): plain OK/Cancel — OK resets + advances, Cancel leaves everything as it is.
+  if(!(window.overlayAPI && window.overlayAPI.askCycleComplete)){
+    if(confirm('Would you like to reset progress for this cycle and open the next?')) resetCycleAndAdvance(cycle);
+    return;
+  }
+  // App: native box with "Next Cycle" / "Sneak Preview" (see cycle:askComplete
+  // in main.js). Closing it with X/Esc answers 'none' = nothing changes.
+  cyclePromptOpen = true;
+  let choice = 'none';
+  try{ choice = await window.overlayAPI.askCycleComplete(); }
+  catch(err){ console.error('cycle-complete prompt failed:', err); } // stays 'none' = nothing reset
+  finally{ cyclePromptOpen = false; }
+  if(choice === 'next') await resetCycleAndAdvance(cycle);
+  else if(choice === 'sneak') await resetCycleForSneakPreview(cycle);
 }
 
 /* ---------------- MIGRATION FROM V1 ---------------- */

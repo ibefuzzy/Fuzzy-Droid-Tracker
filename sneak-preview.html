@@ -178,8 +178,10 @@
      first. Data comes from getSneakPreview() in requirements.js. Same card
      template, default size/position and hotkey-scrolled viewport as the
      Rebirth Requirements overlay. Shown automatically by tracker.html when a
-     cycle hits 105/105 and the player answers "No" to resetting, and by its
-     own (unbound-by-default) hotkey / toolbar button otherwise.
+     cycle hits 105/105 and the player picks "Sneak Preview" in the prompt
+     (that cycle is reset first, so "✓ Have" only reflects what's still
+     logged), and by its own (unbound-by-default) hotkey / toolbar button
+     otherwise.
   --------------------------------------------------------------------------- */
 
   const DOT_COLOR = { B:'var(--r-base)', G:'var(--r-gold)', D:'var(--r-diamond)', R:'var(--r-rainbow2)', K:'var(--r-beskar)', X:'var(--r-galactic)', S:'var(--r-stellar)' };

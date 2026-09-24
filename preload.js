@@ -54,10 +54,14 @@ contextBridge.exposeInMainWorld('overlayAPI', {
 
   // Sneak Preview — next cycle's Mythic droids, at their highest required
   // variety (sneak-preview.html + the toggle button/hotkey in tracker.html;
-  // showSneakPreview is also called automatically when the user answers
-  // "No" to the cycle-complete reset prompt)
+  // showSneakPreview is called when the user picks "Sneak Preview" in the
+  // cycle-complete prompt — it also turns off every other overlay except
+  // the timers)
   toggleSneak: () => ipcRenderer.invoke('sneak:toggle'),
   showSneakPreview: () => ipcRenderer.invoke('sneak:show'),
+  // Cycle-complete prompt (native box, main.js) -> 'next' | 'sneak' | 'none'
+  // ('none' = closed with X/Esc: leave everything as it is)
+  askCycleComplete: () => ipcRenderer.invoke('cycle:askComplete'),
   onSneakVisibility: (cb) => subscribe('sneak:visibility-changed', cb), // cb(boolean)
   setSneakLocked: (locked) => ipcRenderer.invoke('sneak:setLocked', locked),
   resetSneakPosition: () => ipcRenderer.invoke('sneak:resetPosition'),

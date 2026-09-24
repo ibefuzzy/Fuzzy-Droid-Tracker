@@ -369,15 +369,21 @@ Toggle it with **🧬 Rebirth Req** in the toolbar or its hotkey,
 
 A small overlay showing the **Mythic-class droids the *next* cycle will
 ask for**, each at the highest colorway that cycle ever needs from it —
-so if you're not resetting into the next cycle right away, you know what
-to start hunting for or holding onto before you flip over. Cycle 5's
+so you know what to start hunting for before you flip over. Cycle 5's
 "next" wraps back around to Cycle 1.
 
-It **opens automatically** the moment you answer **No** to the "reset
-progress and move to the next cycle?" prompt once a cycle hits 105/105 —
-that's the exact moment "what's coming up" is most useful. You can also
-open it anytime with **🔮 Sneak Preview** in the toolbar or its hotkey
-(unbound by default — set one in ⚙ Overlay Settings).
+Once a cycle hits 105/105 you get a prompt with two choices — both reset
+that cycle's progress:
+- **Next Cycle** — moves the tracker on to the next cycle, same as before.
+- **Sneak Preview** (v1.7.1) — keeps the tracker on the finished cycle (so
+  the preview is still the one coming up next), turns off every other
+  overlay **except the timers**, and opens the Sneak Preview. Switch the
+  tracker to the new cycle whenever you start it.
+
+Closing the prompt with its **X** (or Esc) leaves everything as it is.
+You can also open the Sneak Preview anytime with **🔮 Sneak Preview** in
+the toolbar or its hotkey (unbound by default — set one in ⚙ Overlay
+Settings).
 
 Same card look, default size and screen position as Safe to Retire /
 Rebirth Requirements (drag-to-reposition + Lock, hotkey-scrolled if the
