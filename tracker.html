@@ -1273,11 +1273,20 @@ function renderByAlpha(){
   listEl.innerHTML = keys.map(nk=>droidRowHtml(nk)).join('');
 }
 
-function droidCellHtml(nk, occEntry){
+function droidCellHtml(nk, occEntry, lastNeeded){
   const entry = DROID_INDEX[nk];
   const owned = ownedRank[nk];
   const covered = owned !== undefined && occEntry.rank <= owned;
-  const sellable = !entry.entries.some(e => e.cycle > occEntry.cycle || (e.cycle === occEntry.cycle && e.level > occEntry.level));
+  // Fixed 2026-09-24: SELL used to compare cycle NUMBERS across the whole
+  // 5-cycle table (entry.entries.some(cycle > occEntry.cycle, ...)), as if
+  // cycle 5 were the end rather than a label that loops back to cycle 1 —
+  // see cycleLastNeededLevel's comment above for why that under-reported
+  // SELL on 31% of occurrences. This droid is sellable once you're past the
+  // LAST level THIS cycle's own table ever asks for it again, full stop —
+  // cycleLastNeededLevel(occEntry.cycle) is the same per-cycle check the
+  // Safe to Retire overlay already uses (requirements.js), just applied to
+  // this grid's SELL tag too.
+  const sellable = lastNeeded[nk] === occEntry.level;
   const code = RARITY_ORDER[occEntry.rank];
   const cls = 'droid-cell ' + code + (covered ? ' covered' : '');
   const iconKey = occEntry.cycle + '-' + occEntry.level + '-' + occEntry.slot;
@@ -1288,7 +1297,7 @@ function droidCellHtml(nk, occEntry){
   const titleBits = [entry.display + ' — ' + RNAME[code]];
   titleBits.push(covered ? 'already covered' : 'tap to log');
   titleBits.push('right-click to see/change the exact colorway on record');
-  if(sellable) titleBits.push('not needed again at any later level or rebirth');
+  if(sellable) titleBits.push('not needed again this cycle');
   return '<td class="' + cls + '" data-nk="' + nk + '" data-rank="' + occEntry.rank + '" title="' + titleBits.join(' — ') + '">' +
     '<div class="cell-flex">' +
       '<div class="icon-badge icon-badge-sm ' + badgeClass + '">' + imgTag + '</div>' +
@@ -1302,6 +1311,7 @@ function renderByLevel(){
   const covered = cycleCoveredCount(activeCycle);
   getEl('cycleProgress').textContent = covered + ' / 105 covered';
   const q = filterText.trim().toLowerCase();
+  const lastNeeded = cycleLastNeededLevel(activeCycle); // once per render, not once per cell
   let rowsHtml = '';
   let anyVisible = false;
   for(let l=1;l<=35;l++){
@@ -1312,7 +1322,7 @@ function renderByLevel(){
     anyVisible = true;
     const cellsHtml = row.map((d,i)=>{
       const occEntry = { cycle:activeCycle, level:l, slot:i, code:d[0], rank:rankOf(d[0]) };
-      return droidCellHtml(nks[i], occEntry);
+      return droidCellHtml(nks[i], occEntry, lastNeeded);
     }).join('');
     rowsHtml += '<tr><td class="lv-num" data-cycle="' + activeCycle + '" data-level="' + l + '" title="Mark all 3 as obtained">' + l + '</td>' + cellsHtml + '</tr>';
   }
@@ -1399,6 +1409,41 @@ function cycleCeilings(cycle){
     });
   }
   return ceilings;
+}
+
+/* For one cycle, the LAST (highest-numbered) level that still requires a
+   given droid, at ANY rarity. Deliberately NOT the same thing as
+   cycleCeilings' level: cycleCeilings records the FIRST level a droid hits
+   its ceiling/max rarity, which can be several levels before its true final
+   appearance if the same max rarity (or a lower one) is asked for again
+   later. Verified against the real CYCLES data this happens 13 times across
+   the 5 cycles — e.g. cycle 1's Proto Roller first hits Galactic at level 28
+   but is asked for again at Galactic at level 31, so a level-28 SELL tag
+   would be 3 rebirths too early. Was previously only defined in
+   requirements.js for the Safe to Retire overlay's own per-cycle safety
+   check — added here 2026-09-24 so droidCellHtml's SELL tag below (the "By
+   Rebirth Level" grid) uses the exact same, already-correct definition
+   instead of its own cross-cycle one. See that fix's note on
+   droidCellHtml for why the old one under-reported SELL by 162/525
+   occurrences (31%): it compared cycle NUMBERS (1-5) as if cycle 5 were an
+   absolute end rather than a label that wraps back to cycle 1 forever, so a
+   droid appearing in a later-numbered cycle almost never showed SELL in an
+   earlier one, even on its own true last need within that cycle. Since
+   completing a cycle wipes tracked ownership for every droid in it
+   (clearCycleMarks) regardless of what a LATER cycle table asks for, the
+   only question that matters for "can I sell this now" is whether this
+   cycle's own table will ask for it again — cross-cycle comparisons were
+   never meaningful here. */
+function cycleLastNeededLevel(cycle){
+  const lastLevel = {}; // nk -> highest level number requiring this droid, any rarity
+  for(let l=1;l<=35;l++){
+    const row = CYCLES[cycle][l-1];
+    row.forEach(d=>{
+      const nk = normKey(canonicalName(d[1]));
+      lastLevel[nk] = l; // levels visited in increasing order, so the last write is the true max
+    });
+  }
+  return lastLevel;
 }
 
 function rebirthCellHtml(nk, info){
