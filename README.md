@@ -365,13 +365,35 @@ apart, or just toggle whichever one you're not using off.
 Toggle it with **🧬 Rebirth Req** in the toolbar or its hotkey,
 **Ctrl+Shift+5** by default.
 
+## 🔮 Sneak Preview (v1.7.0)
+
+A small overlay showing the **Mythic-class droids the *next* cycle will
+ask for**, each at the highest colorway that cycle ever needs from it —
+so if you're not resetting into the next cycle right away, you know what
+to start hunting for or holding onto before you flip over. Cycle 5's
+"next" wraps back around to Cycle 1.
+
+It **opens automatically** the moment you answer **No** to the "reset
+progress and move to the next cycle?" prompt once a cycle hits 105/105 —
+that's the exact moment "what's coming up" is most useful. You can also
+open it anytime with **🔮 Sneak Preview** in the toolbar or its hotkey
+(unbound by default — set one in ⚙ Overlay Settings).
+
+Same card look, default size and screen position as Safe to Retire /
+Rebirth Requirements (drag-to-reposition + Lock, hotkey-scrolled if the
+list runs long — **Scroll Sneak Preview Up / Down**, also unbound by
+default). Each card shows the droid's icon, name, and either **"Needs
+&lt;colorway&gt;"** or, in green, **"✓ Have &lt;colorway&gt;"** if what
+you've already logged for that droid (from anywhere) already covers what
+next cycle will need — nothing left to chase for that one.
+
 ## 🚫 Hide All Overlays (one-way — never toggles back on)
 
 Every other hotkey in this app toggles its own overlay on and off. This one
 is the deliberate exception: **Ctrl+Shift+1** by default, and it only ever
 turns things **off** — the main HUD, the timers banner, the Declutter list,
-the Rebirth Requirements overlay, and the hotkey reference card below, all
-at once. Pressing it again does nothing; each overlay only comes back when
+the Rebirth Requirements overlay, the Sneak Preview overlay, and the hotkey
+reference card below, all at once. Pressing it again does nothing; each overlay only comes back when
 you show it again yourself, individually, the same way you always would
 (its own hotkey or toolbar button).
 
@@ -408,12 +430,14 @@ changeable from **⚙ Overlay Settings**:
 | Toggle Declutter List | Show/hide the ♻ safe-to-retire droid list | `Ctrl+Shift+4` |
 | Toggle Rebirth Requirements | Show/hide the 🧬 still-needed overlay | `Ctrl+Shift+5` |
 | Trigger Read Rebirth Screen | Fires the 📸 Read Rebirth Screen button | `Ctrl+Shift+6` |
-| Scroll Safe to Retire Up / Down | Pages the Safe to Retire list one screen at a time | *(unbound — set in ⚙ Overlay Settings)* |
+| Toggle Sneak Preview | Show/hide the 🔮 next-cycle Mythic overlay | *(unbound — set in ⚙ Overlay Settings)* |
+| Scroll Safe to Retire Up / Down | Pages the Safe to Retire list one screen at a time | *(unbound)* |
 | Scroll Rebirth Requirements Up / Down | Same, for the Rebirth Requirements overlay | *(unbound)* |
+| Scroll Sneak Preview Up / Down | Same, for the Sneak Preview overlay | *(unbound)* |
 | Safe to Retire: Toggle All Tiers | Shows all five rarity tiers if any is hidden, otherwise hides all | *(unbound)* |
 | Safe to Retire: Toggle Default / Rare / Epic / Legendary / Mythic | Show or hide that one tier in the Safe to Retire list | *(unbound, one each)* |
 
-The ten unbound hotkeys above ship with no key combo on purpose (see the convention note in `main.js`): they only appear on the on-screen hotkey list once you've set them.
+The thirteen unbound hotkeys above ship with no key combo on purpose (see the convention note in `main.js`): they only appear on the on-screen hotkey list once you've set them.
 
 The read-button hotkey doesn't do anything new under the hood — pressing it
 just clicks the real toolbar button for you, so the exact same
@@ -508,9 +532,9 @@ and testing everything above:
 
 ## File map
 
-- `main.js` — Electron main process: all six windows (tracker, HUD,
-  timers, Declutter list, Rebirth Requirements overlay, hotkey list), the
-  shared JSON store, the seventeen global hotkeys (registered together at
+- `main.js` — Electron main process: all seven windows (tracker, HUD,
+  timers, Declutter list, Rebirth Requirements overlay, Sneak Preview,
+  hotkey list), the shared JSON store, the twenty global hotkeys (registered together at
   launch via `registerAllHotkeys`, with any that fail to bind reported to
   the tracker window as a toast via `reportHotkeyRegistrationFailures`),
   settings (including the four-step `migrateHotkeyLayout()` pass that
@@ -537,6 +561,9 @@ and testing everything above:
   overlay (see its section above); reuses `cycleCeilings()` from
   `requirements.js`, so it can never disagree with the tracker's own 🧬
   panel for the same cycle.
+- `sneak-preview.html` — the 🔮 Sneak Preview overlay (see its section
+  above); reuses `getSneakPreview()` from `requirements.js` and the same
+  card/scroll-viewport pattern as Rebirth Requirements / Safe to Retire.
 - `droid-data.js` — CYCLES + rarity data, shared verbatim by both windows.
   Also holds `DROID_RARITY_CLASS` + `RARITY_CLASS_ORDER` (the separate,
   community-sourced Default/Rare/Epic/Legendary/Mythic tier map the Safe to
@@ -549,10 +576,12 @@ and testing everything above:
   final appearance level in a cycle — deliberately separate from
   `cycleCeilings`, which only records the *first* level a droid hits its
   ceiling colorway and is the wrong field for a "safe to retire" decision;
-  see the Declutter list section above) and `getDeclutterList` (the list's
+  see the Declutter list section above), `getDeclutterList` (the list's
   full filter logic, so it can be verified once against the real data
-  instead of duplicated in declutter.html). Mirror any change here if you
-  edit the equivalent logic in tracker.html.
+  instead of duplicated in declutter.html), and `getSneakPreview` (next
+  cycle's Mythic-only ceiling requirements, 5→1 wrap — the Sneak Preview
+  overlay's data). Mirror any change here if you edit the equivalent logic
+  in tracker.html.
 - `rebirth-level-detect.js` — continuous badge-watching OCR: its own
   screen-capture call (independent of Live Detect), calibration, sampling,
   debounce, and the manual stepper.

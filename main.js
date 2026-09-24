@@ -104,6 +104,15 @@ const DEFAULT_SETTINGS = {
   // Requirements overlay's own scroll viewport.
   rebirthReqScrollUpHotkey: '',
   rebirthReqScrollDownHotkey: '',
+  // Sneak Preview overlay (v1.6.1): next cycle's Mythic requirements. Hidden
+  // by default — it pops up on its own when a cycle completes and the player
+  // declines the reset; the hotkey/toolbar button toggle it otherwise.
+  sneakHotkey: '',
+  sneakScrollUpHotkey: '',
+  sneakScrollDownHotkey: '',
+  sneakVisible: false,
+  sneakLocked: true,
+  sneakPosition: null,
   hasSeenIntroGuide: false, // first-launch walkthrough (guide.js) — set true once dismissed or finished; an existing settings file just merges this in as false via loadJson(), so upgraders see it once too
   hotkeyLayoutVersion: 0   // bumped by the migrations below; never hand-edit
 };
@@ -271,6 +280,7 @@ let pickerWindow = null;
 let timersWindow = null;
 let declutterWindow = null;
 let rebirthReqWindow = null;
+let sneakWindow = null;
 let hotkeyListWindow = null;
 let hotkeyListVisible = true; // runtime-only — always shown fresh each launch, not persisted
 let storeData = {};
@@ -639,6 +649,52 @@ function createRebirthReqWindow(){
 }
 
 /* ---------------- declutter list ---------------- */
+/* Sneak Preview — same bounds as Safe to Retire / Rebirth Requirements. */
+function createSneakWindow(){
+  const bounds = settings.sneakPosition ? clampToDisplay({ ...computeDefaultDeclutterBounds(), ...settings.sneakPosition }) : computeDefaultDeclutterBounds();
+
+  sneakWindow = new BrowserWindow({
+    ...bounds,
+    frame: false,
+    transparent: true,
+    backgroundColor: '#00000000',
+    hasShadow: false,
+    resizable: false,
+    movable: true,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    focusable: false,
+    show: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false
+    }
+  });
+
+  sneakWindow.setAlwaysOnTop(true, 'screen-saver');
+  sneakWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  // See the matching comment in createOverlayWindow(): match the persisted
+  // lock state instead of always defaulting to locked/click-through.
+  if(settings.sneakLocked){
+    sneakWindow.setIgnoreMouseEvents(true, { forward: true });
+  } else {
+    sneakWindow.setFocusable(true);
+  }
+  sneakWindow.loadFile(path.join(__dirname, 'sneak-preview.html'));
+
+  sneakWindow.once('ready-to-show', ()=>{
+    if(settings.sneakVisible) sneakWindow.showInactive();
+  });
+
+  // See the matching comment in createOverlayWindow(): unlocking makes this
+  // focusable, so an OS-level close (Alt+F4) must be treated as "hide", not
+  // "destroy" — otherwise it's gone for the rest of the session with no way
+  // back except restarting the app.
+  sneakWindow.on('close', (e)=>{ if(isQuitting) return; e.preventDefault(); setSneakVisible(false); });
+  sneakWindow.on('closed', ()=>{ sneakWindow = null; });
+}
+
 function toggleDeclutterVisible(){
   setDeclutterVisible(!settings.declutterVisible);
 }
@@ -816,16 +872,27 @@ function pickScreenSource(sources){
    overlay window that can be on screen: the main Rebirth Requirements HUD,
    the timers banner, the declutter list, the standalone Rebirth
    Requirements overlay, and the hotkey reference card. */
+function toggleSneakVisible(){ setSneakVisible(!settings.sneakVisible); }
+function setSneakVisible(visible){
+  settings.sneakVisible = !!visible;
+  persistSettingsNow();
+  if(!sneakWindow) return;
+  if(settings.sneakVisible) sneakWindow.showInactive();
+  else sneakWindow.hide();
+  broadcast('sneak:visibility-changed', settings.sneakVisible);
+}
+
 function hideAllOverlays(){
   setOverlayVisible(false);
   setTimersVisible(false);
   setDeclutterVisible(false);
   setRebirthReqVisible(false);
+  setSneakVisible(false);
   hideHotkeyList();
 }
 
 /* ---------------- global hotkeys ----------------
-   Seventeen independent named hotkeys share this same register/unregister
+   Twenty independent named hotkeys share this same register/unregister
    logic: "hideAll" (turns every overlay off — never back on, see
    hideAllOverlays() above, default Ctrl+Shift+1), "hotkeyList" (toggles
    the on-screen hotkey reference list, default Ctrl+Shift+2), "overlay"
@@ -870,6 +937,9 @@ const HOTKEY_HANDLERS = {
   declutterScrollDown: () => broadcast('hotkey:triggered', 'declutterScrollDown'),
   rebirthReqScrollUp: () => broadcast('hotkey:triggered', 'rebirthReqScrollUp'),
   rebirthReqScrollDown: () => broadcast('hotkey:triggered', 'rebirthReqScrollDown'),
+  sneak: () => toggleSneakVisible(),
+  sneakScrollUp: () => broadcast('hotkey:triggered', 'sneakScrollUp'),
+  sneakScrollDown: () => broadcast('hotkey:triggered', 'sneakScrollDown'),
   // Safe to Retire tier filters live in settings (main process owns them),
   // so these flip the flag here and let the normal settings:changed
   // broadcast re-render declutter.html — no new IPC channel needed.
@@ -931,7 +1001,10 @@ const HOTKEY_LABELS = {
   declutterTierRare: 'Safe to Retire: Toggle Rare',
   declutterTierEpic: 'Safe to Retire: Toggle Epic',
   declutterTierLegendary: 'Safe to Retire: Toggle Legendary',
-  declutterTierMythic: 'Safe to Retire: Toggle Mythic'
+  declutterTierMythic: 'Safe to Retire: Toggle Mythic',
+  sneak: 'Toggle Sneak Preview',
+  sneakScrollUp: 'Scroll Sneak Preview Up',
+  sneakScrollDown: 'Scroll Sneak Preview Down'
 };
 const HOTKEY_SETTINGS_KEY = {
   hideAll: 'hideAllHotkey',
@@ -950,7 +1023,10 @@ const HOTKEY_SETTINGS_KEY = {
   declutterTierRare: 'declutterTierRareHotkey',
   declutterTierEpic: 'declutterTierEpicHotkey',
   declutterTierLegendary: 'declutterTierLegendaryHotkey',
-  declutterTierMythic: 'declutterTierMythicHotkey'
+  declutterTierMythic: 'declutterTierMythicHotkey',
+  sneak: 'sneakHotkey',
+  sneakScrollUp: 'sneakScrollUpHotkey',
+  sneakScrollDown: 'sneakScrollDownHotkey'
 };
 
 /* Registers all seventeen global hotkeys from current settings and returns each
@@ -1089,6 +1165,9 @@ function wireIpc(){
     if(rebirthReqWindow && (partial.rebirthReqPosition)){
       rebirthReqWindow.setBounds(clampToDisplay({ ...rebirthReqWindow.getBounds(), ...partial.rebirthReqPosition }));
     }
+    if(sneakWindow && (partial.sneakPosition)){
+      sneakWindow.setBounds(clampToDisplay({ ...sneakWindow.getBounds(), ...partial.sneakPosition }));
+    }
     broadcast('settings:changed', { ...settings });
     return { settings: { ...settings }, hotkeyResult };
   });
@@ -1109,6 +1188,11 @@ function wireIpc(){
   ipcMain.handle('declutter:toggle', ()=>{ toggleDeclutterVisible(); return settings.declutterVisible; });
 
   ipcMain.handle('rebirthReq:toggle', ()=>{ toggleRebirthReqVisible(); return settings.rebirthReqVisible; });
+
+  ipcMain.handle('sneak:toggle', ()=>{ toggleSneakVisible(); return settings.sneakVisible; });
+  // Force-show (not toggle): tracker.html calls this when a cycle completes
+  // and the player answers "No" to the reset prompt.
+  ipcMain.handle('sneak:show', ()=>{ setSneakVisible(true); return settings.sneakVisible; });
 
   ipcMain.handle('overlay:setLocked', (evt, locked)=>{
     settings.locked = !!locked;
@@ -1169,6 +1253,14 @@ function wireIpc(){
   ipcMain.handle('rebirthReq:resetPosition', ()=>{
     settings.rebirthReqPosition = null;
     if(rebirthReqWindow) rebirthReqWindow.setBounds(computeDefaultDeclutterBounds());
+    persistSettingsNow();
+    broadcast('settings:changed', { ...settings });
+    return { ...settings };
+  });
+
+  ipcMain.handle('sneak:resetPosition', ()=>{
+    settings.sneakPosition = null;
+    if(sneakWindow) sneakWindow.setBounds(computeDefaultDeclutterBounds());
     persistSettingsNow();
     broadcast('settings:changed', { ...settings });
     return { ...settings };
@@ -1239,6 +1331,28 @@ function wireIpc(){
     broadcast('settings:changed', { ...settings });
     return { ...settings };
   });
+
+  ipcMain.handle('sneak:setLocked', (evt, locked)=>{
+    settings.sneakLocked = !!locked;
+    if(sneakWindow){
+      if(settings.sneakLocked){
+        const b = sneakWindow.getBounds();
+        settings.sneakPosition = { x: b.x, y: b.y };
+        sneakWindow.setFocusable(false);
+        sneakWindow.setIgnoreMouseEvents(true, { forward: true });
+        // See the matching comment in overlay:setLocked.
+        if(!settings.sneakVisible) sneakWindow.hide();
+      } else {
+        sneakWindow.setFocusable(true);
+        sneakWindow.setIgnoreMouseEvents(false);
+        sneakWindow.showInactive();
+        sneakWindow.focus();
+      }
+    }
+    persistSettingsNow();
+    broadcast('settings:changed', { ...settings });
+    return { ...settings };
+  });
 }
 
 /* ---------------- one-time userData migration (2026-09-22 rename) ----------------
@@ -1293,6 +1407,7 @@ app.whenReady().then(()=>{
   createTimersWindow();
   createDeclutterWindow();
   createRebirthReqWindow();
+  createSneakWindow();
   createHotkeyListWindow();
   const hotkeyRegResults = registerAllHotkeys();
   // Wait for the tracker window's own scripts (overlay-controls.js's
@@ -1312,6 +1427,7 @@ app.whenReady().then(()=>{
       createTimersWindow();
       createDeclutterWindow();
       createRebirthReqWindow();
+      createSneakWindow();
       createHotkeyListWindow();
     }
   });

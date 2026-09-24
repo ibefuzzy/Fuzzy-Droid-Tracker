@@ -52,6 +52,16 @@ contextBridge.exposeInMainWorld('overlayAPI', {
   setRebirthReqLocked: (locked) => ipcRenderer.invoke('rebirthReq:setLocked', locked),
   resetRebirthReqPosition: () => ipcRenderer.invoke('rebirthReq:resetPosition'),
 
+  // Sneak Preview — next cycle's Mythic droids, at their highest required
+  // variety (sneak-preview.html + the toggle button/hotkey in tracker.html;
+  // showSneakPreview is also called automatically when the user answers
+  // "No" to the cycle-complete reset prompt)
+  toggleSneak: () => ipcRenderer.invoke('sneak:toggle'),
+  showSneakPreview: () => ipcRenderer.invoke('sneak:show'),
+  onSneakVisibility: (cb) => subscribe('sneak:visibility-changed', cb), // cb(boolean)
+  setSneakLocked: (locked) => ipcRenderer.invoke('sneak:setLocked', locked),
+  resetSneakPosition: () => ipcRenderer.invoke('sneak:resetPosition'),
+
   // hotkey-triggered button actions: the Ctrl+Shift+5 hotkey fires the same
   // click listener as manually clicking 📸 Read Rebirth Screen — this just
   // tells the renderer which one to click

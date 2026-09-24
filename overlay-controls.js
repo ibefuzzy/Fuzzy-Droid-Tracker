@@ -32,6 +32,9 @@
   const rebirthReqRepositionBtn = document.getElementById('rebirthReqRepositionBtn');
   const rebirthReqResetPosBtn = document.getElementById('rebirthReqResetPosBtn');
   const rebirthReqToggleBtn = document.getElementById('rebirthReqToggleBtn');
+  const sneakRepositionBtn = document.getElementById('sneakRepositionBtn');
+  const sneakResetPosBtn = document.getElementById('sneakResetPosBtn');
+  const sneakToggleBtn = document.getElementById('sneakToggleBtn');
 
   /* Every "press to rebind" hotkey button: [button id, settings key, label].
      One table instead of seventeen hand-copied const/label/wire lines
@@ -56,7 +59,10 @@
     ['declutterTierMythicHotkeyBtn', 'declutterTierMythicHotkey', 'Safe to Retire: Toggle Mythic'],
     ['rebirthReqHotkeyBtn', 'rebirthReqOverlayHotkey', 'Toggle Rebirth Requirements'],
     ['rebirthReqScrollUpHotkeyBtn', 'rebirthReqScrollUpHotkey', 'Scroll Rebirth Requirements Up'],
-    ['rebirthReqScrollDownHotkeyBtn', 'rebirthReqScrollDownHotkey', 'Scroll Rebirth Requirements Down']
+    ['rebirthReqScrollDownHotkeyBtn', 'rebirthReqScrollDownHotkey', 'Scroll Rebirth Requirements Down'],
+    ['sneakHotkeyBtn', 'sneakHotkey', 'Toggle Sneak Preview'],
+    ['sneakScrollUpHotkeyBtn', 'sneakScrollUpHotkey', 'Scroll Sneak Preview Up'],
+    ['sneakScrollDownHotkeyBtn', 'sneakScrollDownHotkey', 'Scroll Sneak Preview Down']
   ].map(([id, settingsKey, label]) => ({ btn: document.getElementById(id), settingsKey, label }));
 
   /* Safe to Retire tier filter buttons (⚙ Overlay Settings → Display &
@@ -73,6 +79,7 @@
   if(hotkeyListToggleBtn) hotkeyListToggleBtn.hidden = false;
   if(declutterToggleBtn) declutterToggleBtn.hidden = false;
   if(rebirthReqToggleBtn) rebirthReqToggleBtn.hidden = false;
+  if(sneakToggleBtn) sneakToggleBtn.hidden = false;
 
   let opacityDebounce = null;
   const capturing = {}; // settingsKey -> bool, so two hotkey rows never step on each other
@@ -106,6 +113,12 @@
     rebirthReqToggleBtn.classList.toggle('on', visible);
   }
 
+  function setSneakToggleLabel(visible){
+    if(!sneakToggleBtn) return;
+    sneakToggleBtn.textContent = visible ? '🔮 Sneak Preview: On' : '🔮 Sneak Preview: Off';
+    sneakToggleBtn.classList.toggle('on', visible);
+  }
+
   function applySettingsToUI(settings){
     HOTKEY_BUTTONS.forEach(({ btn, settingsKey })=>{
       if(btn && !capturing[settingsKey]) btn.textContent = settings[settingsKey] || '(none set)';
@@ -117,6 +130,7 @@
     setTimersToggleLabel(settings.timersVisible);
     setDeclutterToggleLabel(settings.declutterVisible);
     setRebirthReqToggleLabel(settings.rebirthReqVisible);
+    setSneakToggleLabel(settings.sneakVisible);
     repositionBtn.textContent = settings.locked ? '🎯 Drag into place' : '🔓 Unlocked — drag the HUD, then use its Lock button';
     repositionBtn.classList.toggle('on', !settings.locked);
     if(timersRepositionBtn){
@@ -130,6 +144,10 @@
     if(rebirthReqRepositionBtn){
       rebirthReqRepositionBtn.textContent = settings.rebirthReqLocked ? '🎯 Drag into place' : '🔓 Unlocked — drag the overlay, then use its Lock button';
       rebirthReqRepositionBtn.classList.toggle('on', !settings.rebirthReqLocked);
+    }
+    if(sneakRepositionBtn){
+      sneakRepositionBtn.textContent = settings.sneakLocked ? '🎯 Drag into place' : '🔓 Unlocked — drag the overlay, then use its Lock button';
+      sneakRepositionBtn.classList.toggle('on', !settings.sneakLocked);
     }
   }
 
@@ -414,6 +432,35 @@
     });
   }
 
+  if(sneakToggleBtn){
+    sneakToggleBtn.addEventListener('click', async ()=>{
+      const visible = await window.overlayAPI.toggleSneak();
+      setSneakToggleLabel(visible);
+    });
+  }
+
+  if(sneakRepositionBtn){
+    sneakRepositionBtn.addEventListener('click', async ()=>{
+      const s = await window.overlayAPI.getSettings();
+      if(s.sneakLocked){
+        await window.overlayAPI.setSneakLocked(false);
+        showToast('Sneak Preview overlay unlocked — drag it into place, then click its own Lock button');
+      } else {
+        await window.overlayAPI.setSneakLocked(true);
+        showToast('Sneak Preview overlay position locked');
+      }
+    });
+  }
+
+  if(sneakResetPosBtn){
+    sneakResetPosBtn.addEventListener('click', async ()=>{
+      if(!window.overlayAPI.resetSneakPosition) return;
+      const s = await window.overlayAPI.resetSneakPosition();
+      applySettingsToUI(s);
+      showToast('Sneak Preview overlay position reset to default');
+    });
+  }
+
   /* Ctrl+Shift+6 (Read Rebirth Screen) fires from a global OS-level hotkey
      in the main process, which can't call renderer functions directly — it
      broadcasts that it fired, and this just clicks the real button, so the
@@ -459,6 +506,7 @@
   if(window.overlayAPI.onHotkeyListVisibility) window.overlayAPI.onHotkeyListVisibility(setHotkeyListToggleLabel);
   if(window.overlayAPI.onDeclutterVisibility) window.overlayAPI.onDeclutterVisibility(setDeclutterToggleLabel);
   if(window.overlayAPI.onRebirthReqVisibility) window.overlayAPI.onRebirthReqVisibility(setRebirthReqToggleLabel);
+  if(window.overlayAPI.onSneakVisibility) window.overlayAPI.onSneakVisibility(setSneakToggleLabel);
 
   (async ()=>{
     const s = await window.overlayAPI.getSettings();

@@ -336,7 +336,7 @@
   // and — like a manual correction already does in setLevel() above —
   // clears any OCR confirmation streak that was building toward a value
   // this external change has now made stale.
-  window.overlayAPI.onStoreChanged(({ key, value })=>{
+  if(window.overlayAPI) window.overlayAPI.onStoreChanged(({ key, value })=>{ // absent when tracker.html is opened in a plain browser
     if(key !== 'rebirth-currentLevel') return;
     currentLevel = value || 0;
     const disp = getEl('rlLevelDisplay');

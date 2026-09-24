@@ -230,3 +230,33 @@ function getDeclutterList(cycle, currentLevel, ownedRank){
   });
   return out;
 }
+
+/* ---------------- Sneak Preview (v1.6.1) ----------------
+   What the NEXT cycle will ask for, restricted to Mythic-class droids, each
+   at the highest variety that cycle ever requires of it — so a player who
+   just finished a cycle (and said "No" to resetting) can see what to hang
+   on to / start hunting before flipping over. Returns
+   [{nk, display, rank, code, ownedCode, iconKey}] sorted highest required
+   variety first, then name. `cycle` is the CURRENT cycle; 5 wraps to 1. */
+function nextCycleOf(cycle){ return cycle >= 5 ? 1 : cycle + 1; }
+function getSneakPreview(cycle, ownedRank){
+  const next = nextCycleOf(cycle);
+  const ceilings = cycleCeilings(next);
+  const out = [];
+  Object.keys(ceilings).forEach(nk=>{
+    if(getDroidRarityClass(nk) !== 'Mythic') return;
+    const info = ceilings[nk];
+    const entry = DROID_INDEX[nk];
+    const owned = ownedRank ? ownedRank[nk] : undefined;
+    out.push({
+      nk,
+      display: entry ? entry.display : nk,
+      rank: info.rank,
+      code: RARITY_ORDER[info.rank],
+      ownedCode: (owned === undefined || owned === null) ? null : RARITY_ORDER[owned],
+      iconKey: info.cycle + '-' + info.level + '-' + info.slot
+    });
+  });
+  out.sort((a,b)=> (b.rank - a.rank) || a.display.localeCompare(b.display));
+  return { nextCycle: next, items: out };
+}

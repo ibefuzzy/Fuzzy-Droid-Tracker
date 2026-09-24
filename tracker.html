@@ -520,6 +520,7 @@
     <button class="btn" id="hotkeyListToggleBtn" hidden title="Show or hide the on-screen hotkey reference list (toggle with the hotkey too, shown automatically on launch)">⌨ Hotkeys: On</button>
     <button class="btn" id="declutterToggleBtn" hidden title="Show or hide the on-screen list of Legendary/Mythic droids you can safely retire this cycle (toggle with the hotkey too)">♻ Declutter: On</button>
     <button class="btn" id="rebirthReqToggleBtn" hidden title="Show or hide the standalone Rebirth Requirements overlay — every droid this cycle needs, in-game (toggle with the hotkey too)">🧬 Rebirth Req: On</button>
+    <button class="btn" id="sneakToggleBtn" hidden title="Show or hide the Sneak Preview — next cycle's Mythic droids">🔮 Sneak Preview: Off</button>
     <button class="btn" id="exportBtn">Export</button>
     <button class="btn" id="importBtn">Import</button>
     <button class="btn" id="resetBtn">Reset all</button>
@@ -611,6 +612,21 @@
       <span class="overlay-panel-hint">Pages the Rebirth Requirements overlay down one screen.</span>
     </div>
     <div class="overlay-panel-row">
+      <span class="overlay-panel-label">Toggle Sneak Preview</span>
+      <button class="btn" id="sneakHotkeyBtn">(none set)</button>
+      <span class="overlay-panel-hint">Shows/hides the Sneak Preview overlay — the next cycle's Mythic droids, at their highest required variety.</span>
+    </div>
+    <div class="overlay-panel-row">
+      <span class="overlay-panel-label">Scroll Sneak Preview Up</span>
+      <button class="btn" id="sneakScrollUpHotkeyBtn">(none set)</button>
+      <span class="overlay-panel-hint">Pages the Sneak Preview overlay up one screen.</span>
+    </div>
+    <div class="overlay-panel-row">
+      <span class="overlay-panel-label">Scroll Sneak Preview Down</span>
+      <button class="btn" id="sneakScrollDownHotkeyBtn">(none set)</button>
+      <span class="overlay-panel-hint">Pages the Sneak Preview overlay down one screen.</span>
+    </div>
+    <div class="overlay-panel-row">
       <span class="overlay-panel-label">Trigger Read Rebirth Screen</span>
       <button class="btn" id="rebirthScreenHotkeyBtn">Control+Shift+6</button>
       <span class="overlay-panel-hint">Fires the 📸 Read Rebirth Screen button without alt-tabbing out of the game.</span>
@@ -654,6 +670,12 @@
       <button class="btn" id="rebirthReqRepositionBtn">🎯 Drag into place</button>
       <button class="btn" id="rebirthReqResetPosBtn" title="Snap the Rebirth Requirements overlay back to its default position">↺ Reset</button>
       <span class="overlay-panel-hint">Defaults to the exact same spot as the Declutter List, so drag it if you want the two apart before showing them together.</span>
+    </div>
+    <div class="overlay-panel-row">
+      <span class="overlay-panel-label">Reposition Sneak Preview</span>
+      <button class="btn" id="sneakRepositionBtn">🎯 Drag into place</button>
+      <button class="btn" id="sneakResetPosBtn" title="Snap the Sneak Preview overlay back to its default position">↺ Reset</button>
+      <span class="overlay-panel-hint">Defaults to the exact same spot as the Declutter List / Rebirth Requirements, so drag it if you want them apart before showing them together.</span>
     </div>
     <div class="overlay-panel-row">
       <span class="overlay-panel-label">Sync mission timer</span>
@@ -1048,6 +1070,9 @@ function maybeOfferCycleReset(cycle, coveredBefore){
   const wantsReset = confirm('Would you like to reset progress for this cycle and open the next?');
   if(wantsReset) resetCycleAndAdvance(cycle);
   // "No" -> leave everything exactly as it is: fully marked, same cycle, nothing cleared.
+  // v1.7.0: and pop up the Sneak Preview overlay (next cycle's Mythic droids)
+  // so you can start working toward them. Desktop app only.
+  else if(window.overlayAPI && window.overlayAPI.showSneakPreview) window.overlayAPI.showSneakPreview();
 }
 
 /* ---------------- MIGRATION FROM V1 ---------------- */
@@ -1578,9 +1603,27 @@ document.getElementById('importFile').addEventListener('change', (e)=>{
   reader.onload = async () => {
     try{
       const parsed = JSON.parse(reader.result);
-      ownedRank = parsed.ownedRank || {};
-      nameMerges = parsed.nameMerges || {};
-      displayOverrides = parsed.displayOverrides || {};
+      // Validate before touching anything: a wrong/partial JSON file used to
+      // replace all progress with {} silently (parsed.ownedRank || {}).
+      const isObj = v => v && typeof v === 'object' && !Array.isArray(v);
+      if(!isObj(parsed) || !isObj(parsed.ownedRank) ||
+         Object.values(parsed.ownedRank).some(r => !Number.isInteger(r) || r < 0 || r >= RARITY_ORDER.length)){
+        alert("That doesn't look like a Droid Tracker export — nothing was changed.");
+        return;
+      }
+      const nNew = Object.keys(parsed.ownedRank).length, nOld = Object.keys(ownedRank).length;
+      if(!confirm('Replace your current progress (' + nOld + ' droids logged) with this file (' + nNew + ' droids)?\n\nA backup of your current progress will be downloaded first — import it to undo.')) return;
+      // Safety copy of what we're about to overwrite, as a normal export
+      // file the user can re-import to undo.
+      if(nOld){
+        const bak = new Blob([JSON.stringify({ v:2, ownedRank, nameMerges, displayOverrides }, null, 2)], {type:'application/json'});
+        const u = URL.createObjectURL(bak); const a = document.createElement('a');
+        a.href = u; a.download = 'droid-tycoon-progress-BACKUP-' + new Date().toISOString().slice(0,19).replace(/[:T]/g,'-') + '.json'; a.click();
+        setTimeout(()=>URL.revokeObjectURL(u), 1000);
+      }
+      ownedRank = parsed.ownedRank;
+      nameMerges = isObj(parsed.nameMerges) ? parsed.nameMerges : {};
+      displayOverrides = isObj(parsed.displayOverrides) ? parsed.displayOverrides : {};
       await storeSet('rebirth-ownedRank-v2', ownedRank);
       await storeSet('rebirth-nameMerges', nameMerges);
       await storeSet('rebirth-displayOverrides', displayOverrides);
