@@ -49,8 +49,12 @@
     ['rebirthScreenHotkeyBtn', 'rebirthScreenHotkey', 'Trigger Read Rebirth Screen'],
     ['hotkeyListHotkeyBtn', 'hotkeyListHotkey', 'Toggle Hotkey List'],
     ['declutterHotkeyBtn', 'declutterHotkey', 'Toggle Declutter List'],
-    ['declutterScrollUpHotkeyBtn', 'declutterScrollUpHotkey', 'Scroll Safe to Retire Up'],
-    ['declutterScrollDownHotkeyBtn', 'declutterScrollDownHotkey', 'Scroll Safe to Retire Down'],
+    // v1.7.3: these page whichever of Safe to Retire / Rebirth Requirements
+    // is open — one shared hotkey pair, not a separate one per overlay (the
+    // old rebirthReqScrollUp/DownHotkey rows are retired, same fix as the
+    // tier filter below).
+    ['declutterScrollUpHotkeyBtn', 'declutterScrollUpHotkey', 'Scroll List: Up'],
+    ['declutterScrollDownHotkeyBtn', 'declutterScrollDownHotkey', 'Scroll List: Down'],
     ['declutterTierAllHotkeyBtn', 'declutterTierAllHotkey', 'Tier Filter: Toggle All Tiers'],
     ['declutterTierDefaultHotkeyBtn', 'declutterTierDefaultHotkey', 'Tier Filter: Toggle Default'],
     ['declutterTierRareHotkeyBtn', 'declutterTierRareHotkey', 'Tier Filter: Toggle Rare'],
@@ -58,8 +62,6 @@
     ['declutterTierLegendaryHotkeyBtn', 'declutterTierLegendaryHotkey', 'Tier Filter: Toggle Legendary'],
     ['declutterTierMythicHotkeyBtn', 'declutterTierMythicHotkey', 'Tier Filter: Toggle Mythic'],
     ['rebirthReqHotkeyBtn', 'rebirthReqOverlayHotkey', 'Toggle Rebirth Requirements'],
-    ['rebirthReqScrollUpHotkeyBtn', 'rebirthReqScrollUpHotkey', 'Scroll Rebirth Requirements Up'],
-    ['rebirthReqScrollDownHotkeyBtn', 'rebirthReqScrollDownHotkey', 'Scroll Rebirth Requirements Down'],
     ['sneakHotkeyBtn', 'sneakHotkey', 'Toggle Sneak Preview'],
     ['sneakScrollUpHotkeyBtn', 'sneakScrollUpHotkey', 'Scroll Sneak Preview Up'],
     ['sneakScrollDownHotkeyBtn', 'sneakScrollDownHotkey', 'Scroll Sneak Preview Down']

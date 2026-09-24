@@ -263,7 +263,10 @@
 
   /* Scroll viewport — the paging/scrollbar logic lives in overlay-scroll.js
      (shared by both scrollable overlays); this window only supplies its own
-     elements and hotkey names. */
+     elements. v1.7.3: 'declutterScrollUp'/'declutterScrollDown' now also
+     page rebirth-requirements-overlay.html (it listens for the same event
+     name) — one hotkey binding controls whichever overlay is open, not
+     just this one. */
   const viewport = document.getElementById('viewport');
   const scroller = createScrollViewport(viewport, document.getElementById('scrollbar'), document.getElementById('scrollThumb'), '.d-cell');
   const updateScrollbar = scroller.update;

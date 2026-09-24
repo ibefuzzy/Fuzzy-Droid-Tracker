@@ -301,8 +301,15 @@ old layout blew icons up whenever only a few droids were listed. When there
 are more droids than fit, the list scrolls rather than shrinking: a thin
 scrollbar appears on the right showing where you are (it's hidden when
 everything fits). Because a locked overlay is click-through, scrolling is by
-hotkey — **Scroll Safe to Retire Up / Down**, one screenful per press. Both
-ship unbound; set them in ⚙ Overlay Settings.
+hotkey — **Scroll List: Up / Down**, one screenful per press. Both ship
+unbound; set them in ⚙ Overlay Settings.
+
+**Shared with the Rebirth Requirements overlay (v1.7.3).** This is one
+hotkey pair, not two — the same Scroll List: Up/Down keys also page the 🧬
+Rebirth Requirements overlay below, so you don't need a second binding to
+scroll that list too. (Before v1.7.3 it had its own separate, unbound scroll
+hotkeys; those are retired in favor of this shared pair — same fix as the
+v1.7.2 tier filter, and for the same reason.)
 
 Each entry shows the droid's actual in-game icon, its name, and the exact
 colorway you have logged, color-coded the same as everywhere else in this
@@ -358,11 +365,10 @@ any), same drag-to-reposition/Lock behavior. The one real difference is
 volume: right after you switch to a new cycle, before you've logged
 anything, this can show the full roster (43-49 droids depending on the
 cycle). As of v1.6.0 it uses the same small fixed-size cards and hotkey
-scrolling as the Safe to Retire list instead of shrinking everything to fit
-— **Scroll Rebirth Requirements Up / Down**, unbound until you set them in ⚙
-Overlay Settings, with a scrollbar on the right whenever there's more below.
-Once you're partway through a cycle the list is usually short enough that no
-scrolling is needed at all.
+scrolling as the Safe to Retire list instead of shrinking everything to fit,
+with a scrollbar on the right whenever there's more below. Once you're
+partway through a cycle the list is usually short enough that no scrolling
+is needed at all.
 
 Because it defaults to the same spot as the Declutter list, showing both at
 once will overlap — reposition one in **⚙ Overlay Settings** if you want them
@@ -375,6 +381,11 @@ Toggle it with **🧬 Rebirth Req** in the toolbar or its hotkey,
 ♻ Safe to Retire — see that section above. Toggling a tier off (by hotkey or
 in ⚙ Overlay Settings → Tier filter) hides it here too; the same tier-pills
 row appears under the title while any tier is hidden.
+
+**Scroll hotkey (v1.7.3).** This overlay also shares Safe to Retire's
+**Scroll List: Up / Down** hotkeys — see that section above. One binding
+pages whichever of the two you have open; there's no separate Rebirth
+Requirements scroll hotkey to set up any more.
 
 ## 🔮 Sneak Preview (v1.7.0)
 
@@ -448,13 +459,12 @@ changeable from **⚙ Overlay Settings**:
 | Toggle Rebirth Requirements | Show/hide the 🧬 still-needed overlay | `Ctrl+Shift+5` |
 | Trigger Read Rebirth Screen | Fires the 📸 Read Rebirth Screen button | `Ctrl+Shift+6` |
 | Toggle Sneak Preview | Show/hide the 🔮 next-cycle Mythic overlay | *(unbound — set in ⚙ Overlay Settings)* |
-| Scroll Safe to Retire Up / Down | Pages the Safe to Retire list one screen at a time | *(unbound)* |
-| Scroll Rebirth Requirements Up / Down | Same, for the Rebirth Requirements overlay | *(unbound)* |
+| Scroll List: Up / Down | Pages whichever of the ♻ Safe to Retire / 🧬 Rebirth Requirements lists is open, one screen at a time — one shared pair, not one per overlay | *(unbound)* |
 | Scroll Sneak Preview Up / Down | Same, for the Sneak Preview overlay | *(unbound)* |
 | Tier Filter: Toggle All Tiers | Shows all five rarity tiers if any is hidden, otherwise hides all — in both Safe to Retire and Rebirth Requirements | *(unbound)* |
 | Tier Filter: Toggle Default / Rare / Epic / Legendary / Mythic | Show or hide that one tier in both the Safe to Retire and Rebirth Requirements overlays | *(unbound, one each)* |
 
-The thirteen unbound hotkeys above ship with no key combo on purpose (see the convention note in `main.js`): they only appear on the on-screen hotkey list once you've set them.
+The eleven unbound hotkeys above ship with no key combo on purpose (see the convention note in `main.js`): they only appear on the on-screen hotkey list once you've set them.
 
 The read-button hotkey doesn't do anything new under the hood — pressing it
 just clicks the real toolbar button for you, so the exact same

@@ -77,6 +77,11 @@ const DEFAULT_SETTINGS = {
   // a locked overlay is click-through by design (mouse events pass straight
   // to the game), so the only way to move a scroll position on it is a
   // global hotkey — see declutter.html's own scroll-viewport comment.
+  // v1.7.3: shared with the Rebirth Requirements overlay too (same fix as
+  // the v1.7.2 tier filter) — this one hotkey pair pages whichever of
+  // Safe to Retire / Rebirth Requirements is open, instead of each overlay
+  // needing its own separate scroll binding. See rebirthReqScrollUpHotkey's
+  // retirement note below.
   declutterScrollUpHotkey: '',
   declutterScrollDownHotkey: '',
   // Which rarity tiers the Safe to Retire list shows (2026-09-24 — it used
@@ -100,10 +105,15 @@ const DEFAULT_SETTINGS = {
   rebirthReqVisible: true,
   rebirthReqLocked: true,
   rebirthReqPosition: null,
-  // Same deal as declutterScrollUp/DownHotkey above, for the Rebirth
-  // Requirements overlay's own scroll viewport.
-  rebirthReqScrollUpHotkey: '',
-  rebirthReqScrollDownHotkey: '',
+  // rebirthReqScrollUpHotkey / rebirthReqScrollDownHotkey retired 2026-09-24
+  // (v1.7.3) — the Rebirth Requirements overlay never actually needed its
+  // own separate scroll hotkeys, it just hadn't been wired to share
+  // declutterScrollUp/DownHotkey above the way it now is (same class of gap
+  // as the v1.7.2 tier filter fix: a control that should apply everywhere
+  // only ever reached one overlay). Deliberately no longer in
+  // DEFAULT_SETTINGS, so a fresh install never has them; an existing
+  // install that had bound one of its own keeps that value sitting unused
+  // in its saved settings file, same as craftBenchHotkey/calibHotkey above.
   // Sneak Preview overlay (v1.6.1): next cycle's Mythic requirements. Hidden
   // by default — it pops up on its own when a cycle completes and the player
   // declines the reset; the hotkey/toolbar button toggle it otherwise.
@@ -906,7 +916,7 @@ function hideAllOverlays(){
 }
 
 /* ---------------- global hotkeys ----------------
-   Twenty independent named hotkeys share this same register/unregister
+   Eighteen independent named hotkeys share this same register/unregister
    logic: "hideAll" (turns every overlay off — never back on, see
    hideAllOverlays() above, default Ctrl+Shift+1), "hotkeyList" (toggles
    the on-screen hotkey reference list, default Ctrl+Shift+2), "overlay"
@@ -918,14 +928,17 @@ function hideAllOverlays(){
    Ctrl+Shift+6), "timers" (the blueprint/mission countdown banners,
    default Alt+Shift+T — the one hotkey here still outside the Ctrl+Shift+N
    block; see the "convention" comment above DEFAULT_SETTINGS if that ever
-   changes for a future overlay), and four more — "declutterScrollUp"/
-   "declutterScrollDown"/"rebirthReqScrollUp"/"rebirthReqScrollDown" — that
-   page their overlay's now-scrollable card list, plus six "declutterTier*"
-   hotkeys that toggle which rarity tiers Safe to Retire shows (all tiers,
-   or Default/Rare/Epic/Legendary/Mythic individually) — all ten unbound
-   by default per that same convention (see declutter.html/rebirth-
-   requirements-overlay.html for the actual scroll logic). Each is tracked
-   by name so setting one never disturbs the others.
+   changes for a future overlay), and two more — "declutterScrollUp"/
+   "declutterScrollDown" — that page a scrollable card list: v1.7.3 made
+   these fire in BOTH declutter.html and rebirth-requirements-overlay.html
+   (previously the latter had its own separate, now-retired
+   rebirthReqScrollUp/Down pair — see the DEFAULT_SETTINGS retirement note
+   above), plus six "declutterTier*" hotkeys that toggle which rarity tiers
+   Safe to Retire AND Rebirth Requirements show (all tiers, or Default/Rare/
+   Epic/Legendary/Mythic individually) — all eight unbound by default per
+   that same convention (see declutter.html/rebirth-requirements-overlay.html
+   for the actual scroll logic). Each is tracked by name so setting one
+   never disturbs the others.
 
    "rebirthScreen" can't just call a function here directly — the actual
    read logic (screen capture + OCR + confirm step) lives in the renderer,
@@ -946,11 +959,13 @@ const HOTKEY_HANDLERS = {
   // Same broadcast-and-let-the-renderer-react pattern as rebirthScreen above
   // — the actual scroll position lives in declutter.html's / rebirth-
   // requirements-overlay.html's own DOM, not anything the main process
-  // tracks, so this just tells the right window which direction to move.
+  // tracks, so this just tells every window which direction to move. v1.7.3:
+  // broadcast() already reaches every open window (see below), so both
+  // declutter.html AND rebirth-requirements-overlay.html now listen for
+  // this same 'declutterScrollUp'/'declutterScrollDown' event — no separate
+  // rebirthReqScrollUp/Down handler needed any more.
   declutterScrollUp: () => broadcast('hotkey:triggered', 'declutterScrollUp'),
   declutterScrollDown: () => broadcast('hotkey:triggered', 'declutterScrollDown'),
-  rebirthReqScrollUp: () => broadcast('hotkey:triggered', 'rebirthReqScrollUp'),
-  rebirthReqScrollDown: () => broadcast('hotkey:triggered', 'rebirthReqScrollDown'),
   sneak: () => toggleSneakVisible(),
   sneakScrollUp: () => broadcast('hotkey:triggered', 'sneakScrollUp'),
   sneakScrollDown: () => broadcast('hotkey:triggered', 'sneakScrollDown'),
@@ -1006,10 +1021,12 @@ const HOTKEY_LABELS = {
   hotkeyList: 'Toggle Hotkey List',
   declutter: 'Toggle Declutter List',
   rebirthReqOverlay: 'Toggle Rebirth Requirements', // "Overlay" dropped from the end 2026-09-23, see tracker.html/hotkey-list.html/README for the matching rename
-  declutterScrollUp: 'Scroll Safe to Retire Up',
-  declutterScrollDown: 'Scroll Safe to Retire Down',
-  rebirthReqScrollUp: 'Scroll Rebirth Requirements Up',
-  rebirthReqScrollDown: 'Scroll Rebirth Requirements Down',
+  // Renamed 2026-09-24 (v1.7.3): pages whichever of Safe to Retire /
+  // Rebirth Requirements is open, not just Safe to Retire — same
+  // shared-control treatment as the tier filter just below. The old,
+  // separate rebirthReqScrollUp/Down pair is retired (see DEFAULT_SETTINGS).
+  declutterScrollUp: 'Scroll List: Up',
+  declutterScrollDown: 'Scroll List: Down',
   // Renamed 2026-09-24 (v1.7.2): these flip settings keys shared with the
   // Rebirth Requirements overlay's own tier filter, not just Safe to
   // Retire's — see rebirth-requirements-overlay.html's TIER_SETTING.
@@ -1033,8 +1050,6 @@ const HOTKEY_SETTINGS_KEY = {
   rebirthReqOverlay: 'rebirthReqOverlayHotkey',
   declutterScrollUp: 'declutterScrollUpHotkey',
   declutterScrollDown: 'declutterScrollDownHotkey',
-  rebirthReqScrollUp: 'rebirthReqScrollUpHotkey',
-  rebirthReqScrollDown: 'rebirthReqScrollDownHotkey',
   declutterTierAll: 'declutterTierAllHotkey',
   declutterTierDefault: 'declutterTierDefaultHotkey',
   declutterTierRare: 'declutterTierRareHotkey',
@@ -1046,7 +1061,7 @@ const HOTKEY_SETTINGS_KEY = {
   sneakScrollDown: 'sneakScrollDownHotkey'
 };
 
-/* Registers all seventeen global hotkeys from current settings and returns each
+/* Registers all eighteen global hotkeys from current settings and returns each
    one's { ok, reason } result, keyed by name — called once at launch. A
    failure here is otherwise silent (globalShortcut.register() just returns
    false, no exception, no OS-level detail) and was an open, never-confirmed
