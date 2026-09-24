@@ -13,6 +13,11 @@
     --r-beskar: #b9c2cc;
     --r-galactic: #c96bf2;
     --r-stellar: #e08a3c;
+    --rarity-default: #9aa39d;
+    --rarity-rare: #4fa3e8;
+    --rarity-epic: #b06cf2;
+    --rarity-legendary: #f4a93b;
+    --rarity-mythic: #ff4d6d;
     --accent: #5ef2a6;
   }
   html,body{
@@ -141,6 +146,18 @@
   }
   /* an empty list fills the viewport so its message sits centered, not stuck at the top */
   .list-inner:has(.empty-msg){ height:100%; align-content:stretch; }
+  /* Tier filter pills — same idea and same underlying settings as declutter.html's
+     (see the tier filtering note in render() below): only shown while at least one
+     tier is hidden, display-only, toggled via the shared tier hotkeys or the tier
+     buttons in ⚙ Overlay Settings. */
+  .tier-pills{ display:none; gap:3px; flex-wrap:wrap; margin-top:-2px; }
+  .tier-pills.visible{ display:flex; }
+  .tier-pill{
+    font-size:8.5px; font-weight:800; letter-spacing:.03em; line-height:1;
+    padding:2px 6px; border-radius:999px;
+    color:#08130d; background:var(--tc);
+  }
+  .tier-pill.off{ background:transparent; color:rgba(255,255,255,0.35); box-shadow:inset 0 0 0 1px rgba(255,255,255,0.18); text-decoration:line-through; }
 </style>
 </head>
 <body>
@@ -154,6 +171,7 @@
         <span>🧬 Rebirth Requirements</span>
         <span class="tags"><span class="cycle-tag" id="cycleTag">Cycle 1</span><span class="count" id="countTag">0</span></span>
       </h1>
+      <div class="tier-pills" id="tierPills"></div>
       <div class="list-wrap">
         <div class="list-viewport" id="viewport"><div class="list-inner" id="grid"></div></div>
         <div class="scrollbar" id="scrollbar"><div class="thumb" id="scrollThumb"></div></div>
@@ -244,10 +262,31 @@
     else if(name === 'rebirthReqScrollDown') scroller.page(1);
   });
 
+  // Which rarity CLASSES to show — v1.7.2: shares the exact same settings
+  // keys (and therefore the exact same hotkeys / ⚙ Overlay Settings buttons)
+  // as Safe to Retire's tier filter (declutter.html), rather than this
+  // overlay getting its own separate set. One filter, controlled from one
+  // place, applies to both "which droids can I retire" and "which droids do
+  // I still need" — flipping Mythic off because you're drowning in Mythic
+  // reminders hides it here too, no second binding to set up. Re-read on
+  // every settings:changed, same pattern as declutter.html.
+  const TIER_SETTING = { Mythic:'declutterShowMythic', Legendary:'declutterShowLegendary', Epic:'declutterShowEpic', Rare:'declutterShowRare', Default:'declutterShowDefault' };
+  let tiersOn = { Default:true, Rare:true, Epic:true, Legendary:true, Mythic:true };
+
   // Same guard as declutter.html: nothing renders until the first
   // fullReload() has built the droid index, so an early store:changed can't
   // paint a list with raw normalized keys instead of display names.
   let loaded = false;
+
+  function renderTierPills(){
+    const el = document.getElementById('tierPills');
+    const anyOff = Object.keys(TIER_SETTING).some(t => !tiersOn[t]);
+    el.classList.toggle('visible', anyOff);
+    if(!anyOff){ el.innerHTML = ''; return; }
+    el.innerHTML = Object.keys(TIER_SETTING).map(t =>
+      '<span class="tier-pill' + (tiersOn[t] ? '' : ' off') + '" style="--tc:var(--rarity-' + t.toLowerCase() + ')">' + t + '</span>'
+    ).join('');
+  }
 
   function render(){
     if(!loaded) return;
@@ -260,19 +299,28 @@
     // Still-needed only: drop any droid already owned at (or above) the
     // rarity this cycle requires it at. Fixed 2026-09-20 — the first
     // shipped version showed the whole cycle roster, owned droids included.
-    const nks = Object.keys(ceilings).filter(nk=>{
+    const allNks = Object.keys(ceilings).filter(nk=>{
       const owned = ownedRankLocal[nk];
       return owned === undefined || owned < ceilings[nk].rank;
-    }).sort((a,b)=>{
-      const ra = ceilings[a].rank, rb = ceilings[b].rank;
-      if(ra !== rb) return ra - rb;
-      const da = DROID_INDEX[a] ? DROID_INDEX[a].display : a;
-      const db = DROID_INDEX[b] ? DROID_INDEX[b].display : b;
-      return da.localeCompare(db);
     });
+    // Tier filter (v1.7.2): getDroidRarityClass(nk) is the same droid-class
+    // lookup getDeclutterList() uses for Safe to Retire, checked against the
+    // same tiersOn state above.
+    const nks = allNks.filter(nk => tiersOn[getDroidRarityClass(nk)] !== false)
+      .sort((a,b)=>{
+        const ra = ceilings[a].rank, rb = ceilings[b].rank;
+        if(ra !== rb) return ra - rb;
+        const da = DROID_INDEX[a] ? DROID_INDEX[a].display : a;
+        const db = DROID_INDEX[b] ? DROID_INDEX[b].display : b;
+        return da.localeCompare(db);
+      });
     countTag.textContent = String(nks.length);
     if(!nks.length){
-      gridEl.innerHTML = '<div class="empty-msg">Every droid this cycle needs is already covered 🎉</div>';
+      const hiddenByTier = allNks.length - nks.length;
+      gridEl.innerHTML = '<div class="empty-msg">' +
+        (hiddenByTier ? (hiddenByTier + ' droid' + (hiddenByTier === 1 ? '' : 's') + ' hidden by the tier filter — turn tiers back on with their hotkeys or in ⚙ Overlay Settings.')
+                      : 'Every droid this cycle needs is already covered 🎉') +
+        '</div>';
       updateScrollbar();
       return;
     }
@@ -295,6 +343,12 @@
 
   function applySettings(settings){
     document.body.classList.toggle('unlocked', !settings.rebirthReqLocked);
+    let changed = false;
+    Object.keys(TIER_SETTING).forEach(t=>{
+      const v = settings[TIER_SETTING[t]] !== false;
+      if(tiersOn[t] !== v){ tiersOn[t] = v; changed = true; }
+    });
+    if(changed){ renderTierPills(); render(); }
   }
   window.overlayAPI.onSettingsChanged(applySettings);
 

@@ -280,14 +280,20 @@ tiers — **Default, Rare, Epic, Legendary, Mythic** (it was Legendary/Mythic
 only before 1.6.0) — sorted highest tier first. Each card's frame and corner
 dot are colored by tier (gray / blue / purple / amber / red). Show or hide
 tiers two ways:
-- **⚙ Overlay Settings → Safe to Retire tiers** — click All / Default / Rare /
+- **⚙ Overlay Settings → Tier filter** — click All / Default / Rare /
   Epic / Legendary / Mythic. Works straight away, nothing to bind.
 - **Hotkeys** — one per tier plus a "toggle all tiers" key. These ship
   **unbound**; set whichever you want under ⚙ Overlay Settings → Hotkeys.
 
+**Shared with the Rebirth Requirements overlay (v1.7.2).** This is one
+filter, not two — the same buttons and hotkeys also show/hide tiers in the
+🧬 Rebirth Requirements overlay below, so turning off a tier you don't want
+to think about right now (say, Default) hides it from both lists at once
+instead of needing to be set up twice.
+
 All tiers are on by default. While any tier is hidden, a small row of tier
 pills appears under the title (hidden ones crossed out) so you can tell at a
-glance the list is filtered.
+glance the list is filtered — both overlays show this.
 
 **Clean cards + scrolling (v1.6.0).** Cards are a small fixed size, matching
 the 🎯 Upcoming RB Req's HUD, instead of stretching to fill the box — the
@@ -365,6 +371,11 @@ apart, or just toggle whichever one you're not using off.
 Toggle it with **🧬 Rebirth Req** in the toolbar or its hotkey,
 **Ctrl+Shift+5** by default.
 
+**Tier filter (v1.7.2).** This overlay shares the exact same tier filter as
+♻ Safe to Retire — see that section above. Toggling a tier off (by hotkey or
+in ⚙ Overlay Settings → Tier filter) hides it here too; the same tier-pills
+row appears under the title while any tier is hidden.
+
 ## 🔮 Sneak Preview (v1.7.0)
 
 A small overlay showing the **Mythic-class droids the *next* cycle will
@@ -440,8 +451,8 @@ changeable from **⚙ Overlay Settings**:
 | Scroll Safe to Retire Up / Down | Pages the Safe to Retire list one screen at a time | *(unbound)* |
 | Scroll Rebirth Requirements Up / Down | Same, for the Rebirth Requirements overlay | *(unbound)* |
 | Scroll Sneak Preview Up / Down | Same, for the Sneak Preview overlay | *(unbound)* |
-| Safe to Retire: Toggle All Tiers | Shows all five rarity tiers if any is hidden, otherwise hides all | *(unbound)* |
-| Safe to Retire: Toggle Default / Rare / Epic / Legendary / Mythic | Show or hide that one tier in the Safe to Retire list | *(unbound, one each)* |
+| Tier Filter: Toggle All Tiers | Shows all five rarity tiers if any is hidden, otherwise hides all — in both Safe to Retire and Rebirth Requirements | *(unbound)* |
+| Tier Filter: Toggle Default / Rare / Epic / Legendary / Mythic | Show or hide that one tier in both the Safe to Retire and Rebirth Requirements overlays | *(unbound, one each)* |
 
 The thirteen unbound hotkeys above ship with no key combo on purpose (see the convention note in `main.js`): they only appear on the on-screen hotkey list once you've set them.
 

@@ -1010,12 +1010,15 @@ const HOTKEY_LABELS = {
   declutterScrollDown: 'Scroll Safe to Retire Down',
   rebirthReqScrollUp: 'Scroll Rebirth Requirements Up',
   rebirthReqScrollDown: 'Scroll Rebirth Requirements Down',
-  declutterTierAll: 'Safe to Retire: Toggle All Tiers',
-  declutterTierDefault: 'Safe to Retire: Toggle Default',
-  declutterTierRare: 'Safe to Retire: Toggle Rare',
-  declutterTierEpic: 'Safe to Retire: Toggle Epic',
-  declutterTierLegendary: 'Safe to Retire: Toggle Legendary',
-  declutterTierMythic: 'Safe to Retire: Toggle Mythic',
+  // Renamed 2026-09-24 (v1.7.2): these flip settings keys shared with the
+  // Rebirth Requirements overlay's own tier filter, not just Safe to
+  // Retire's — see rebirth-requirements-overlay.html's TIER_SETTING.
+  declutterTierAll: 'Tier Filter: Toggle All Tiers',
+  declutterTierDefault: 'Tier Filter: Toggle Default',
+  declutterTierRare: 'Tier Filter: Toggle Rare',
+  declutterTierEpic: 'Tier Filter: Toggle Epic',
+  declutterTierLegendary: 'Tier Filter: Toggle Legendary',
+  declutterTierMythic: 'Tier Filter: Toggle Mythic',
   sneak: 'Toggle Sneak Preview',
   sneakScrollUp: 'Scroll Sneak Preview Up',
   sneakScrollDown: 'Scroll Sneak Preview Down'

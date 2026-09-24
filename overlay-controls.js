@@ -51,12 +51,12 @@
     ['declutterHotkeyBtn', 'declutterHotkey', 'Toggle Declutter List'],
     ['declutterScrollUpHotkeyBtn', 'declutterScrollUpHotkey', 'Scroll Safe to Retire Up'],
     ['declutterScrollDownHotkeyBtn', 'declutterScrollDownHotkey', 'Scroll Safe to Retire Down'],
-    ['declutterTierAllHotkeyBtn', 'declutterTierAllHotkey', 'Safe to Retire: Toggle All Tiers'],
-    ['declutterTierDefaultHotkeyBtn', 'declutterTierDefaultHotkey', 'Safe to Retire: Toggle Default'],
-    ['declutterTierRareHotkeyBtn', 'declutterTierRareHotkey', 'Safe to Retire: Toggle Rare'],
-    ['declutterTierEpicHotkeyBtn', 'declutterTierEpicHotkey', 'Safe to Retire: Toggle Epic'],
-    ['declutterTierLegendaryHotkeyBtn', 'declutterTierLegendaryHotkey', 'Safe to Retire: Toggle Legendary'],
-    ['declutterTierMythicHotkeyBtn', 'declutterTierMythicHotkey', 'Safe to Retire: Toggle Mythic'],
+    ['declutterTierAllHotkeyBtn', 'declutterTierAllHotkey', 'Tier Filter: Toggle All Tiers'],
+    ['declutterTierDefaultHotkeyBtn', 'declutterTierDefaultHotkey', 'Tier Filter: Toggle Default'],
+    ['declutterTierRareHotkeyBtn', 'declutterTierRareHotkey', 'Tier Filter: Toggle Rare'],
+    ['declutterTierEpicHotkeyBtn', 'declutterTierEpicHotkey', 'Tier Filter: Toggle Epic'],
+    ['declutterTierLegendaryHotkeyBtn', 'declutterTierLegendaryHotkey', 'Tier Filter: Toggle Legendary'],
+    ['declutterTierMythicHotkeyBtn', 'declutterTierMythicHotkey', 'Tier Filter: Toggle Mythic'],
     ['rebirthReqHotkeyBtn', 'rebirthReqOverlayHotkey', 'Toggle Rebirth Requirements'],
     ['rebirthReqScrollUpHotkeyBtn', 'rebirthReqScrollUpHotkey', 'Scroll Rebirth Requirements Up'],
     ['rebirthReqScrollDownHotkeyBtn', 'rebirthReqScrollDownHotkey', 'Scroll Rebirth Requirements Down'],
@@ -65,10 +65,12 @@
     ['sneakScrollDownHotkeyBtn', 'sneakScrollDownHotkey', 'Scroll Sneak Preview Down']
   ].map(([id, settingsKey, label]) => ({ btn: document.getElementById(id), settingsKey, label }));
 
-  /* Safe to Retire tier filter buttons (⚙ Overlay Settings → Display &
-     Position) — clickable equivalents of the declutterTier* hotkeys, so the
-     filter works without binding any of them. Same settings keys main.js's
-     toggleDeclutterTier() flips; declutter.html re-renders off settings:changed. */
+  /* Tier filter buttons (⚙ Overlay Settings → Display & Position) —
+     clickable equivalents of the declutterTier* hotkeys, so the filter works
+     without binding any of them. Same settings keys main.js's
+     toggleDeclutterTier() flips; both declutter.html AND
+     rebirth-requirements-overlay.html re-render off settings:changed (v1.7.2
+     — the two overlays share this one filter, not one each). */
   const TIER_KEYS = ['declutterShowDefault', 'declutterShowRare', 'declutterShowEpic', 'declutterShowLegendary', 'declutterShowMythic'];
   const tierBtns = Array.from(document.querySelectorAll('[data-tier-key]'));
   const tierAllBtn = document.getElementById('declutterTierAllBtn');
