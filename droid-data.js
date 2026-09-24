@@ -200,7 +200,11 @@ function rankOf(code){ return RARITY_ORDER.indexOf(code); }
 /* ---------------- droid RARITY CLASS (Common/Rare/Epic/Legendary/Mythic/Iconic) ----------------
    A second, separate axis from the Base->Stellar variant ladder above — this
    is the droid's fixed "class" (independent of which colorway you own), used
-   only by the Declutter list (2026-09-19) to filter down to Legendary/Mythic.
+   only by the Safe to Retire / Declutter list: originally (2026-09-19) to
+   filter down to Legendary/Mythic, and since v1.6.0 (2026-09-24) to group
+   and tier-filter every droid it lists. All five tiers are now populated
+   for every droid in CYCLES (see the note inside the table below); the
+   provenance notes that follow describe the original Legendary/Mythic pass.
 
    Sourced from community guides, not the game's own files (this sandbox has
    no way to read those), so treat it as best-effort — cross-checked across
@@ -215,15 +219,35 @@ function rankOf(code){ return RARITY_ORDER.indexOf(code); }
        lists a Droid Fusion example set that exactly matches its own
        value-list's Legendary/Mythic assignments (internal consistency check)
    Every Legendary/Mythic name below appears in at least 2 of these sources
-   with zero disagreement. Common/Rare/Epic are deliberately NOT populated
-   here — this app has no feature that distinguishes between those three, so
-   getting one of those wrong has no effect on anything. Iconic droids
+   with zero disagreement. (Common/Rare/Epic were left out at first since
+   nothing distinguished them yet — added in v1.6.0, see below.) Iconic droids
    (event-exclusive characters like BB-8, DJ-R3X) never appear in CYCLES at
    all, so they're absent from this table by construction, not by oversight.
    Both raw spellings of names CYCLES itself is inconsistent about (e.g.
    "Mecha Droid"/"Mecha-Droid") are included so lookup never misses either
    form; the lookup in requirements.js normalizes with normKey() regardless. */
+// Tier order, lowest to highest. "Default" is what the game's own UI calls
+// the lowest class (community sites like droidex call it "Common").
+const RARITY_CLASS_ORDER = ['Default', 'Rare', 'Epic', 'Legendary', 'Mythic'];
+
 const DROID_RARITY_CLASS = {
+  // Default/Common, Rare and Epic added 2026-09-24 (source: droidex.nackz.dev
+  // value list, cross-checked name-by-name against every unique droid in
+  // CYCLES — all 62 covered, and its Legendary/Mythic entries agreed with
+  // the ones below that were already here). Needed once the Safe to Retire
+  // list started showing every tier, not just Legendary/Mythic.
+  "Gonk": "Default", "Mouse": "Default", "Pit": "Default", "R8": "Default",
+  "CB": "Default", "R3": "Default", "R5": "Default", "IMPERIAL PROBE": "Default",
+  "B1 Battle": "Default", "ID10": "Default", "DRK-1 PROBE": "Default",
+  "B-U4D": "Rare", "SENATE HOVERCAM": "Rare", "ARG": "Rare", "Roll-R": "Rare",
+  "Bal-Core": "Rare", "BDX Explorer": "Rare", "R9": "Rare", "R4": "Rare",
+  "A-LT": "Rare", "2BB": "Rare", "B1 Security": "Rare", "Hov-R": "Rare",
+  "Vect-Arm": "Rare", "Nav-Ex": "Rare",
+  "Gunrunner": "Epic", "Amp Walker": "Epic", "Sen-Tri": "Epic", "Opti-Pod": "Epic",
+  "LO": "Epic", "Groundmech": "Epic", "R2": "Epic", "Trak-R": "Epic", "R6": "Epic",
+  "Util-Tec": "Epic", "Orb Walker": "Epic", "BB": "Epic", "B1 Heavy": "Epic",
+  "Strike-Orb": "Epic", "B2 Heavy": "Epic", "LNG-Shot": "Epic", "B2 Super": "Epic",
+  "Haul-R": "Epic",
   // Legendary (8 canonical droids, some with 2 raw spellings in CYCLES)
   "Proto Roller": "Legendary",
   "Mecha Droid": "Legendary",

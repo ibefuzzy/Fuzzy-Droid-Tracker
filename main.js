@@ -70,10 +70,40 @@ const DEFAULT_SETTINGS = {
   declutterVisible: true,
   declutterLocked: true,
   declutterPosition: null,
+  // Scroll hotkeys for the Declutter list's now-scrollable card viewport
+  // (2026-09-23, the same round that added the empty-default convention
+  // right below) — the first hotkeys actually built under that convention:
+  // unbound by default, player opts in from Settings. Needed at all because
+  // a locked overlay is click-through by design (mouse events pass straight
+  // to the game), so the only way to move a scroll position on it is a
+  // global hotkey — see declutter.html's own scroll-viewport comment.
+  declutterScrollUpHotkey: '',
+  declutterScrollDownHotkey: '',
+  // Which rarity tiers the Safe to Retire list shows (2026-09-24 — it used
+  // to be Legendary/Mythic only, now every tier). Flipped by the six
+  // declutterTier* hotkeys below (all unbound by default, per the
+  // convention comment further down); declutter.html just re-renders off
+  // settings:changed. Flat booleans rather than one nested object so
+  // loadJson()'s top-level-key merge fills in any one that's missing.
+  declutterShowDefault: true,
+  declutterShowRare: true,
+  declutterShowEpic: true,
+  declutterShowLegendary: true,
+  declutterShowMythic: true,
+  declutterTierAllHotkey: '',       // all five on if any is off, otherwise all five off
+  declutterTierDefaultHotkey: '',
+  declutterTierRareHotkey: '',
+  declutterTierEpicHotkey: '',
+  declutterTierLegendaryHotkey: '',
+  declutterTierMythicHotkey: '',
   rebirthReqOverlayHotkey: 'Control+Shift+5', // toggles the standalone Rebirth Requirements overlay, same deal (moved from Ctrl+Shift+4 on 2026-09-23 — see hotkey above)
   rebirthReqVisible: true,
   rebirthReqLocked: true,
   rebirthReqPosition: null,
+  // Same deal as declutterScrollUp/DownHotkey above, for the Rebirth
+  // Requirements overlay's own scroll viewport.
+  rebirthReqScrollUpHotkey: '',
+  rebirthReqScrollDownHotkey: '',
   hasSeenIntroGuide: false, // first-launch walkthrough (guide.js) — set true once dismissed or finished; an existing settings file just merges this in as false via loadJson(), so upgraders see it once too
   hotkeyLayoutVersion: 0   // bumped by the migrations below; never hand-edit
 };
@@ -351,7 +381,12 @@ function computeDefaultDeclutterBounds(){
   const display = screen.getPrimaryDisplay();
   const { width, height } = display.workAreaSize;
   const w = Math.max(240, Math.round(width * 0.20));
-  const h = Math.max(240, Math.round(height * 0.34));
+  // v1.6.0: cards are a fixed size and the list scrolls, so the box no longer
+  // has to be tall enough to hold everything (was 34% of screen height).
+  // 266px is exactly three full rows of cards (46px of header/padding + 72px
+  // per row, measured) so a 1080p screen shows three clean rows; taller
+  // screens scale up to ~25% of their height and show a fourth.
+  const h = Math.max(266, Math.round(height * 0.25));
   const x = Math.round(width * 0.995) - w + display.workArea.x;
   const y = Math.round(height * 0.34) + display.workArea.y;
   return { x, y, width: w, height: h };
@@ -365,7 +400,11 @@ function computeDefaultHotkeyListBounds(){
   const display = screen.getPrimaryDisplay();
   const { width, height } = display.workAreaSize;
   const w = Math.min(460, Math.max(380, Math.round(width * 0.24)));
-  const h = Math.min(420, Math.max(340, Math.round(height * 0.38)));
+  // Sized to the rows actually shown: hotkey-list.html lists only BOUND
+  // hotkeys (most are unbound by default), so count those rather than
+  // assuming a fixed row count. ~36px per row + chrome.
+  const shown = Object.keys(HOTKEY_SETTINGS_KEY).filter(n => settings[HOTKEY_SETTINGS_KEY[n]]).length;
+  const h = Math.min(Math.round(height * 0.9), Math.max(200, 110 + shown * 36));
   const x = Math.round((width - w) / 2) + display.workArea.x;
   const y = Math.round((height - h) / 2) + display.workArea.y;
   return { x, y, width: w, height: h };
@@ -786,7 +825,7 @@ function hideAllOverlays(){
 }
 
 /* ---------------- global hotkeys ----------------
-   Seven independent named hotkeys share this same register/unregister
+   Seventeen independent named hotkeys share this same register/unregister
    logic: "hideAll" (turns every overlay off — never back on, see
    hideAllOverlays() above, default Ctrl+Shift+1), "hotkeyList" (toggles
    the on-screen hotkey reference list, default Ctrl+Shift+2), "overlay"
@@ -795,11 +834,17 @@ function hideAllOverlays(){
    Mythic droid list, default Ctrl+Shift+4), "rebirthReqOverlay" (the
    standalone Rebirth Requirements overlay, default Ctrl+Shift+5),
    "rebirthScreen" (fires the 📸 Read Rebirth Screen button, default
-   Ctrl+Shift+6), and "timers" (the blueprint/mission countdown banners,
+   Ctrl+Shift+6), "timers" (the blueprint/mission countdown banners,
    default Alt+Shift+T — the one hotkey here still outside the Ctrl+Shift+N
    block; see the "convention" comment above DEFAULT_SETTINGS if that ever
-   changes for a future overlay). Each is tracked by name so setting one
-   never disturbs the others.
+   changes for a future overlay), and four more — "declutterScrollUp"/
+   "declutterScrollDown"/"rebirthReqScrollUp"/"rebirthReqScrollDown" — that
+   page their overlay's now-scrollable card list, plus six "declutterTier*"
+   hotkeys that toggle which rarity tiers Safe to Retire shows (all tiers,
+   or Default/Rare/Epic/Legendary/Mythic individually) — all ten unbound
+   by default per that same convention (see declutter.html/rebirth-
+   requirements-overlay.html for the actual scroll logic). Each is tracked
+   by name so setting one never disturbs the others.
 
    "rebirthScreen" can't just call a function here directly — the actual
    read logic (screen capture + OCR + confirm step) lives in the renderer,
@@ -816,8 +861,39 @@ const HOTKEY_HANDLERS = {
   rebirthScreen: () => broadcast('hotkey:triggered', 'rebirthScreen'),
   hotkeyList: () => toggleHotkeyList(),
   declutter: () => toggleDeclutterVisible(),
-  rebirthReqOverlay: () => toggleRebirthReqVisible()
+  rebirthReqOverlay: () => toggleRebirthReqVisible(),
+  // Same broadcast-and-let-the-renderer-react pattern as rebirthScreen above
+  // — the actual scroll position lives in declutter.html's / rebirth-
+  // requirements-overlay.html's own DOM, not anything the main process
+  // tracks, so this just tells the right window which direction to move.
+  declutterScrollUp: () => broadcast('hotkey:triggered', 'declutterScrollUp'),
+  declutterScrollDown: () => broadcast('hotkey:triggered', 'declutterScrollDown'),
+  rebirthReqScrollUp: () => broadcast('hotkey:triggered', 'rebirthReqScrollUp'),
+  rebirthReqScrollDown: () => broadcast('hotkey:triggered', 'rebirthReqScrollDown'),
+  // Safe to Retire tier filters live in settings (main process owns them),
+  // so these flip the flag here and let the normal settings:changed
+  // broadcast re-render declutter.html — no new IPC channel needed.
+  declutterTierAll: () => toggleDeclutterTiersAll(),
+  declutterTierDefault: () => toggleDeclutterTier('declutterShowDefault'),
+  declutterTierRare: () => toggleDeclutterTier('declutterShowRare'),
+  declutterTierEpic: () => toggleDeclutterTier('declutterShowEpic'),
+  declutterTierLegendary: () => toggleDeclutterTier('declutterShowLegendary'),
+  declutterTierMythic: () => toggleDeclutterTier('declutterShowMythic')
 };
+const DECLUTTER_TIER_KEYS = ['declutterShowDefault','declutterShowRare','declutterShowEpic','declutterShowLegendary','declutterShowMythic'];
+// A tier counts as ON unless explicitly false — the same rule declutter.html
+// and overlay-controls.js read it with, so the three can never disagree.
+function toggleDeclutterTier(key){
+  settings[key] = settings[key] === false;
+  persistSettingsNow();
+  broadcast('settings:changed', { ...settings });
+}
+function toggleDeclutterTiersAll(){
+  const allOn = DECLUTTER_TIER_KEYS.every(k => settings[k] !== false);
+  DECLUTTER_TIER_KEYS.forEach(k => { settings[k] = !allOn; });
+  persistSettingsNow();
+  broadcast('settings:changed', { ...settings });
+}
 function registerHotkeyFor(name, accelerator){
   const prev = registeredHotkeys[name];
   if(prev){
@@ -845,7 +921,17 @@ const HOTKEY_LABELS = {
   rebirthScreen: 'Trigger Read Rebirth Screen',
   hotkeyList: 'Toggle Hotkey List',
   declutter: 'Toggle Declutter List',
-  rebirthReqOverlay: 'Toggle Rebirth Requirements' // "Overlay" dropped from the end 2026-09-23, see tracker.html/hotkey-list.html/README for the matching rename
+  rebirthReqOverlay: 'Toggle Rebirth Requirements', // "Overlay" dropped from the end 2026-09-23, see tracker.html/hotkey-list.html/README for the matching rename
+  declutterScrollUp: 'Scroll Safe to Retire Up',
+  declutterScrollDown: 'Scroll Safe to Retire Down',
+  rebirthReqScrollUp: 'Scroll Rebirth Requirements Up',
+  rebirthReqScrollDown: 'Scroll Rebirth Requirements Down',
+  declutterTierAll: 'Safe to Retire: Toggle All Tiers',
+  declutterTierDefault: 'Safe to Retire: Toggle Default',
+  declutterTierRare: 'Safe to Retire: Toggle Rare',
+  declutterTierEpic: 'Safe to Retire: Toggle Epic',
+  declutterTierLegendary: 'Safe to Retire: Toggle Legendary',
+  declutterTierMythic: 'Safe to Retire: Toggle Mythic'
 };
 const HOTKEY_SETTINGS_KEY = {
   hideAll: 'hideAllHotkey',
@@ -854,10 +940,20 @@ const HOTKEY_SETTINGS_KEY = {
   rebirthScreen: 'rebirthScreenHotkey',
   hotkeyList: 'hotkeyListHotkey',
   declutter: 'declutterHotkey',
-  rebirthReqOverlay: 'rebirthReqOverlayHotkey'
+  rebirthReqOverlay: 'rebirthReqOverlayHotkey',
+  declutterScrollUp: 'declutterScrollUpHotkey',
+  declutterScrollDown: 'declutterScrollDownHotkey',
+  rebirthReqScrollUp: 'rebirthReqScrollUpHotkey',
+  rebirthReqScrollDown: 'rebirthReqScrollDownHotkey',
+  declutterTierAll: 'declutterTierAllHotkey',
+  declutterTierDefault: 'declutterTierDefaultHotkey',
+  declutterTierRare: 'declutterTierRareHotkey',
+  declutterTierEpic: 'declutterTierEpicHotkey',
+  declutterTierLegendary: 'declutterTierLegendaryHotkey',
+  declutterTierMythic: 'declutterTierMythicHotkey'
 };
 
-/* Registers all seven global hotkeys from current settings and returns each
+/* Registers all seventeen global hotkeys from current settings and returns each
    one's { ok, reason } result, keyed by name — called once at launch. A
    failure here is otherwise silent (globalShortcut.register() just returns
    false, no exception, no OS-level detail) and was an open, never-confirmed
@@ -944,76 +1040,42 @@ function wireIpc(){
 
   ipcMain.handle('settings:get', ()=> ({ ...settings }));
   ipcMain.handle('settings:set', (evt, partial)=>{
-    const prevHideAllHotkey = settings.hideAllHotkey;
-    const prevHotkey = settings.hotkey;
-    const prevTimersHotkey = settings.timersHotkey;
-    const prevRebirthScreenHotkey = settings.rebirthScreenHotkey;
-    const prevHotkeyListHotkey = settings.hotkeyListHotkey;
-    const prevDeclutterHotkey = settings.declutterHotkey;
-    const prevRebirthReqOverlayHotkey = settings.rebirthReqOverlayHotkey;
+    // Snapshot every hotkey's current accelerator BEFORE merging, then for
+    // any hotkey the caller actually changed, try to (re)register it and
+    // revert to the previous binding if the OS says no. One generic loop
+    // over HOTKEY_SETTINGS_KEY (2026-09-24) replaced eleven hand-copied
+    // per-hotkey blocks that were all identical in shape — same behavior,
+    // and a new hotkey now only needs its map entries, not another block.
+    const prevHotkeys = {};
+    Object.keys(HOTKEY_SETTINGS_KEY).forEach(name=>{ prevHotkeys[name] = settings[HOTKEY_SETTINGS_KEY[name]]; });
     settings = { ...settings, ...partial };
     persistSettingsNow();
 
     let hotkeyResult = { ok: true, reason: null };
-    if(partial.hideAllHotkey && partial.hideAllHotkey !== prevHideAllHotkey){
-      hotkeyResult = registerHotkeyFor('hideAll', settings.hideAllHotkey);
-      if(!hotkeyResult.ok){
-        settings.hideAllHotkey = prevHideAllHotkey;
-        registerHotkeyFor('hideAll', prevHideAllHotkey);
-        persistSettingsNow();
+    let boundSetChanged = false;
+    Object.keys(HOTKEY_SETTINGS_KEY).forEach(name=>{
+      const key = HOTKEY_SETTINGS_KEY[name];
+      if(!(key in partial) || partial[key] === prevHotkeys[name]) return;
+      if(!partial[key]){
+        // Cleared (Backspace in the rebind UI). registerHotkeyFor('') drops
+        // the old OS registration and reports 'empty' — that IS the success
+        // case here, so no revert.
+        registerHotkeyFor(name, '');
+        boundSetChanged = true;
+        return;
       }
-    }
-    if(partial.hotkey && partial.hotkey !== prevHotkey){
-      hotkeyResult = registerHotkeyFor('overlay', settings.hotkey);
+      hotkeyResult = registerHotkeyFor(name, settings[key]);
       if(!hotkeyResult.ok){
-        settings.hotkey = prevHotkey; // revert, keep the old one working
-        registerHotkeyFor('overlay', prevHotkey);
+        settings[key] = prevHotkeys[name]; // revert, keep the old one working
+        registerHotkeyFor(name, prevHotkeys[name]);
         persistSettingsNow();
+      } else {
+        boundSetChanged = true;
       }
-    }
-    // calibHotkey/craftBenchHotkey rebind handling removed 2026-09-22 along
-    // with the rest of Read Crafting Bench — see the DEFAULT_SETTINGS
-    // comment above for why any old saved values for them are harmless to
-    // leave sitting unread in an existing user's settings file.
-    if(partial.timersHotkey && partial.timersHotkey !== prevTimersHotkey){
-      hotkeyResult = registerHotkeyFor('timers', settings.timersHotkey);
-      if(!hotkeyResult.ok){
-        settings.timersHotkey = prevTimersHotkey;
-        registerHotkeyFor('timers', prevTimersHotkey);
-        persistSettingsNow();
-      }
-    }
-    if(partial.rebirthScreenHotkey && partial.rebirthScreenHotkey !== prevRebirthScreenHotkey){
-      hotkeyResult = registerHotkeyFor('rebirthScreen', settings.rebirthScreenHotkey);
-      if(!hotkeyResult.ok){
-        settings.rebirthScreenHotkey = prevRebirthScreenHotkey;
-        registerHotkeyFor('rebirthScreen', prevRebirthScreenHotkey);
-        persistSettingsNow();
-      }
-    }
-    if(partial.hotkeyListHotkey && partial.hotkeyListHotkey !== prevHotkeyListHotkey){
-      hotkeyResult = registerHotkeyFor('hotkeyList', settings.hotkeyListHotkey);
-      if(!hotkeyResult.ok){
-        settings.hotkeyListHotkey = prevHotkeyListHotkey;
-        registerHotkeyFor('hotkeyList', prevHotkeyListHotkey);
-        persistSettingsNow();
-      }
-    }
-    if(partial.declutterHotkey && partial.declutterHotkey !== prevDeclutterHotkey){
-      hotkeyResult = registerHotkeyFor('declutter', settings.declutterHotkey);
-      if(!hotkeyResult.ok){
-        settings.declutterHotkey = prevDeclutterHotkey;
-        registerHotkeyFor('declutter', prevDeclutterHotkey);
-        persistSettingsNow();
-      }
-    }
-    if(partial.rebirthReqOverlayHotkey && partial.rebirthReqOverlayHotkey !== prevRebirthReqOverlayHotkey){
-      hotkeyResult = registerHotkeyFor('rebirthReqOverlay', settings.rebirthReqOverlayHotkey);
-      if(!hotkeyResult.ok){
-        settings.rebirthReqOverlayHotkey = prevRebirthReqOverlayHotkey;
-        registerHotkeyFor('rebirthReqOverlay', prevRebirthReqOverlayHotkey);
-        persistSettingsNow();
-      }
+    });
+    // The hotkey card only lists bound hotkeys, so its height follows the count.
+    if(boundSetChanged && hotkeyListWindow && !hotkeyListWindow.isDestroyed()){
+      hotkeyListWindow.setBounds(computeDefaultHotkeyListBounds());
     }
     if(overlayWindow && (partial.position)){
       overlayWindow.setBounds(clampToDisplay({ ...overlayWindow.getBounds(), ...partial.position }));

@@ -13,32 +13,59 @@
   const toggleBtn = document.getElementById('overlayToggleBtn');
   const settingsBtn = document.getElementById('overlaySettingsBtn');
   const panel = document.getElementById('overlaySettingsPanel');
-  const hideAllHotkeyBtn = document.getElementById('hideAllHotkeyBtn');
-  const hotkeyBtn = document.getElementById('overlayHotkeyBtn');
   const hotkeyHint = document.getElementById('overlayHotkeyHint');
   const opacityRange = document.getElementById('overlayOpacityRange');
   const repositionBtn = document.getElementById('overlayRepositionBtn');
   const overlayResetPosBtn = document.getElementById('overlayResetPosBtn');
   const timersToggleBtn = document.getElementById('timersToggleBtn');
-  const timersHotkeyBtn = document.getElementById('timersHotkeyBtn');
   const timersRepositionBtn = document.getElementById('timersRepositionBtn');
   const timersResetPosBtn = document.getElementById('timersResetPosBtn');
   const appVersionTag = document.getElementById('appVersionTag');
   const missionSyncMin = document.getElementById('missionSyncMin');
   const missionSyncSec = document.getElementById('missionSyncSec');
   const missionSyncBtn = document.getElementById('missionSyncBtn');
-  const rebirthScreenHotkeyBtn = document.getElementById('rebirthScreenHotkeyBtn');
-  const hotkeyListHotkeyBtn = document.getElementById('hotkeyListHotkeyBtn');
   const hotkeyListToggleBtn = document.getElementById('hotkeyListToggleBtn');
   const rebirthScreenBtn = document.getElementById('rebirthScreenBtn');
-  const declutterHotkeyBtn = document.getElementById('declutterHotkeyBtn');
   const declutterRepositionBtn = document.getElementById('declutterRepositionBtn');
   const declutterResetPosBtn = document.getElementById('declutterResetPosBtn');
   const declutterToggleBtn = document.getElementById('declutterToggleBtn');
-  const rebirthReqHotkeyBtn = document.getElementById('rebirthReqHotkeyBtn');
   const rebirthReqRepositionBtn = document.getElementById('rebirthReqRepositionBtn');
   const rebirthReqResetPosBtn = document.getElementById('rebirthReqResetPosBtn');
   const rebirthReqToggleBtn = document.getElementById('rebirthReqToggleBtn');
+
+  /* Every "press to rebind" hotkey button: [button id, settings key, label].
+     One table instead of seventeen hand-copied const/label/wire lines
+     (2026-09-24) — a new hotkey only needs a row here, its map entries in
+     main.js, a <button> in tracker.html and a ROWS entry in hotkey-list.html.
+     Labels match main.js's HOTKEY_LABELS so a toast names each one the same
+     way the startup-failure notice does. */
+  const HOTKEY_BUTTONS = [
+    ['hideAllHotkeyBtn', 'hideAllHotkey', 'Hide All Overlays'],
+    ['overlayHotkeyBtn', 'hotkey', 'Toggle Current Rebirth Requirements'],
+    ['timersHotkeyBtn', 'timersHotkey', 'Toggle Timers'],
+    ['rebirthScreenHotkeyBtn', 'rebirthScreenHotkey', 'Trigger Read Rebirth Screen'],
+    ['hotkeyListHotkeyBtn', 'hotkeyListHotkey', 'Toggle Hotkey List'],
+    ['declutterHotkeyBtn', 'declutterHotkey', 'Toggle Declutter List'],
+    ['declutterScrollUpHotkeyBtn', 'declutterScrollUpHotkey', 'Scroll Safe to Retire Up'],
+    ['declutterScrollDownHotkeyBtn', 'declutterScrollDownHotkey', 'Scroll Safe to Retire Down'],
+    ['declutterTierAllHotkeyBtn', 'declutterTierAllHotkey', 'Safe to Retire: Toggle All Tiers'],
+    ['declutterTierDefaultHotkeyBtn', 'declutterTierDefaultHotkey', 'Safe to Retire: Toggle Default'],
+    ['declutterTierRareHotkeyBtn', 'declutterTierRareHotkey', 'Safe to Retire: Toggle Rare'],
+    ['declutterTierEpicHotkeyBtn', 'declutterTierEpicHotkey', 'Safe to Retire: Toggle Epic'],
+    ['declutterTierLegendaryHotkeyBtn', 'declutterTierLegendaryHotkey', 'Safe to Retire: Toggle Legendary'],
+    ['declutterTierMythicHotkeyBtn', 'declutterTierMythicHotkey', 'Safe to Retire: Toggle Mythic'],
+    ['rebirthReqHotkeyBtn', 'rebirthReqOverlayHotkey', 'Toggle Rebirth Requirements'],
+    ['rebirthReqScrollUpHotkeyBtn', 'rebirthReqScrollUpHotkey', 'Scroll Rebirth Requirements Up'],
+    ['rebirthReqScrollDownHotkeyBtn', 'rebirthReqScrollDownHotkey', 'Scroll Rebirth Requirements Down']
+  ].map(([id, settingsKey, label]) => ({ btn: document.getElementById(id), settingsKey, label }));
+
+  /* Safe to Retire tier filter buttons (⚙ Overlay Settings → Display &
+     Position) — clickable equivalents of the declutterTier* hotkeys, so the
+     filter works without binding any of them. Same settings keys main.js's
+     toggleDeclutterTier() flips; declutter.html re-renders off settings:changed. */
+  const TIER_KEYS = ['declutterShowDefault', 'declutterShowRare', 'declutterShowEpic', 'declutterShowLegendary', 'declutterShowMythic'];
+  const tierBtns = Array.from(document.querySelectorAll('[data-tier-key]'));
+  const tierAllBtn = document.getElementById('declutterTierAllBtn');
 
   toggleBtn.hidden = false;
   settingsBtn.hidden = false;
@@ -80,13 +107,11 @@
   }
 
   function applySettingsToUI(settings){
-    if(hideAllHotkeyBtn && !capturing.hideAllHotkey) hideAllHotkeyBtn.textContent = settings.hideAllHotkey || '(none set)';
-    if(!capturing.hotkey) hotkeyBtn.textContent = settings.hotkey || '(none set)';
-    if(timersHotkeyBtn && !capturing.timersHotkey) timersHotkeyBtn.textContent = settings.timersHotkey || '(none set)';
-    if(rebirthScreenHotkeyBtn && !capturing.rebirthScreenHotkey) rebirthScreenHotkeyBtn.textContent = settings.rebirthScreenHotkey || '(none set)';
-    if(hotkeyListHotkeyBtn && !capturing.hotkeyListHotkey) hotkeyListHotkeyBtn.textContent = settings.hotkeyListHotkey || '(none set)';
-    if(declutterHotkeyBtn && !capturing.declutterHotkey) declutterHotkeyBtn.textContent = settings.declutterHotkey || '(none set)';
-    if(rebirthReqHotkeyBtn && !capturing.rebirthReqOverlayHotkey) rebirthReqHotkeyBtn.textContent = settings.rebirthReqOverlayHotkey || '(none set)';
+    HOTKEY_BUTTONS.forEach(({ btn, settingsKey })=>{
+      if(btn && !capturing[settingsKey]) btn.textContent = settings[settingsKey] || '(none set)';
+    });
+    tierBtns.forEach(b=>{ b.classList.toggle('on', settings[b.dataset.tierKey] !== false); });
+    if(tierAllBtn) tierAllBtn.classList.toggle('on', TIER_KEYS.every(k => settings[k] !== false));
     opacityRange.value = settings.opacity != null ? settings.opacity : 0.55;
     setToggleLabel(settings.visible);
     setTimersToggleLabel(settings.timersVisible);
@@ -159,6 +184,15 @@
         applySettingsToUI(s);
         return;
       }
+      if(!hadModifier && (e.key === 'Backspace' || e.key === 'Delete')){
+        // Backspace/Delete = unbind. Needed since v1.6.0 made most hotkeys
+        // optional (unbound by default): without it, binding one by mistake
+        // or to try it out was permanent. main.js unregisters it on ''.
+        const result = await window.overlayAPI.setSettings({ [settingsKey]: '' });
+        showToast(label + ' cleared — no hotkey set');
+        applySettingsToUI(result.settings);
+        return;
+      }
       if(!hadModifier){
         // Registering a bare, unmodified key (e.g. just "E") as a SYSTEM-
         // WIDE hotkey would swallow every press of it in every app while
@@ -208,7 +242,7 @@
         // DIFFERENT button's capture used to skip this re-sync — its stop()
         // correctly tore down capturing state/listener but never touched
         // btn.textContent, so the pre-empted button stayed stuck on "Press
-        // new keys… (Esc to cancel)" until some unrelated settings change
+        // new keys…" until some unrelated settings change
         // happened to repaint it. applySettingsToUI skips any button whose
         // `capturing` flag is still true, so calling it here only repaints
         // the one we just pre-empted (already false) — safe to call before
@@ -219,7 +253,7 @@
       capturing[settingsKey] = true;
       activeCapture = stop;
       btn.classList.add('capturing');
-      btn.textContent = 'Press new keys… (Esc to cancel)';
+      btn.textContent = 'Press new keys… (Esc cancel · Backspace clear)';
       document.addEventListener('keydown', onKeydown, true);
     });
   }
@@ -233,16 +267,26 @@
     panel.hidden = !panel.hidden;
   });
 
-  wireHotkeyButton(hideAllHotkeyBtn, 'hideAllHotkey', 'Hide All Overlays');
-  wireHotkeyButton(hotkeyBtn, 'hotkey', 'Toggle Current Rebirth Requirements');
-  wireHotkeyButton(timersHotkeyBtn, 'timersHotkey', 'Toggle Timers');
-  wireHotkeyButton(rebirthScreenHotkeyBtn, 'rebirthScreenHotkey', 'Trigger Read Rebirth Screen');
-  wireHotkeyButton(hotkeyListHotkeyBtn, 'hotkeyListHotkey', 'Toggle Hotkey List');
-  wireHotkeyButton(declutterHotkeyBtn, 'declutterHotkey', 'Toggle Declutter List');
-  wireHotkeyButton(rebirthReqHotkeyBtn, 'rebirthReqOverlayHotkey', 'Toggle Rebirth Requirements');
+  HOTKEY_BUTTONS.forEach(({ btn, settingsKey, label }) => wireHotkeyButton(btn, settingsKey, label));
 
-  // Toast bridge for one-off messages the main process pushes (e.g. "boxes
-  // weren't saved yet" from the crafting-bench guide-box toggle).
+  tierBtns.forEach(b=>{
+    b.addEventListener('click', async ()=>{
+      const cur = await window.overlayAPI.getSettings();
+      await window.overlayAPI.setSettings({ [b.dataset.tierKey]: cur[b.dataset.tierKey] === false });
+    });
+  });
+  if(tierAllBtn){
+    tierAllBtn.addEventListener('click', async ()=>{
+      const cur = await window.overlayAPI.getSettings();
+      const allOn = TIER_KEYS.every(k => cur[k] !== false);
+      const partial = {};
+      TIER_KEYS.forEach(k => { partial[k] = !allOn; });
+      await window.overlayAPI.setSettings(partial);
+    });
+  }
+
+  // Toast bridge for one-off messages the main process pushes (e.g. the
+  // startup "hotkey couldn't register" notice).
   if(window.overlayAPI.onNotify){
     window.overlayAPI.onNotify((msg)=>{ if(msg) showToast(msg); });
   }
@@ -370,7 +414,7 @@
     });
   }
 
-  /* Ctrl+Shift+5 (Read Rebirth Screen) fires from a global OS-level hotkey
+  /* Ctrl+Shift+6 (Read Rebirth Screen) fires from a global OS-level hotkey
      in the main process, which can't call renderer functions directly — it
      broadcasts that it fired, and this just clicks the real button, so the
      read runs through the exact same code path (same confirm step, same

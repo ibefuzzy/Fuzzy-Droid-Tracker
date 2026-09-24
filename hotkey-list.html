@@ -76,17 +76,28 @@
      re-renders whenever they change, so rebinding a hotkey in the tracker's
      settings panel updates this list immediately without needing a restart.
      Nothing here reads the screen or touches Fortnite. */
-  // Kept in ascending Ctrl+Shift+N order (1-6) so the card reads in the same
-  // order as the keys themselves, with the two hotkeys still outside that
-  // numbered family (timersHotkey) tacked on at the end — see the
-  // "convention" comment above DEFAULT_SETTINGS in main.js for why a future
-  // overlay's hotkey won't default to a number at all.
+  // Ctrl+Shift+1-6 order, each overlay's optional scroll/tier hotkeys grouped
+  // under it, timers last. Only BOUND hotkeys are listed — most are unbound
+  // by default (see the "convention" comment above DEFAULT_SETTINGS in
+  // main.js), and a "(none set)" row is no use on a quick-reference card.
+  // main.js's computeDefaultHotkeyListBounds() sizes this window by the
+  // same bound-only count, so the two must keep filtering the same way.
   const ROWS = [
     { key: 'hideAllHotkey', label: '🚫 Hide ALL overlays (one-way — won\'t turn them back on)' },
     { key: 'hotkeyListHotkey', label: 'Show / hide this hotkey list' },
     { key: 'hotkey', label: '🎯 Show / hide Current Rebirth Requirements' },
-    { key: 'declutterHotkey', label: '♻ Show / hide declutter list' },
+    { key: 'declutterHotkey', label: '♻ Show / hide Safe to Retire' },
+    { key: 'declutterScrollUpHotkey', label: '♻ Scroll Safe to Retire Up' },
+    { key: 'declutterScrollDownHotkey', label: '♻ Scroll Safe to Retire Down' },
+    { key: 'declutterTierAllHotkey', label: '♻ Toggle All Tiers' },
+    { key: 'declutterTierDefaultHotkey', label: '♻ Toggle Default' },
+    { key: 'declutterTierRareHotkey', label: '♻ Toggle Rare' },
+    { key: 'declutterTierEpicHotkey', label: '♻ Toggle Epic' },
+    { key: 'declutterTierLegendaryHotkey', label: '♻ Toggle Legendary' },
+    { key: 'declutterTierMythicHotkey', label: '♻ Toggle Mythic' },
     { key: 'rebirthReqOverlayHotkey', label: '🧬 Show / hide Rebirth Requirements' },
+    { key: 'rebirthReqScrollUpHotkey', label: '🧬 Scroll Rebirth Requirements Up' },
+    { key: 'rebirthReqScrollDownHotkey', label: '🧬 Scroll Rebirth Requirements Down' },
     { key: 'rebirthScreenHotkey', label: '📸 Read Rebirth Screen' },
     { key: 'timersHotkey', label: '⏱ Show / hide timer banners' }
   ];
@@ -96,7 +107,7 @@
 
   function render(settings){
     rowsEl.innerHTML = '';
-    ROWS.forEach(r=>{
+    ROWS.filter(r => settings[r.key]).forEach(r=>{
       const row = document.createElement('div');
       row.className = 'row';
 
@@ -106,13 +117,15 @@
 
       const keys = document.createElement('span');
       keys.className = 'keys';
-      keys.textContent = settings[r.key] || '(none set)';
+      keys.textContent = settings[r.key];
 
       row.appendChild(label);
       row.appendChild(keys);
       rowsEl.appendChild(row);
     });
-    toggleHintEl.textContent = 'Press ' + (settings.hotkeyListHotkey || '(none set)') + ' to hide/show this list';
+    toggleHintEl.textContent = settings.hotkeyListHotkey
+      ? 'Press ' + settings.hotkeyListHotkey + ' to hide/show this list'
+      : 'Use the ⌨ Hotkeys button in the tracker to hide/show this list';
   }
 
   window.overlayAPI.onSettingsChanged(render);

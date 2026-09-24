@@ -99,6 +99,14 @@
   /* ---- content row: main list + optional rebirth-requirements side panel ---- */
   .content-row{display:flex;gap:22px;align-items:flex-start;}
   .content-row .main-col{flex:1;min-width:0;}
+  /* A–Z / By Rebirth Level pressed again = list off (2026-09-24). With the
+     list gone the side panel takes the full width and packs more cells per
+     row instead of sitting as a lone 300px strip. */
+  .content-row .main-col.list-off{display:none;}
+  .nothing-shown{display:none;flex:1;padding:28px 12px;text-align:center;color:var(--text-dim);font-size:13px;border:1px dashed var(--line);border-radius:8px;}
+  .nothing-shown.show{display:block;}
+  .content-row .main-col.list-off ~ .rebirth-panel{flex:1 1 0;}
+  .content-row .main-col.list-off ~ .rebirth-panel .rebirth-grid{grid-template-columns:repeat(auto-fill,minmax(92px,1fr));}
   .wrap.with-rebirth{max-width:1300px;}
 
   .rebirth-panel{
@@ -381,7 +389,15 @@
   }
   .overlay-panel-heading:first-child{padding-top:0;margin-top:0;border-top:none;}
   .overlay-panel-row input[type="range"]{accent-color:var(--accent);width:160px;}
-  #hideAllHotkeyBtn.capturing, #overlayHotkeyBtn.capturing, #timersHotkeyBtn.capturing, #hotkeyListHotkeyBtn.capturing, #declutterHotkeyBtn.capturing, #rebirthReqHotkeyBtn.capturing, #rebirthScreenHotkeyBtn.capturing{color:var(--accent);border-color:var(--accent-dim);background:rgba(94,242,166,0.1);}
+  /* .capturing is only ever set by overlay-controls.js's wireHotkeyButton(), so one class selector covers every rebind button (was a 17-id list) */
+  .overlay-panel .btn.capturing{color:var(--accent);border-color:var(--accent-dim);background:rgba(94,242,166,0.1);}
+  .tier-btn{font-size:12px;padding:5px 10px;opacity:.55;}
+  .tier-btn.on{opacity:1;}
+  .tier-btn[data-tier-key="declutterShowDefault"].on{color:#c5ccc8;border-color:#9aa39d;background:rgba(154,163,157,0.12);}
+  .tier-btn[data-tier-key="declutterShowRare"].on{color:#7fbdf0;border-color:#4fa3e8;background:rgba(79,163,232,0.12);}
+  .tier-btn[data-tier-key="declutterShowEpic"].on{color:#c99af6;border-color:#b06cf2;background:rgba(176,108,242,0.12);}
+  .tier-btn[data-tier-key="declutterShowLegendary"].on{color:#f7c36f;border-color:#f4a93b;background:rgba(244,169,59,0.12);}
+  .tier-btn[data-tier-key="declutterShowMythic"].on{color:#ff8198;border-color:#ff4d6d;background:rgba(255,77,109,0.12);}
   .ms-sync-input{
     width:46px;background:var(--panel2);border:1px solid var(--line);color:var(--text);
     border-radius:6px;padding:6px 4px;font-size:13px;font-family:'IBM Plex Mono',monospace;text-align:center;
@@ -513,6 +529,7 @@
 
   <div class="overlay-panel" id="overlaySettingsPanel" hidden>
     <div class="overlay-panel-heading">⌨ Hotkeys</div>
+    <div class="overlay-panel-hint">Click a button, then press a combo with Ctrl/Alt/Shift. While it's waiting: Esc cancels, Backspace clears the hotkey. Anything showing "(none set)" is optional — bind it only if you want it.</div>
     <div class="overlay-panel-row">
       <span class="overlay-panel-label">Hide ALL Overlays</span>
       <button class="btn" id="hideAllHotkeyBtn">Control+Shift+1</button>
@@ -536,12 +553,62 @@
     <div class="overlay-panel-row">
       <span class="overlay-panel-label">Toggle Declutter List</span>
       <button class="btn" id="declutterHotkeyBtn">Control+Shift+4</button>
-      <span class="overlay-panel-hint">Shows/hides the "safe to retire" Legendary/Mythic droid list.</span>
+      <span class="overlay-panel-hint">Shows/hides the "safe to retire" droid list (every tier, filterable below).</span>
+    </div>
+    <div class="overlay-panel-row">
+      <span class="overlay-panel-label">Scroll Safe to Retire Up</span>
+      <button class="btn" id="declutterScrollUpHotkeyBtn">(none set)</button>
+      <span class="overlay-panel-hint">Pages the Safe to Retire list up one screen (unbound until you set it).</span>
+    </div>
+    <div class="overlay-panel-row">
+      <span class="overlay-panel-label">Scroll Safe to Retire Down</span>
+      <button class="btn" id="declutterScrollDownHotkeyBtn">(none set)</button>
+      <span class="overlay-panel-hint">Pages the Safe to Retire list down one screen.</span>
+    </div>
+    <div class="overlay-panel-row">
+      <span class="overlay-panel-label">Safe to Retire: Toggle All Tiers</span>
+      <button class="btn" id="declutterTierAllHotkeyBtn">(none set)</button>
+      <span class="overlay-panel-hint">Shows all five tiers if any is hidden, otherwise hides all five.</span>
+    </div>
+    <div class="overlay-panel-row">
+      <span class="overlay-panel-label">Safe to Retire: Toggle Default</span>
+      <button class="btn" id="declutterTierDefaultHotkeyBtn">(none set)</button>
+      <span class="overlay-panel-hint">Show/hide Default-tier droids in the Safe to Retire list.</span>
+    </div>
+    <div class="overlay-panel-row">
+      <span class="overlay-panel-label">Safe to Retire: Toggle Rare</span>
+      <button class="btn" id="declutterTierRareHotkeyBtn">(none set)</button>
+      <span class="overlay-panel-hint">Show/hide Rare-tier droids.</span>
+    </div>
+    <div class="overlay-panel-row">
+      <span class="overlay-panel-label">Safe to Retire: Toggle Epic</span>
+      <button class="btn" id="declutterTierEpicHotkeyBtn">(none set)</button>
+      <span class="overlay-panel-hint">Show/hide Epic-tier droids.</span>
+    </div>
+    <div class="overlay-panel-row">
+      <span class="overlay-panel-label">Safe to Retire: Toggle Legendary</span>
+      <button class="btn" id="declutterTierLegendaryHotkeyBtn">(none set)</button>
+      <span class="overlay-panel-hint">Show/hide Legendary-tier droids.</span>
+    </div>
+    <div class="overlay-panel-row">
+      <span class="overlay-panel-label">Safe to Retire: Toggle Mythic</span>
+      <button class="btn" id="declutterTierMythicHotkeyBtn">(none set)</button>
+      <span class="overlay-panel-hint">Show/hide Mythic-tier droids.</span>
     </div>
     <div class="overlay-panel-row">
       <span class="overlay-panel-label">Toggle Rebirth Requirements</span>
       <button class="btn" id="rebirthReqHotkeyBtn">Control+Shift+5</button>
       <span class="overlay-panel-hint">Shows/hides the standalone overlay listing every droid this cycle needs (same data as the 🧬 Rebirth Reqs panel below).</span>
+    </div>
+    <div class="overlay-panel-row">
+      <span class="overlay-panel-label">Scroll Rebirth Requirements Up</span>
+      <button class="btn" id="rebirthReqScrollUpHotkeyBtn">(none set)</button>
+      <span class="overlay-panel-hint">Pages the Rebirth Requirements overlay up one screen.</span>
+    </div>
+    <div class="overlay-panel-row">
+      <span class="overlay-panel-label">Scroll Rebirth Requirements Down</span>
+      <button class="btn" id="rebirthReqScrollDownHotkeyBtn">(none set)</button>
+      <span class="overlay-panel-hint">Pages the Rebirth Requirements overlay down one screen.</span>
     </div>
     <div class="overlay-panel-row">
       <span class="overlay-panel-label">Trigger Read Rebirth Screen</span>
@@ -550,6 +617,16 @@
     </div>
 
     <div class="overlay-panel-heading">Display &amp; Position</div>
+    <div class="overlay-panel-row">
+      <span class="overlay-panel-label">Safe to Retire tiers</span>
+      <button class="btn tier-btn" id="declutterTierAllBtn" title="Show every tier if any is hidden, otherwise hide them all">All</button>
+      <button class="btn tier-btn" data-tier-key="declutterShowDefault">Default</button>
+      <button class="btn tier-btn" data-tier-key="declutterShowRare">Rare</button>
+      <button class="btn tier-btn" data-tier-key="declutterShowEpic">Epic</button>
+      <button class="btn tier-btn" data-tier-key="declutterShowLegendary">Legendary</button>
+      <button class="btn tier-btn" data-tier-key="declutterShowMythic">Mythic</button>
+      <span class="overlay-panel-hint">Click to show/hide a tier in the ♻ Safe to Retire overlay — same as the tier hotkeys above, no binding needed.</span>
+    </div>
     <div class="overlay-panel-row">
       <span class="overlay-panel-label">Panel opacity</span>
       <input type="range" id="overlayOpacityRange" min="0.2" max="0.92" step="0.02" value="0.55">
@@ -589,6 +666,7 @@
   </div>
 
   <div class="content-row">
+    <div class="nothing-shown" id="nothingShown">Nothing selected — press <b>A–Z</b>, <b>By Rebirth Level</b> or <b>🧬 Rebirth Reqs</b> to show a view.</div>
     <div class="main-col" id="quickPanelHome">
       <div class="quick-panel" id="quickPanel">
         <div id="dqList"></div>
@@ -1404,6 +1482,7 @@ function openRbContextMenu(nk, x, y){
 }
 
 let showReqPanel = false;
+let listVisible = true; // false = droid list hidden (active sort button pressed again), so the Rebirth Reqs panel can be the whole view
 function applyReqPanelVisibility(){
   const panel = getEl('rebirthPanel');
   const wrapEl = getEl('wrapEl');
@@ -1411,6 +1490,13 @@ function applyReqPanelVisibility(){
   if(panel) panel.classList.toggle('show', showReqPanel);
   if(wrapEl) wrapEl.classList.toggle('with-rebirth', showReqPanel);
   if(btn) btn.classList.toggle('on', showReqPanel);
+  applyNothingShown();
+}
+// With the list toggled off AND the Rebirth Reqs panel closed, the page body
+// would be completely empty — say how to get a view back instead.
+function applyNothingShown(){
+  const el = getEl('nothingShown');
+  if(el) el.classList.toggle('show', !listVisible && !showReqPanel);
 }
 async function toggleReqPanel(force){
   showReqPanel = (force !== undefined) ? force : !showReqPanel;
@@ -1424,11 +1510,23 @@ document.getElementById('reqPanelClose').addEventListener('click', ()=> toggleRe
 document.getElementById('search').addEventListener('input', e=>{
   filterText = e.target.value; renderList();
 });
+function applyListVisibility(){
+  const col = getEl('quickPanelHome');
+  if(col) col.classList.toggle('list-off', !listVisible);
+  qsa('.sort-toggle button').forEach(b=>{ b.classList.toggle('on', listVisible && b.dataset.sort === sortMode); });
+  applyNothingShown();
+}
 qsa('.sort-toggle button').forEach(btn=>{
   btn.addEventListener('click', ()=>{
-    sortMode = btn.dataset.sort;
-    qsa('.sort-toggle button').forEach(b=>{ b.classList.toggle('on', b===btn); });
-    storeSet('rebirth-sortMode', sortMode);
+    if(listVisible && btn.dataset.sort === sortMode){
+      listVisible = false; // pressing the active sort again hides the list
+    } else {
+      listVisible = true;
+      sortMode = btn.dataset.sort;
+      storeSet('rebirth-sortMode', sortMode);
+    }
+    storeSet('rebirth-listVisible', listVisible);
+    applyListVisibility();
     renderList();
   });
 });
@@ -1885,9 +1983,8 @@ document.getElementById('bgDimRange').addEventListener('change', async (e)=>{
   applyBackground();
   showReqPanel = !!(await storeGet('rebirth-showReqPanel'));
   applyReqPanelVisibility();
-  qsa('.sort-toggle button').forEach(b=>{
-    b.classList.toggle('on', b.dataset.sort === sortMode);
-  });
+  { const lv = await storeGet('rebirth-listVisible'); listVisible = (lv === null || lv === undefined) ? true : !!lv; }
+  applyListVisibility(); // also sets which sort button reads as "on"
   buildIndex();
   await migrate();
   await migrateDroidSpellingFixesV1();

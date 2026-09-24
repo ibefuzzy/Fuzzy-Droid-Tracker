@@ -171,8 +171,8 @@ function cycleLastNeededLevel(cycle){
 
 /* Looks up the DROID_RARITY_CLASS table (droid-data.js) by normalized key,
    so either raw spelling CYCLES uses for the same droid resolves the same
-   way. Returns null for anything not in that table (Common/Rare/Epic —
-   deliberately unclassified, see droid-data.js's comment). */
+   way. Every CYCLES droid has an entry as of v1.6.0; anything that somehow
+   doesn't (see the fallback below) is treated as 'Default'. */
 let RARITY_CLASS_BY_NK = null;
 function getDroidRarityClass(nk){
   if(!RARITY_CLASS_BY_NK){
@@ -188,24 +188,27 @@ function getDroidRarityClass(nk){
       RARITY_CLASS_BY_NK[normKey(canonicalName(rawName))] = DROID_RARITY_CLASS[rawName];
     });
   }
-  return RARITY_CLASS_BY_NK[nk] || null;
+  // Every droid in CYCLES is classified as of 2026-09-24; 'Default' is only
+  // a safety net for a renamed/unknown key so it still shows up somewhere.
+  return RARITY_CLASS_BY_NK[nk] || 'Default';
 }
 
-/* Puts it all together: every droid in `cycle` that's (a) Legendary or
-   Mythic rarity class, (b) logged as owned at some rarity (nothing to
-   retire if you never logged it), and (c) already past its last-needed
-   level for this cycle. Returns [{nk, display, ownedCode, rarityClass,
-   iconKey}], sorted by display name for a stable on-screen order. iconKey
-   reuses cycleCeilings' {cycle,level,slot} (any occurrence of a droid shows
-   the same art — rarity is conveyed by color/badge, not different art per
-   variant — exactly how the Rebirth Reqs panel already looks up icons). */
+/* Puts it all together: every droid in `cycle` that's (a) logged as owned
+   at some rarity (nothing to retire if you never logged it), and (b)
+   already past its last-needed level for this cycle — ANY rarity class as
+   of 2026-09-24 (was Legendary/Mythic only); declutter.html filters by
+   whichever tiers are toggled on. Returns [{nk, display, ownedCode,
+   rarityClass, iconKey}], sorted highest tier first, then display name.
+   iconKey reuses cycleCeilings' {cycle,level,slot} (any occurrence of a
+   droid shows the same art — rarity is conveyed by color/badge, not
+   different art per variant — exactly how the Rebirth Reqs panel already
+   looks up icons). */
 function getDeclutterList(cycle, currentLevel, ownedRank){
   const lastNeeded = cycleLastNeededLevel(cycle);
   const ceilings = cycleCeilings(cycle);
   const out = [];
   Object.keys(lastNeeded).forEach(nk=>{
     const rarityClass = getDroidRarityClass(nk);
-    if(rarityClass !== 'Legendary' && rarityClass !== 'Mythic') return;
     const owned = ownedRank ? ownedRank[nk] : undefined;
     if(owned === undefined || owned === null) return; // nothing logged, nothing to retire
     if(lastNeeded[nk] > currentLevel) return; // still needed later this cycle
@@ -220,6 +223,10 @@ function getDeclutterList(cycle, currentLevel, ownedRank){
       iconKey
     });
   });
-  out.sort((a,b)=> a.display.localeCompare(b.display));
+  out.sort((a,b)=>{
+    const ta = RARITY_CLASS_ORDER.indexOf(a.rarityClass), tb = RARITY_CLASS_ORDER.indexOf(b.rarityClass);
+    if(ta !== tb) return tb - ta; // Mythic first
+    return a.display.localeCompare(b.display);
+  });
   return out;
 }

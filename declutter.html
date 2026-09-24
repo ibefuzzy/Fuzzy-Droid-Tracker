@@ -13,6 +13,9 @@
     --r-beskar: #b9c2cc;
     --r-galactic: #c96bf2;
     --r-stellar: #e08a3c;
+    --rarity-default: #9aa39d;
+    --rarity-rare: #4fa3e8;
+    --rarity-epic: #b06cf2;
     --rarity-legendary: #f4a93b;
     --rarity-mythic: #ff4d6d;
     --accent: #5ef2a6;
@@ -68,35 +71,56 @@
     background:var(--accent); border-radius:999px;
     padding:1px 7px; letter-spacing:0;
   }
-  .grid{
-    display:grid; grid-template-columns:repeat(2, 1fr); gap:4px;
-    overflow:hidden; flex:1; min-height:0;
+  /* ---------------------------------------------------------------------
+     Redesigned 2026-09-23 to match the "Upcoming RB Req's" HUD's clean
+     look (overlay.html): that HUD never looked bulky because its icons are
+     a small, FIXED size regardless of how few cards are on screen — the
+     old grid here instead divided this panel's fixed height into exactly
+     as many equal rows as the current count needed (see the git history
+     for the removed pickCols()/rows math), so a short list handed each row
+     a huge 1fr share and the old 118px icon cap happily filled it
+     ("bulky... large and pixelated"). Fixed instead: icons are a small,
+     constant size (see .d-icon-wrap below, no cap-that-can-still-grow),
+     the grid auto-fills as many fixed-ish-width columns as the window's
+     actual width allows (no more hand-tuned column-count tiers), and rows
+     size themselves from content instead of stretching. A list that's
+     taller than the visible area no longer needs to shrink to fit — it
+     scrolls instead, moved by two new hotkeys (unbound by default, bind
+     them in ⚙ Overlay Settings) since a locked overlay is click-through by
+     design and a mouse can't reach it. See .list-wrap/#viewport/#scrollbar
+     and overlay-scroll.js (shared with rebirth-requirements-overlay.html). */
+  .list-wrap{ position:relative; flex:1; min-height:0; display:flex; }
+  .list-viewport{
+    position:relative; /* offsetParent for overlay-scroll.js's row math */
+    flex:1; min-height:0; overflow:hidden;
+    padding-right:8px; box-sizing:border-box;
+  }
+  .list-inner{
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(80px, 1fr));
+    gap:5px 4px;
+    align-content:start;
+  }
+  .scrollbar{
+    position:absolute; top:0; right:0; bottom:0; width:4px;
+    background:rgba(255,255,255,0.08); border-radius:2px;
+    display:none;
+  }
+  .scrollbar.visible{ display:block; }
+  .scrollbar .thumb{
+    position:absolute; left:0; right:0; min-height:14px;
+    background:var(--accent); border-radius:2px;
+    box-shadow:0 0 4px -1px var(--accent);
   }
   .d-cell{
-    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px;
-    min-width:0; min-height:0; overflow:hidden;
+    display:flex; flex-direction:column; align-items:center; gap:2px;
+    min-width:0; padding:2px 1px;
   }
   .d-icon-wrap{
-    /* Capped 2026-09-20: the grid below divides its fixed height into exactly
-       enough equal rows to fit however many droids are currently listed (see
-       the `rows` comment in render()), which is what lets the list "just
-       fit" with no scrolling regardless of count — but with only 1-2 droids,
-       each row's full 1fr share of that fixed height could be enormous, and
-       flex:1 happily stretched this icon to fill all of it (reported: "when
-       the first few droids become ready to retire, their images are very
-       large"). Capping the icon's own size keeps it a sane, consistent size
-       no matter how few rows there are; any leftover row space just becomes
-       empty margin around a centered cell (.d-cell is justify-content:center
-       now, not flex-start) instead of an oversized image. Doesn't affect the
-       many-droids case at all — real rows are already smaller than this cap
-       once there are more than a handful of entries.
-       */
-    position:relative; width:100%; flex:1; min-height:0;
-    max-width:118px; max-height:118px;
+    position:relative; width:40px; height:40px; flex:0 0 auto; box-sizing:border-box;
     border-radius:6px;
     background:rgba(255,255,255,0.06);
     border:2px solid var(--rc, var(--r-base));
-    box-shadow:0 0 6px -1px var(--rc, transparent);
+    box-shadow:0 0 5px -1px var(--rc, transparent);
     display:flex; align-items:center; justify-content:center;
     overflow:hidden;
   }
@@ -110,11 +134,14 @@
        ~175 individual icons, and just as effective visually. */
     transform:scale(1.3);
   }
+  .d-icon-wrap.default{ --rc: var(--rarity-default); }
+  .d-icon-wrap.rare{ --rc: var(--rarity-rare); }
+  .d-icon-wrap.epic{ --rc: var(--rarity-epic); }
   .d-icon-wrap.legendary{ --rc: var(--rarity-legendary); }
   .d-icon-wrap.mythic{ --rc: var(--rarity-mythic); }
   .d-rarity-dot{
     position:absolute; top:2px; right:2px;
-    width:8px; height:8px; border-radius:50%;
+    width:7px; height:7px; border-radius:50%;
     background:var(--rc, var(--r-base));
     border:1px solid rgba(0,0,0,0.5);
   }
@@ -122,20 +149,35 @@
     font-size:9px; font-weight:700; color:#f2f6f4; text-align:center;
     text-shadow:0 1px 2px rgba(0,0,0,0.9);
     line-height:1.15;
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;
-    flex:0 0 auto;
+    max-width:100%; overflow:hidden;
+    /* wraps to a 2nd line rather than an ellipsis — only a couple of long
+       all-caps names (SENATE HOVERCAM, IMPERIAL PROBE) ever need it */
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
   }
   .d-owned{
     font-size:7.5px; font-weight:600; text-align:center;
     text-shadow:0 1px 2px rgba(0,0,0,0.9);
     opacity:0.85;
-    flex:0 0 auto;
   }
   .empty-msg{
-    flex:1; display:flex; align-items:center; justify-content:center;
+    grid-column:1/-1; display:flex; align-items:center; justify-content:center;
     color:#dfe8e2; font-size:11.5px; text-align:center; line-height:1.4;
     padding:8px;
   }
+  /* an empty list fills the viewport so its message sits centered, not stuck at the top */
+  .list-inner:has(.empty-msg){ height:100%; align-content:stretch; }
+  /* Tier filter pills — only shown while at least one tier is hidden, so the
+     default all-tiers view stays as clean as before. Display-only (a locked
+     overlay is click-through); toggling happens via the tier hotkeys or the
+     tier buttons in ⚙ Overlay Settings. */
+  .tier-pills{ display:none; gap:3px; flex-wrap:wrap; margin-top:-2px; }
+  .tier-pills.visible{ display:flex; }
+  .tier-pill{
+    font-size:8.5px; font-weight:800; letter-spacing:.03em; line-height:1;
+    padding:2px 6px; border-radius:999px;
+    color:#08130d; background:var(--tc);
+  }
+  .tier-pill.off{ background:transparent; color:rgba(255,255,255,0.35); box-shadow:inset 0 0 0 1px rgba(255,255,255,0.18); text-decoration:line-through; }
 </style>
 </head>
 <body>
@@ -146,13 +188,18 @@
     </div>
     <div class="card">
       <h1><span>♻ Safe to Retire</span><span class="count" id="countTag">0</span></h1>
-      <div class="grid" id="grid"></div>
+      <div class="tier-pills" id="tierPills"></div>
+      <div class="list-wrap">
+        <div class="list-viewport" id="viewport"><div class="list-inner" id="grid"></div></div>
+        <div class="scrollbar" id="scrollbar"><div class="thumb" id="scrollThumb"></div></div>
+      </div>
     </div>
   </div>
 
 <script src="icons-data.js"></script>
 <script src="droid-data.js"></script>
 <script src="requirements.js"></script>
+<script src="overlay-scroll.js"></script>
 <script>
 (function(){
   if(!window.overlayAPI){
@@ -161,8 +208,9 @@
   }
 
   /* ---------------------------------------------------------------------------
-     Legendary/Mythic droids you've logged as owned whose last-needed level in
-     the ACTIVE cycle has already been passed — i.e. nothing left in this
+     Droids of every rarity tier (Default through Mythic — this was
+     Legendary/Mythic only until v1.6.0) you've logged as owned whose
+     last-needed level in the ACTIVE cycle has already been passed — i.e. nothing left in this
      cycle's requirement table will ever ask for them again, so whatever copy
      you're holding is safe to sell/dismantle/retire in-game. All of the real
      logic (which droid, which level, which rarity class) lives in
@@ -196,7 +244,7 @@
   function cellHtml(item){
     const src = (typeof ICONS !== 'undefined' && item.iconKey && ICONS[item.iconKey]) ? ('data:image/webp;base64,' + ICONS[item.iconKey]) : '';
     const imgTag = src ? ('<img src="' + src + '" alt="' + item.display + '" loading="lazy">') : '';
-    const rarityClass = item.rarityClass === 'Mythic' ? 'mythic' : 'legendary';
+    const rarityClass = String(item.rarityClass || 'Default').toLowerCase();
     const ownedColorVar = 'var(--r-' + (
       item.ownedCode === 'B' ? 'base' :
       item.ownedCode === 'G' ? 'gold' :
@@ -213,61 +261,80 @@
     '</div>';
   }
 
-  // Dynamic column count — same fix and same reasoning as
-  // rebirth-requirements-overlay.html's pickCols() (added 2026-09-22 after
-  // that panel's icons were measured collapsing to 4px tall at a full
-  // 43-droid list): more columns means fewer rows means more height left per
-  // row for the icon, once this panel's fixed height is divided up. Safe to
-  // Retire's lists are usually short — a handful of Legendary/Mythic droids
-  // at a time — so this rarely climbs above the base 2 columns. It's here so
-  // a cycle that happens to free up a lot of droids at once can't reproduce
-  // the same collapse bug, not because it's a problem today.
-  function pickCols(count){
-    if(count <= 18) return 2;
-    if(count <= 27) return 3;
-    if(count <= 36) return 4;
-    if(count <= 45) return 5;
-    return 6;
+  /* Scroll viewport — the paging/scrollbar logic lives in overlay-scroll.js
+     (shared by both scrollable overlays); this window only supplies its own
+     elements and hotkey names. */
+  const viewport = document.getElementById('viewport');
+  const scroller = createScrollViewport(viewport, document.getElementById('scrollbar'), document.getElementById('scrollThumb'), '.d-cell');
+  const updateScrollbar = scroller.update;
+
+  window.overlayAPI.onHotkeyTriggered((name)=>{
+    if(name === 'declutterScrollUp') scroller.page(-1);
+    else if(name === 'declutterScrollDown') scroller.page(1);
+  });
+
+  // Which rarity tiers to show — driven purely by settings (flipped by the
+  // tier hotkeys in main.js or the tier buttons in ⚙ Overlay Settings),
+  // re-read on every settings:changed. Highest tier first, matching the sort.
+  const TIER_SETTING = { Mythic:'declutterShowMythic', Legendary:'declutterShowLegendary', Epic:'declutterShowEpic', Rare:'declutterShowRare', Default:'declutterShowDefault' };
+  let tiersOn = { Default:true, Rare:true, Epic:true, Legendary:true, Mythic:true };
+  // render() is a no-op until the first fullReload() has built the droid
+  // index and loaded progress, so an early settings:changed can't paint a
+  // half-loaded list.
+  let loaded = false;
+
+  function renderTierPills(){
+    const el = document.getElementById('tierPills');
+    const anyOff = Object.keys(TIER_SETTING).some(t => !tiersOn[t]);
+    el.classList.toggle('visible', anyOff);
+    if(!anyOff){ el.innerHTML = ''; return; }
+    el.innerHTML = Object.keys(TIER_SETTING).map(t =>
+      '<span class="tier-pill' + (tiersOn[t] ? '' : ' off') + '" style="--tc:var(--rarity-' + t.toLowerCase() + ')">' + t + '</span>'
+    ).join('');
   }
 
   function render(){
+    if(!loaded) return;
     const gridEl = document.getElementById('grid');
     const countTag = document.getElementById('countTag');
-    const list = getDeclutterList(currentCycle, currentLevel, ownedRankLocal);
+    const all = getDeclutterList(currentCycle, currentLevel, ownedRankLocal);
+    const list = all.filter(item => tiersOn[item.rarityClass] !== false);
     countTag.textContent = String(list.length);
     if(!list.length){
-      gridEl.style.gridTemplateRows = '';
-      gridEl.innerHTML = '<div class="empty-msg" style="grid-column:1/-1">Nothing to retire yet — Legendary/Mythic droids show up here once this cycle no longer needs them.</div>';
+      const hiddenByTier = all.length - list.length;
+      gridEl.innerHTML = '<div class="empty-msg">' +
+        (hiddenByTier ? (hiddenByTier + ' droid' + (hiddenByTier === 1 ? '' : 's') + ' hidden by the tier filter — turn tiers back on with their hotkeys or in ⚙ Overlay Settings.')
+                      : 'Nothing to retire yet — droids show up here once this cycle no longer needs them.') +
+        '</div>';
+      updateScrollbar();
       return;
     }
-    // This box never scrolls: however many rows the current count needs,
-    // explicitly divide the grid's own fixed height into exactly that many
-    // equal rows (CSS's 1fr does the actual division) instead of letting
-    // rows size themselves from content and overflow. Cells — and the icons
-    // inside them, which stretch via flex:1 in the CSS above — shrink as
-    // the count grows, but everything always fits without a scrollbar.
-    const cols = pickCols(list.length);
-    const rows = Math.max(1, Math.ceil(list.length / cols));
-    gridEl.style.gridTemplateColumns = 'repeat(' + cols + ', 1fr)';
-    gridEl.style.gridTemplateRows = 'repeat(' + rows + ', 1fr)';
     gridEl.innerHTML = list.map(cellHtml).join('');
+    updateScrollbar();
   }
 
   async function fullReload(){
     await loadIndexData();
     await loadProgress();
+    loaded = true;
     render();
   }
 
   window.overlayAPI.onStoreChanged(({ key, value })=>{
     if(key === 'rebirth-ownedRank-v2'){ ownedRankLocal = value || {}; render(); }
-    else if(key === 'rebirth-activeCycle'){ currentCycle = value || 1; render(); }
+    else if(key === 'rebirth-activeCycle'){ currentCycle = value || 1; scroller.toTop(); render(); } // new cycle = new list, start at the top
     else if(key === 'rebirth-currentLevel'){ currentLevel = value || 0; render(); }
     else if(key === 'rebirth-nameMerges' || key === 'rebirth-displayOverrides'){ fullReload(); }
   });
 
   function applySettings(settings){
     document.body.classList.toggle('unlocked', !settings.declutterLocked);
+    let changed = false;
+    Object.keys(TIER_SETTING).forEach(t=>{
+      const v = settings[TIER_SETTING[t]] !== false;
+      if(tiersOn[t] !== v){ tiersOn[t] = v; changed = true; }
+    });
+    if(changed){ renderTierPills(); render(); }
   }
   window.overlayAPI.onSettingsChanged(applySettings);
 

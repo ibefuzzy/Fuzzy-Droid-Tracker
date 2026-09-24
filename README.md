@@ -262,12 +262,11 @@ researched color language, not lifted screenshots. Once a banner's own
 countdown drops under 10 seconds, it pulses gently — a glance-only cue that
 something's about to fire, without needing to read the numbers.
 
-## ♻ Declutter list (Legendary/Mythic droids you can safely retire)
+## ♻ Safe to Retire list (droids you can safely let go of)
 
-A third always-on-top window, meant to sit under your in-game player-counter
-HUD (which can show up to 6 rows). It lists every **Legendary or Mythic**
-droid you've logged as owned whose last-required level in the *active*
-cycle you've already passed — meaning nothing left in that cycle's
+An always-on-top window, meant to sit under your in-game player-counter HUD.
+It lists every droid you've logged as owned whose last-required level in the
+*active* cycle you've already passed — meaning nothing left in that cycle's
 requirement table will ever ask for that droid again, so whatever copy
 you're holding (Beskar, Galactic, whatever) is safe to sell or dismantle
 in-game.
@@ -276,53 +275,62 @@ Example: in Cycle 2, Beskar Proto Roller (the highest colorway Proto Roller
 appears in for that cycle) is last needed at Rebirth 22. Once your current
 level passes 22, Proto Roller shows up here — not before.
 
-Each entry shows the droid's actual in-game icon (reused from the same
-artwork the tracker's own Rebirth Reqs panel already uses — real images,
-not placeholders), its name, and the exact colorway you have logged,
-color-coded the same as everywhere else in this app. A small ring/dot marks
-whether it's Legendary (amber) or Mythic (red) — this is a **different axis**
-from the Base→Stellar colorway ladder the rest of the app tracks: it's the
-droid's fixed rarity *class*, independent of which colorway copy you own.
-Only Legendary and Mythic droids are ever shown here, per how this was
-asked for — Common/Rare/Epic droids never appear no matter how far past
-their last-needed level you are. (**Iconic** droids — a separate,
-event-exclusive category — never appear in this game's rebirth requirement
-tables at all, in any cycle, so there was nothing for this list to do about
-them; they're correctly absent, not overlooked.)
+**Every rarity tier, filterable (v1.6.0).** The list covers all five droid
+tiers — **Default, Rare, Epic, Legendary, Mythic** (it was Legendary/Mythic
+only before 1.6.0) — sorted highest tier first. Each card's frame and corner
+dot are colored by tier (gray / blue / purple / amber / red). Show or hide
+tiers two ways:
+- **⚙ Overlay Settings → Safe to Retire tiers** — click All / Default / Rare /
+  Epic / Legendary / Mythic. Works straight away, nothing to bind.
+- **Hotkeys** — one per tier plus a "toggle all tiers" key. These ship
+  **unbound**; set whichever you want under ⚙ Overlay Settings → Hotkeys.
+
+All tiers are on by default. While any tier is hidden, a small row of tier
+pills appears under the title (hidden ones crossed out) so you can tell at a
+glance the list is filtered.
+
+**Clean cards + scrolling (v1.6.0).** Cards are a small fixed size, matching
+the 🎯 Upcoming RB Req's HUD, instead of stretching to fill the box — the
+old layout blew icons up whenever only a few droids were listed. When there
+are more droids than fit, the list scrolls rather than shrinking: a thin
+scrollbar appears on the right showing where you are (it's hidden when
+everything fits). Because a locked overlay is click-through, scrolling is by
+hotkey — **Scroll Safe to Retire Up / Down**, one screenful per press. Both
+ship unbound; set them in ⚙ Overlay Settings.
+
+Each entry shows the droid's actual in-game icon, its name, and the exact
+colorway you have logged, color-coded the same as everywhere else in this
+app. Rarity *tier* is a **different axis** from the Base→Stellar colorway
+ladder the rest of the app tracks: it's the droid's fixed class, independent
+of which colorway copy you own. (**Iconic** droids never appear in this
+game's rebirth requirement tables at all, so they're correctly absent.)
 
 **A correctness note worth knowing:** this is *not* the same check as "have
 I already seen this droid hit its max colorway" — a droid can reach its
-ceiling colorway at one level and then reappear at that *same* ceiling
-colorway again at a *later* level in the same cycle (this actually happens
-for 13 of the 223 droid/cycle combinations in this game's real requirement
-data). The Declutter list specifically tracks each droid's true final
-appearance level, not just the first time it reaches top rarity, so it
-won't tell you something's safe to retire while the cycle could still ask
-for it again.
+ceiling colorway at one level and then reappear at a *later* level in the
+same cycle (this happens for 13 of the 223 droid/cycle combinations in the
+real requirement data). The list tracks each droid's true final appearance
+level, so it won't tell you something's safe to retire while the cycle could
+still ask for it again.
 
-It updates live and automatically — the moment you log a droid, apply a
-Rebirth Screen read, or change your current level or active cycle anywhere
-else in the app, this list recomputes. No manual refresh, ever.
+It updates live — the moment you log a droid, apply a Rebirth Screen read,
+or change your current level or active cycle anywhere else in the app, this
+list recomputes. Switching cycles also scrolls it back to the top.
 
 Toggle it with **♻ Declutter** in the toolbar or its hotkey, **Ctrl+Shift+4**
 by default. Reposition it the same way as the HUD and timers: **⚙ Overlay
 Settings → Reposition Declutter List → 🎯 Drag into place**, drag it under
 your player counter, then click **Lock** on the list itself.
 
-**Where the Legendary/Mythic classification data comes from:** this game's
-own requirement tables (what this app is otherwise built from) don't encode
-rarity class at all, so it's assembled from community references —
-igeeksblog.com, fandomscoop.com, insider-gaming.com's Droidex writeup, and
-especially [droidex.nackz.dev](https://droidex.nackz.dev) (a player-made
-droid database/value list, cross-checked against its own FAQ) — landing on
-8 Legendary and 11 Mythic droids that map onto this app's roster. One name
-(Proto Roller) had a source disagreement — one site called it Epic, the
-rest called it Legendary — resolved to Legendary by majority. Two droids
-(Sen-RTI, Util-Tek) don't show up as Legendary or Mythic anywhere this
-research found, so they're excluded from this list by that absence, though
-not individually confirmed as Common/Rare/Epic either. If a droid ever
-looks wrong here, this is the one piece of data in the whole app that isn't
-sourced from the game's own tables — say so and it can be corrected.
+**Where the tier data comes from:** the game's own requirement tables don't
+encode rarity class, so it comes from community references — chiefly
+[droidex.nackz.dev](https://droidex.nackz.dev)'s value list, cross-checked
+name-by-name against every one of the 62 droids in this app's cycle tables
+(11 Default, 14 Rare, 18 Epic, 8 Legendary, 11 Mythic), with the original
+Legendary/Mythic set also confirmed against igeeksblog.com, fandomscoop.com
+and insider-gaming.com. It's the one piece of data in the app that isn't
+from the game's own tables — if a droid's tier ever looks wrong, say so and
+it can be corrected.
 
 ## 🧬 Rebirth Requirements overlay
 
@@ -342,11 +350,13 @@ position as, the ♻ Declutter list** — same card style (a droid portrait in a
 rarity-colored frame, its name, and the colorway you've logged for it, if
 any), same drag-to-reposition/Lock behavior. The one real difference is
 volume: right after you switch to a new cycle, before you've logged
-anything, this can briefly show the full roster (43-48 droids depending on
-the cycle) — several times more than the Declutter list typically shows at
-once — so this view uses 3 columns instead of 2 to keep that worst case
-fitting without scrolling. Once you're partway through a cycle the list is
-usually much shorter, same as Declutter's.
+anything, this can show the full roster (43-49 droids depending on the
+cycle). As of v1.6.0 it uses the same small fixed-size cards and hotkey
+scrolling as the Safe to Retire list instead of shrinking everything to fit
+— **Scroll Rebirth Requirements Up / Down**, unbound until you set them in ⚙
+Overlay Settings, with a scrollbar on the right whenever there's more below.
+Once you're partway through a cycle the list is usually short enough that no
+scrolling is needed at all.
 
 Because it defaults to the same spot as the Declutter list, showing both at
 once will overlap — reposition one in **⚙ Overlay Settings** if you want them
@@ -382,7 +392,9 @@ All Overlays, hides this card too, but doesn't have its own on/off state to
 toggle back — see above.)
 
 It reads its rows live from **⚙ Overlay Settings**, so if you rebind any
-hotkey there, the list updates immediately without a restart.
+hotkey there, the list updates immediately without a restart. Only hotkeys
+that are actually bound are listed — the optional ones (scroll and tier
+hotkeys) show up here once you set them.
 
 All hotkeys work even while Fortnite has focus, and every default is
 changeable from **⚙ Overlay Settings**:
@@ -396,6 +408,12 @@ changeable from **⚙ Overlay Settings**:
 | Toggle Declutter List | Show/hide the ♻ safe-to-retire droid list | `Ctrl+Shift+4` |
 | Toggle Rebirth Requirements | Show/hide the 🧬 still-needed overlay | `Ctrl+Shift+5` |
 | Trigger Read Rebirth Screen | Fires the 📸 Read Rebirth Screen button | `Ctrl+Shift+6` |
+| Scroll Safe to Retire Up / Down | Pages the Safe to Retire list one screen at a time | *(unbound — set in ⚙ Overlay Settings)* |
+| Scroll Rebirth Requirements Up / Down | Same, for the Rebirth Requirements overlay | *(unbound)* |
+| Safe to Retire: Toggle All Tiers | Shows all five rarity tiers if any is hidden, otherwise hides all | *(unbound)* |
+| Safe to Retire: Toggle Default / Rare / Epic / Legendary / Mythic | Show or hide that one tier in the Safe to Retire list | *(unbound, one each)* |
+
+The ten unbound hotkeys above ship with no key combo on purpose (see the convention note in `main.js`): they only appear on the on-screen hotkey list once you've set them.
 
 The read-button hotkey doesn't do anything new under the hood — pressing it
 just clicks the real toolbar button for you, so the exact same
@@ -407,13 +425,18 @@ read or written changes based on how you triggered it.
 A few small fixes aimed at specific rough edges that came up while building
 and testing everything above:
 
+- **Hide the droid list to jump straight to a panel (v1.6.0).** Press the
+  already-active **A–Z** or **By Rebirth Level** button again to turn the
+  droid list off (press either to bring it back). With the list off, an open
+  **🧬 Rebirth Reqs** panel takes the full width instead of sitting below or
+  beside a long list — handy on small screens. The choice is remembered.
 - **Version badge.** The tracker's title bar and the hotkey reference list
   both now show a small `vX.Y.Z` tag. After unzipping a new copy, check
   that this changed — a stale, not-yet-restarted build has looked exactly
   like a code bug more than once (the mission-timer saga above is a direct
   example: a whole round of back-and-forth turned out to be an old build,
   not a bug).
-- **Hotkey conflict warning.** With seven global hotkeys now competing for
+- **Hotkey conflict warning.** With seventeen global hotkeys now competing for
   key combinations your OS or another app might already have claimed, a
   silent failure to register was a real risk that was never fully confirmed
   either way. If any hotkey fails to bind at launch, a toast names exactly
@@ -431,6 +454,13 @@ and testing everything above:
   rebind with no modifier held at all (Ctrl/Alt/Shift) — an unmodified key
   registered as a global hotkey would swallow every press of it in *every*
   app while this one is running, including Fortnite itself.
+- **Unbinding a hotkey (v1.6.0).** While a rebind button is waiting for keys,
+  press **Backspace** (or Delete) to clear that hotkey entirely — Esc still
+  just cancels. Most hotkeys added in 1.6.0 are unbound by default, so this
+  is how you undo one you set to try it out.
+- **"Nothing selected" hint (v1.6.0).** If the droid list is toggled off and
+  no side panel is open, the page says which buttons bring a view back
+  instead of sitting blank.
 - **Accidentally closing a HUD window is recoverable again.** Unlocking the
   HUD, a timer banner, the Declutter list, or the Rebirth Requirements
   overlay to drag it gives that window real focus, so an OS-level "close
@@ -444,7 +474,7 @@ and testing everything above:
   background. Fixed; closing the tracker window (or File → Quit) now exits
   cleanly every time, hotkeys and all.
 - **Renamed droids stay on the Declutter list.** Fixing a typo or merging a
-  duplicate entry for a Legendary or Mythic droid used to silently drop it
+  duplicate entry for a droid used to silently drop it
   out of the **♻ Safe to Retire** list for good, even once it genuinely
   qualified again — the list was still looking it up under its old name.
   Renaming no longer loses track of it.
@@ -480,7 +510,7 @@ and testing everything above:
 
 - `main.js` — Electron main process: all six windows (tracker, HUD,
   timers, Declutter list, Rebirth Requirements overlay, hotkey list), the
-  shared JSON store, the seven global hotkeys (registered together at
+  shared JSON store, the seventeen global hotkeys (registered together at
   launch via `registerAllHotkeys`, with any that fail to bind reported to
   the tracker window as a toast via `reportHotkeyRegistrationFailures`),
   settings (including the four-step `migrateHotkeyLayout()` pass that
@@ -508,9 +538,9 @@ and testing everything above:
   `requirements.js`, so it can never disagree with the tracker's own 🧬
   panel for the same cycle.
 - `droid-data.js` — CYCLES + rarity data, shared verbatim by both windows.
-  Also holds `DROID_RARITY_CLASS` (the separate, community-sourced
-  Legendary/Mythic map the Declutter list filters on — see its section
-  above for provenance).
+  Also holds `DROID_RARITY_CLASS` + `RARITY_CLASS_ORDER` (the separate,
+  community-sourced Default/Rare/Epic/Legendary/Mythic tier map the Safe to
+  Retire list groups and filters on — see its section above for provenance).
 - `icons-data.js` — reference-icon thumbnails (tracker-only: Live Detect and
   the Rebirth Requirements panel's icons).
 - `requirements.js` — shared logic (`normKey`/`canonicalName`/`buildIndex`/
@@ -539,8 +569,9 @@ and testing everything above:
   reads its rows live from shared settings and re-renders on any change.
   Shown automatically on launch, toggled via the ⌨ Hotkeys button or its own
   hotkey (`Ctrl+Shift+2` by default).
-- `declutter.html` — the "safe to retire" Legendary/Mythic droid list; all
-  filter logic lives in `requirements.js`'s `getDeclutterList`, this file is
-  purely rendering plus the same live store-driven update pattern every
-  other window here already uses. Shown/hidden by `main.js` via the ♻
+- `declutter.html` — the "safe to retire" droid list (every tier); the
+  which-droids logic lives in `requirements.js`'s `getDeclutterList`, this
+  file handles rendering, the tier filter (read from the `declutterShow*`
+  settings), and the hotkey-driven scroll viewport, plus the same live
+  store-driven update pattern every other window here already uses. Shown/hidden by `main.js` via the ♻
   Declutter button or its own hotkey (`Ctrl+Shift+4` by default).

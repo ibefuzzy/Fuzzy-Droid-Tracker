@@ -1,6 +1,6 @@
 {
   "name": "fuzzys-droid-tracker",
-  "version": "1.5.4",
+  "version": "1.6.0",
   "description": "Fuzzy's Droid Tracker — a Droid Tycoon rebirth tracker with an always-on-top requirements HUD",
   "main": "main.js",
   "author": "Fuzzy",
@@ -19,9 +19,20 @@
   "build": {
     "appId": "com.fuzzy.droidtracker",
     "productName": "Fuzzy's Droid Tracker",
+    "directories": {
+      "output": "release"
+    },
     "files": [
       "**/*",
-      "!_orig.html"
+      "!_orig.html",
+      "!dist/**",
+      "!release/**",
+      "!safe-to-retire-icons/**",
+      "!safe-to-retire-icons.zip",
+      "!src/**",
+      "!build-log.txt",
+      "!build-release.bat",
+      "!gh-check.*"
     ],
     "win": {
       "target": "portable"
