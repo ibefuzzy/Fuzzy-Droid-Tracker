@@ -123,18 +123,41 @@ plumbing, since it reads no droid/cycle data at all). The tracker itself still
 works normally outside Electron via a localStorage fallback (real progress in
 userData is never touched).
 
-## Current status (2026-09-25): v1.9.1 built + pushed, release page open, NOT YET PUBLISHED
-Everything through v1.9.1 is done: crash-safe saves, the tabbed holo-console
-settings panel, per-overlay typography and fade-in, the two-column Command Console
-toolbar, holo borders on the Rebirth Reqs panel and droid list, the untested
-ownership logic moved into requirements.js and tested, and the per-overlay
-saber-color picker (Colors tab) — all shipped, 54 tests passing, verified live in
-the browser, not just unit tests. Source is on GitHub main (commit be8c1d3). The
-v1.9.1 exe is built and checksummed, and its release page is open in the browser
-pane with everything prefilled — the ONLY remaining step is the user dragging the
-exe onto the page and clicking Publish. Check whether that already happened before
-assuming it's still pending.
+## Current status (2026-09-25): v1.10.0 built + pushed, release page open, NOT YET PUBLISHED
+v1.10.0 shipped two features in one patch, both previewed as artifacts and
+approved by the user before any code was written:
+- **⚡ Optimal Crit Guide** — a 5th overlay (crit-guide-overlay.html), a STATIC
+  reference panel (no ownership/cycle data) with the fixed crystal-spend order
+  for one build plus the hit-calculation formula. Full main.js/preload.js/
+  overlay-controls.js/tracker.html wiring (window, hotkey, 2 scroll hotkeys,
+  toolbar button, Layout card, Keybind rows) — same pattern as Sneak Preview
+  throughout.
+- **🛡 Overlay Borders** — replaced the flat SABER_COLORS 6-color picker with
+  BORDER_SKINS, 7 hand-drawn CSS/SVG border skins (rebel/empire/jedi/mando/
+  hunter/tatooine/grogu: glow outline + corner brackets + emblem badge via
+  `borderIconSvg()`). User's first ask was to reuse real Star Wars frame
+  image assets they'd sourced elsewhere (a 6-image composite, no individual
+  files, no real alpha transparency); that got dropped in favor of this
+  project's own vector look once a side-by-side preview showed the vector
+  version scaling cleanly to narrow overlays where the sourced frames badly
+  distorted. Settings keys renamed (`color`→`border`,
+  `declutterColor`→`declutterBorder`, `rebirthReqColor`→`rebirthReqBorder`,
+  `sneakColor`→`sneakBorder`, new `critGuideBorder`) — Colors tab is now
+  Borders. Every overlay got a `.border-badge` div + bumped top padding
+  (6px→24px) so the badge doesn't clip against the window edge; verified at
+  the real minimum overlay width (260px), not just full-size.
+
+56 tests passing (was 54; +crit-guide-overlay.html's own page-guard tests,
+`borderIconSvg` added to ARITY_CHECKED). Verified live in the browser — the
+static-server + mocked-overlayAPI pattern (see "Smoke-testing" above) run
+against all 5 overlays and the tracker's Borders tab, not just unit tests.
+Source is on GitHub main (two commits: `8508979` for the feature, `ef76f1c`
+for the ARITY_CHECKED addition). The v1.10.0 exe is built and checksummed
+(release/ holds only this one exe now — old 1.8.1/1.9.0/1.9.1 exes deleted
+per the "keep only current build" rule), and its release page is open in the
+browser pane with everything prefilled — the ONLY remaining step is the user
+dragging the exe onto the page and clicking Publish. Check whether that
+already happened before assuming it's still pending.
 
 No other work is queued. If the user wants a next direction and isn't sure, ask —
-don't assume; the last brainstorm (visual polish) is the most recently exhausted
-vein, but that doesn't mean it's automatically next again.
+don't assume.
