@@ -35,6 +35,9 @@
   const sneakRepositionBtn = document.getElementById('sneakRepositionBtn');
   const sneakResetPosBtn = document.getElementById('sneakResetPosBtn');
   const sneakToggleBtn = document.getElementById('sneakToggleBtn');
+  const critGuideRepositionBtn = document.getElementById('critGuideRepositionBtn');
+  const critGuideResetPosBtn = document.getElementById('critGuideResetPosBtn');
+  const critGuideToggleBtn = document.getElementById('critGuideToggleBtn');
 
   /* Every "press to rebind" hotkey button: [button id, settings key, label].
      One table instead of seventeen hand-copied const/label/wire lines
@@ -64,7 +67,10 @@
     ['rebirthReqHotkeyBtn', 'rebirthReqOverlayHotkey', 'Toggle Rebirth Requirements'],
     ['sneakHotkeyBtn', 'sneakHotkey', 'Toggle Sneak Preview'],
     ['sneakScrollUpHotkeyBtn', 'sneakScrollUpHotkey', 'Scroll Sneak Preview Up'],
-    ['sneakScrollDownHotkeyBtn', 'sneakScrollDownHotkey', 'Scroll Sneak Preview Down']
+    ['sneakScrollDownHotkeyBtn', 'sneakScrollDownHotkey', 'Scroll Sneak Preview Down'],
+    ['critGuideHotkeyBtn', 'critGuideHotkey', 'Toggle Optimal Crit Guide'],
+    ['critGuideScrollUpHotkeyBtn', 'critGuideScrollUpHotkey', 'Scroll Crit Guide Up'],
+    ['critGuideScrollDownHotkeyBtn', 'critGuideScrollDownHotkey', 'Scroll Crit Guide Down']
   ].map(([id, settingsKey, label]) => ({ btn: document.getElementById(id), settingsKey, label }));
 
   /* Tier filter buttons (⚙ Overlay Settings → Filters tab) —
@@ -77,24 +83,25 @@
   const tierBtns = Array.from(document.querySelectorAll('[data-tier-key]'));
   const tierAllBtn = document.getElementById('declutterTierAllBtn');
 
-  /* Colors tab (v1.9.0): one row per overlay (⚙ Overlay Settings → Colors),
-     each with a swatch button per SABER_COLOR_ORDER entry. Swatches are
-     built here instead of hand-written in tracker.html so the color list
-     only exists in one place — SABER_COLORS/SABER_COLOR_ORDER in
-     requirements.js, the same object each overlay window reads its own
-     saber color from. */
-  const COLOR_ROW_DEFAULT = { color:'blue', declutterColor:'green', rebirthReqColor:'purple', sneakColor:'red' };
+  /* Borders tab (v1.10.0, was Colors): one row per overlay (⚙ Overlay
+     Settings → Borders), each with a swatch button per BORDER_SKIN_ORDER
+     entry. Swatches are built here instead of hand-written in tracker.html
+     so the border list only exists in one place — BORDER_SKINS/
+     BORDER_SKIN_ORDER in requirements.js, the same object each overlay
+     window reads its own border skin from. */
+  const COLOR_ROW_DEFAULT = { border:'jedi', declutterBorder:'grogu', rebirthReqBorder:'mando', sneakBorder:'rebel', critGuideBorder:'tatooine' };
   const colorRows = Array.from(document.querySelectorAll('.color-row[data-color-key]'));
   colorRows.forEach(row=>{
     const key = row.dataset.colorKey;
     const wrap = row.querySelector('.color-swatches');
     if(!wrap) return;
-    SABER_COLOR_ORDER.forEach(name=>{
+    BORDER_SKIN_ORDER.forEach(name=>{
       const b = document.createElement('button');
       b.type = 'button';
       b.className = 'swatch';
-      b.title = name.charAt(0).toUpperCase() + name.slice(1);
-      b.style.setProperty('--sw', SABER_COLORS[name].hex);
+      b.title = BORDER_SKINS[name].label;
+      b.style.setProperty('--sw', BORDER_SKINS[name].hex);
+      b.innerHTML = borderIconSvg(name, 16);
       b.dataset.colorValue = name;
       wrap.appendChild(b);
     });
@@ -107,6 +114,7 @@
   if(declutterToggleBtn) declutterToggleBtn.hidden = false;
   if(rebirthReqToggleBtn) rebirthReqToggleBtn.hidden = false;
   if(sneakToggleBtn) sneakToggleBtn.hidden = false;
+  if(critGuideToggleBtn) critGuideToggleBtn.hidden = false;
 
   let opacityDebounce = null;
   const capturing = {}; // settingsKey -> bool, so two hotkey rows never step on each other
@@ -146,6 +154,12 @@
     sneakToggleBtn.classList.toggle('on', visible);
   }
 
+  function setCritGuideToggleLabel(visible){
+    if(!critGuideToggleBtn) return;
+    critGuideToggleBtn.textContent = visible ? '⚡ Crit Guide: On' : '⚡ Crit Guide: Off';
+    critGuideToggleBtn.classList.toggle('on', visible);
+  }
+
   function applySettingsToUI(settings){
     HOTKEY_BUTTONS.forEach(({ btn, settingsKey })=>{
       if(btn && !capturing[settingsKey]) btn.textContent = settings[settingsKey] || '(none set)';
@@ -165,6 +179,7 @@
     setDeclutterToggleLabel(settings.declutterVisible);
     setRebirthReqToggleLabel(settings.rebirthReqVisible);
     setSneakToggleLabel(settings.sneakVisible);
+    setCritGuideToggleLabel(settings.critGuideVisible);
     repositionBtn.textContent = settings.locked ? '🎯 Drag into place' : '🔓 Unlocked — drag the HUD, then use its Lock button';
     repositionBtn.classList.toggle('on', !settings.locked);
     if(timersRepositionBtn){
@@ -182,6 +197,10 @@
     if(sneakRepositionBtn){
       sneakRepositionBtn.textContent = settings.sneakLocked ? '🎯 Drag into place' : '🔓 Unlocked — drag the overlay, then use its Lock button';
       sneakRepositionBtn.classList.toggle('on', !settings.sneakLocked);
+    }
+    if(critGuideRepositionBtn){
+      critGuideRepositionBtn.textContent = settings.critGuideLocked ? '🎯 Drag into place' : '🔓 Unlocked — drag the overlay, then use its Lock button';
+      critGuideRepositionBtn.classList.toggle('on', !settings.critGuideLocked);
     }
   }
 
@@ -504,6 +523,35 @@
     });
   }
 
+  if(critGuideToggleBtn){
+    critGuideToggleBtn.addEventListener('click', async ()=>{
+      const visible = await window.overlayAPI.toggleCritGuide();
+      setCritGuideToggleLabel(visible);
+    });
+  }
+
+  if(critGuideRepositionBtn){
+    critGuideRepositionBtn.addEventListener('click', async ()=>{
+      const s = await window.overlayAPI.getSettings();
+      if(s.critGuideLocked){
+        await window.overlayAPI.setCritGuideLocked(false);
+        showToast('Optimal Crit Guide overlay unlocked — drag it into place, then click its own Lock button');
+      } else {
+        await window.overlayAPI.setCritGuideLocked(true);
+        showToast('Optimal Crit Guide overlay position locked');
+      }
+    });
+  }
+
+  if(critGuideResetPosBtn){
+    critGuideResetPosBtn.addEventListener('click', async ()=>{
+      if(!window.overlayAPI.resetCritGuidePosition) return;
+      const s = await window.overlayAPI.resetCritGuidePosition();
+      applySettingsToUI(s);
+      showToast('Optimal Crit Guide overlay position reset to default');
+    });
+  }
+
   /* Ctrl+Shift+6 (Read Rebirth Screen) fires from a global OS-level hotkey
      in the main process, which can't call renderer functions directly — it
      broadcasts that it fired, and this just clicks the real button, so the
@@ -550,6 +598,7 @@
   if(window.overlayAPI.onDeclutterVisibility) window.overlayAPI.onDeclutterVisibility(setDeclutterToggleLabel);
   if(window.overlayAPI.onRebirthReqVisibility) window.overlayAPI.onRebirthReqVisibility(setRebirthReqToggleLabel);
   if(window.overlayAPI.onSneakVisibility) window.overlayAPI.onSneakVisibility(setSneakToggleLabel);
+  if(window.overlayAPI.onCritGuideVisibility) window.overlayAPI.onCritGuideVisibility(setCritGuideToggleLabel);
 
   (async ()=>{
     const s = await window.overlayAPI.getSettings();

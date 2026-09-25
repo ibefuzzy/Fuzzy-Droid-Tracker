@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Fuzzy's Droid Tracker — Optimal Crit Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --r-gold: #e8c04a;
+    --r-diamond: #4fd3e8;
+    --r-galactic: #c96bf2;
+    --accent: #e08a3c; /* this overlay's own border skin — Tatooine orange by default */
+    --sw-rgb: 224,138,60;
+  }
+  html,body{
+    margin:0; padding:0; background:transparent; overflow:hidden;
+    font-family:'Rajdhani','Segoe UI',system-ui,sans-serif;
+    -webkit-user-select:none; user-select:none;
+    width:100%; height:100%;
+  }
+  .panel{
+    position:relative;
+    display:flex; flex-direction:column; gap:6px;
+    width:100%; height:100%; box-sizing:border-box;
+    padding:24px 6px 6px; /* extra top room for .border-badge, see below */
+  }
+  /* Border badge (v1.10.0): see overlay.html's matching comment. */
+  .border-badge{
+    position:absolute; top:9px; left:50%; transform:translateX(-50%);
+    width:30px; height:30px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    background:#0c1210; border:2px solid var(--accent); color:var(--accent);
+    box-shadow:0 0 8px -2px var(--accent);
+    z-index:3;
+  }
+  .drag-handle{
+    display:none;
+    -webkit-app-region: drag;
+    align-items:center; justify-content:space-between;
+    background:rgba(94,242,166,0.22);
+    border:1px solid rgba(94,242,166,0.55);
+    border-radius:6px;
+    padding:4px 8px;
+    font-size:11px;
+    color:#eafff3;
+    letter-spacing:.02em;
+  }
+  body.unlocked .drag-handle{ display:flex; }
+  .drag-handle button{
+    -webkit-app-region: no-drag;
+    background:var(--accent); color:#08130d; border:none; border-radius:4px;
+    font-size:11px; font-weight:700; padding:3px 9px; cursor:pointer;
+  }
+  .card{
+    flex:1; min-height:0; display:flex; flex-direction:column; gap:6px;
+    background:rgba(10,14,12,0.62);
+    border:1px solid rgba(255,255,255,0.14);
+    border-top:3px solid var(--accent);
+    border-radius:10px;
+    padding:8px 9px;
+    box-sizing:border-box;
+    overflow:hidden;
+  }
+  .card h1{
+    margin:0; font-size:11px; font-weight:800; letter-spacing:.05em;
+    color:#eafff3; text-transform:uppercase;
+    text-shadow:0 1px 2px rgba(0,0,0,0.9);
+    display:flex; align-items:center; justify-content:space-between;
+    gap:6px;
+  }
+  .card h1 .tags{ display:flex; align-items:center; gap:5px; flex:0 0 auto; }
+  .card h1 .count{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px; font-weight:700; color:#08130d;
+    background:var(--accent); border-radius:999px;
+    padding:1px 7px; letter-spacing:0;
+  }
+  .subtitle{
+    font-size:9.5px; color:rgba(255,255,255,0.55); letter-spacing:.02em;
+    margin-top:-4px;
+  }
+  .calc-box{
+    flex:0 0 auto;
+    background:color-mix(in srgb, var(--accent) 12%, rgba(10,14,12,0.4));
+    border:1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+    border-radius:8px;
+    padding:6px 8px;
+    display:flex; flex-direction:column; gap:3px;
+  }
+  .calc-box .calc-title{
+    font-size:9.5px; font-weight:800; letter-spacing:.04em; text-transform:uppercase;
+    color:var(--accent);
+  }
+  .calc-box p{
+    margin:0; font-size:9.5px; line-height:1.35; color:#e8ece9;
+  }
+  .calc-box .formula{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:9px; font-weight:600; color:#08130d;
+    background:var(--accent); border-radius:5px;
+    padding:3px 6px; margin-top:1px; line-height:1.4;
+  }
+  .col-header{
+    flex:0 0 auto;
+    display:grid; grid-template-columns:18px 1fr 48px 44px 56px 50px 30px;
+    gap:4px; padding:0 4px 3px;
+    border-bottom:1px solid rgba(255,255,255,0.14);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:8px; font-weight:700; letter-spacing:.04em; text-transform:uppercase;
+    color:rgba(255,255,255,0.45);
+  }
+  .col-header span:nth-child(n+3){ text-align:right; }
+  .list-wrap{ position:relative; flex:1; min-height:0; display:flex; }
+  .list-viewport{
+    position:relative;
+    flex:1; min-height:0; overflow:hidden;
+    padding-right:8px; box-sizing:border-box;
+  }
+  .list-inner{
+    display:flex; flex-direction:column; gap:3px;
+  }
+  .scrollbar{
+    position:absolute; top:0; right:0; bottom:0; width:4px;
+    background:rgba(255,255,255,0.08); border-radius:2px;
+    display:none;
+  }
+  .scrollbar.visible{ display:block; }
+  .scrollbar .thumb{
+    position:absolute; left:0; right:0; min-height:14px;
+    background:var(--accent); border-radius:2px;
+    box-shadow:0 0 4px -1px var(--accent);
+  }
+  @keyframes fdt-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+  @media (prefers-reduced-motion:reduce){ .g-row,.g-milestones,.g-takeaway,.g-footnote{ animation:none!important; } }
+  .g-row{
+    animation:fdt-in .18s ease-out both;
+    display:grid; grid-template-columns:18px 1fr 48px 44px 56px 50px 30px;
+    gap:4px; align-items:center;
+    padding:2.5px 4px;
+    border-left:3px solid var(--tc, var(--r-gold));
+    border-radius:4px;
+    background:rgba(255,255,255,0.03);
+  }
+  .g-row .n{ font-family:'IBM Plex Mono',monospace; font-size:8.5px; color:rgba(255,255,255,0.4); }
+  .g-row .name{ font-size:9.5px; font-weight:700; color:#f2f6f4; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .g-row .total{ font-family:'IBM Plex Mono',monospace; font-size:9px; font-weight:700; color:var(--tc, var(--r-gold)); text-align:right; }
+  .g-row .cost{ font-family:'IBM Plex Mono',monospace; font-size:8.5px; color:#dfe8e2; text-align:right; }
+  .g-row .running{ font-family:'IBM Plex Mono',monospace; font-size:8.5px; color:rgba(255,255,255,0.55); text-align:right; }
+  .g-row .time{ font-family:'IBM Plex Mono',monospace; font-size:8.5px; font-weight:600; color:#5ef2a6; text-align:right; }
+  .g-row .eff{ position:relative; height:6px; background:rgba(255,255,255,0.08); border-radius:3px; overflow:hidden; }
+  .g-row .eff .bar{ position:absolute; left:0; top:0; bottom:0; background:var(--tc, var(--r-gold)); border-radius:3px; }
+  .g-milestones{
+    animation:fdt-in .18s ease-out both;
+    display:flex; gap:4px; margin-top:2px;
+  }
+  .g-milestones .m{
+    flex:1; min-width:0;
+    background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.14);
+    border-radius:6px; padding:4px 5px; text-align:center;
+  }
+  .g-milestones .m .ml{ font-size:7.5px; font-weight:700; letter-spacing:.02em; text-transform:uppercase; color:rgba(255,255,255,0.5); }
+  .g-milestones .m .mv{ font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:700; color:var(--accent); margin-top:1px; }
+  .g-milestones .m .md{ font-size:8px; color:#5ef2a6; margin-top:1px; }
+  .g-takeaway{
+    animation:fdt-in .18s ease-out both;
+    background:color-mix(in srgb, var(--r-galactic) 14%, rgba(10,14,12,0.4));
+    border:1px solid color-mix(in srgb, var(--r-galactic) 45%, transparent);
+    border-radius:8px; padding:6px 8px; margin-top:2px;
+  }
+  .g-takeaway .kt-title{
+    font-size:9.5px; font-weight:800; letter-spacing:.04em; text-transform:uppercase;
+    color:var(--r-galactic); margin-bottom:2px;
+  }
+  .g-takeaway p{ margin:0 0 3px; font-size:9px; line-height:1.35; color:#e8ece9; }
+  .g-takeaway p:last-child{ margin-bottom:0; }
+  .g-takeaway p.bold{ font-weight:700; color:#f2f6f4; }
+  .g-footnote{
+    animation:fdt-in .18s ease-out both;
+    font-size:8px; line-height:1.4; color:rgba(255,255,255,0.4);
+    padding:2px 4px 4px;
+  }
+</style>
+<link rel="stylesheet" href="sw-texture.css">
+</head>
+<body>
+  <div class="panel">
+    <div class="border-badge" id="borderBadge"></div>
+    <div class="drag-handle" id="dragHandle">
+      <span>Drag to position, then Lock</span>
+      <button id="lockBtn">Lock</button>
+    </div>
+    <div class="card">
+      <h1>
+        <span>⚡ Optimal Crit Guide</span>
+        <span class="tags"><span class="count" id="countTag">36 buys</span></span>
+      </h1>
+      <div class="subtitle">Fortnite · Nova Crystals · Chopper equipped — start: 80% chance / +110% bonus / MC lv.0 (34m 21s)</div>
+      <div class="calc-box">
+        <div class="calc-title">How a Critical Hit is Calculated</div>
+        <p>The standard hit (39.6 s) is counted ONCE, whatever the number of rolls.</p>
+        <p>Each landed roll then adds the crit bonus: 50% base + 50% Chopper + 10% per level</p>
+        <div class="formula">Perk lv. 1: 39.6 s + 1 × 43.56 s = 83.16 s &nbsp;·&nbsp; 2 rolls: 39.6 + 2 × 43.56 = 126.72 s</div>
+      </div>
+      <div class="col-header">
+        <span>#</span><span>Purchase</span><span>Total</span><span>Cost</span><span>Running</span><span>Time</span><span>Eff</span>
+      </div>
+      <div class="list-wrap">
+        <div class="list-viewport" id="viewport"><div class="list-inner" id="grid"></div></div>
+        <div class="scrollbar" id="scrollbar"><div class="thumb" id="scrollThumb"></div></div>
+      </div>
+    </div>
+  </div>
+
+<script src="droid-data.js"></script>
+<script src="requirements.js"></script>
+<script src="overlay-scroll.js"></script>
+<script>
+(function(){
+  if(!window.overlayAPI){
+    document.body.innerHTML = '<div style="color:#fff;padding:10px;font:12px sans-serif;">Open this file through the Fuzzy\'s Droid Tracker app, not directly in a browser.</div>';
+    return;
+  }
+
+  /* ---------------------------------------------------------------------------
+     Optimal Crit Guide — a static reference overlay, unlike the other four:
+     it does not read ownership/cycle progress at all, it's a fixed purchase
+     order + the crit-hit formula for one specific build (Fortnite, Nova
+     Crystals, Chopper equipped, starting at 80%/+110%/MC lv.0). ROWS below
+     is hardcoded from that build's numbers — there is nothing per-player to
+     compute here, so (unlike every other overlay) there's no fullReload(),
+     no store:changed listener, and no droid-data dependency; droid-data.js/
+     requirements.js are only loaded for BORDER_SKINS/borderIconSvg, matching
+     every other overlay's script list.
+  --------------------------------------------------------------------------- */
+
+  const TYPE_COLOR = { dmg:'var(--r-gold)', chance:'var(--r-diamond)', multi:'var(--r-galactic)' };
+  const MAX_EFF = 4.73;
+
+  const ROWS = [
+    [1,'dmg','Crit damage lv. 2','+120%',90,90,'32m 57s',4.73],
+    [2,'multi','Crit chance lv. 8 + MC1','95%',1120,1210,'24m 05s',3.29],
+    [3,'dmg','Crit damage lv. 3','+130%',150,1360,'22m 53s',3.48],
+    [4,'dmg','Crit damage lv. 4','+140%',210,1570,'21m 48s',2.36],
+    [5,'dmg','Crit damage lv. 5','+150%',270,1840,'20m 49s',1.75],
+    [6,'chance','Crit chance lv. 9','100%',300,2140,'19m 52s',1.59],
+    [7,'dmg','Crit damage lv. 6','+160%',330,2470,'19m 00s',1.40],
+    [8,'dmg','Crit damage lv. 7','+170%',390,2860,'18m 12s',1.13],
+    [9,'dmg','Crit damage lv. 8','+180%',450,3310,'17m 27s',0.94],
+    [10,'dmg','Crit damage lv. 9','+190%',510,3820,'16m 46s',0.79],
+    [11,'multi','Multi-crit lv. 2','3 rolls',800,4620,'15m 48s',0.77],
+    [12,'dmg','Crit damage lv. 10','+200%',570,5190,'15m 12s',0.70],
+    [13,'dmg','Crit damage lv. 11','+210%',630,5820,'14m 38s',0.61],
+    [14,'chance','Crit chance lv. 10','105%',330,6150,'14m 23s',0.55],
+    [15,'dmg','Crit damage lv. 12','+220%',690,6840,'13m 52s',0.54],
+    [16,'chance','Crit chance lv. 11','110%',360,7200,'13m 37s',0.50],
+    [17,'dmg','Crit damage lv. 13','+230%',750,7950,'13m 09s',0.48],
+    [18,'chance','Crit chance lv. 12','115%',390,8340,'12m 55s',0.47],
+    [19,'chance','Crit chance lv. 13','120%',420,8760,'12m 41s',0.43],
+    [20,'dmg','Crit damage lv. 14','+240%',810,9570,'12m 15s',0.43],
+    [21,'chance','Crit chance lv. 14','125%',450,10020,'12m 02s',0.41],
+    [22,'dmg','Crit damage lv. 15','+250%',870,10890,'11m 38s',0.39],
+    [23,'chance','Crit chance lv. 15','130%',480,11370,'11m 25s',0.38],
+    [24,'chance','Crit chance lv. 16','135%',510,11880,'11m 13s',0.36],
+    [25,'dmg','Crit damage lv. 16','+260%',930,12810,'10m 52s',0.36],
+    [26,'chance','Crit chance lv. 17','140%',540,13350,'10m 40s',0.34],
+    [27,'dmg','Crit damage lv. 17','+270%',990,14340,'10m 20s',0.32],
+    [28,'chance','Crit chance lv. 18','145%',570,14910,'10m 09s',0.32],
+    [29,'chance','Crit chance lv. 19','150%',600,15510,'9m 58s',0.31],
+    [30,'dmg','Crit damage lv. 18','+280%',1050,16560,'9m 39s',0.30],
+    [31,'chance','Crit chance lv. 20','155%',630,17190,'9m 29s',0.29],
+    [32,'chance','Crit chance lv. 21','160%',660,17850,'9m 19s',0.28],
+    [33,'dmg','Crit damage lv. 19','+290%',1110,18960,'9m 02s',0.28],
+    [34,'chance','Crit chance lv. 22','165%',690,19650,'8m 52s',0.27],
+    [35,'dmg','Crit damage lv. 20','+300%',1170,20820,'8m 37s',0.25],
+    [36,'chance','Crit chance lv. 23','170%',720,21540,'8m 28s',0.26]
+  ];
+
+  const MILESTONES = [
+    ['Multi-crit unlocked','1,210','24m 05s','-30% vs start'],
+    ['Multi-crit level 2','4,620','15m 48s','-54% vs start'],
+    ['After 36 purchases','21,540','8m 28s','-75% vs start']
+  ];
+
+  function fmt(n){ return n.toLocaleString('en-US'); }
+
+  function rowHtml(r){
+    const [n, type, name, total, cost, running, time, eff] = r;
+    const tc = TYPE_COLOR[type] || TYPE_COLOR.dmg;
+    const pct = Math.round((eff / MAX_EFF) * 100);
+    return '<div class="g-row" style="--tc:' + tc + ';" title="' + name + ' — ' + eff + ' s saved per crystal">' +
+      '<span class="n">' + n + '</span>' +
+      '<span class="name">' + name + '</span>' +
+      '<span class="total">' + total + '</span>' +
+      '<span class="cost">' + fmt(cost) + '</span>' +
+      '<span class="running">' + fmt(running) + '</span>' +
+      '<span class="time">' + time + '</span>' +
+      '<span class="eff"><span class="bar" style="width:' + pct + '%"></span></span>' +
+    '</div>';
+  }
+
+  function milestonesHtml(){
+    return '<div class="g-milestones">' + MILESTONES.map(m =>
+      '<div class="m"><div class="ml">' + m[0] + '</div><div class="mv">' + m[1] + '</div><div class="mv" style="font-size:9px;color:#5ef2a6">' + m[2] + '</div><div class="md">' + m[3] + '</div></div>'
+    ).join('') + '</div>';
+  }
+
+  function takeawayHtml(){
+    return '<div class="g-takeaway">' +
+      '<div class="kt-title">Key Takeaway</div>' +
+      '<p class="bold">This order is specific to THIS build — it is not a universal ranking.</p>' +
+      '<p>Below ~100% crit chance, crit chance beats crit damage per crystal spent.</p>' +
+      '<p>Crit damage leads here because Chopper already grants +50% chance for free, and the crit damage perk sits at level 1, where the next levels cost only 90–270 crystals.</p>' +
+    '</div>';
+  }
+
+  function footnoteHtml(){
+    return '<div class="g-footnote">Crit chance = 5% base + 50% Chopper + 5%/level. Crit bonus = 50% base + 50% Chopper + 10%/level. Costs: 30+30n, 60n-30, multi-crit 400/800/1,200.</div>';
+  }
+
+  const viewport = document.getElementById('viewport');
+  const scroller = createScrollViewport(viewport, document.getElementById('scrollbar'), document.getElementById('scrollThumb'), '.g-row, .g-milestones, .g-takeaway, .g-footnote');
+  const updateScrollbar = scroller.update;
+
+  window.overlayAPI.onHotkeyTriggered((name)=>{
+    if(name === 'critGuideScrollUp') scroller.page(-1);
+    else if(name === 'critGuideScrollDown') scroller.page(1);
+  });
+
+  function render(){
+    const gridEl = document.getElementById('grid');
+    gridEl.innerHTML = ROWS.map(rowHtml).join('') + milestonesHtml() + takeawayHtml() + footnoteHtml();
+    updateScrollbar();
+  }
+
+  function applySettings(settings){
+    document.body.classList.toggle('unlocked', !settings.critGuideLocked);
+    // v1.10.0: this overlay's own border skin, picked in ⚙ Overlay Settings →
+    // Borders. BORDER_SKINS/borderIconSvg come from requirements.js, loaded above.
+    const skin = BORDER_SKINS[settings.critGuideBorder] || BORDER_SKINS.tatooine;
+    document.documentElement.style.setProperty('--accent', skin.hex);
+    document.documentElement.style.setProperty('--sw-rgb', skin.rgb);
+    const badge = document.getElementById('borderBadge');
+    if(badge) badge.innerHTML = borderIconSvg(settings.critGuideBorder || 'tatooine', 18);
+  }
+  window.overlayAPI.onSettingsChanged(applySettings);
+
+  document.getElementById('lockBtn').addEventListener('click', ()=>{
+    window.overlayAPI.setCritGuideLocked(true);
+  });
+
+  (async function init(){
+    const settings = await window.overlayAPI.getSettings();
+    applySettings(settings);
+    render();
+  })();
+})();
+</script>
+</body>
+</html>

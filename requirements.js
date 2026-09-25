@@ -261,25 +261,67 @@ function getSneakPreview(cycle, ownedRank){
   return { nextCycle: next, items: out };
 }
 
-/* ---------------- SABER COLORS (v1.9.0) ----------------
-   The curated palette every in-game overlay picks its own color from, in
-   ⚙ Overlay Settings → Colors. A curated set, not a full color wheel — every
-   hex here is already used somewhere else in this app (a Settings tab's own
-   saber color, or a rarity/tier color), so nothing here can be illegible
-   against the dark background or clash with the rest of the UI. Each
-   overlay reads its own settings key (color / declutterColor /
-   rebirthReqColor / sneakColor) and applies { hex, rgb } to its own
-   --accent / --sw-rgb CSS variables — see applySettings() in overlay.html,
-   declutter.html, rebirth-requirements-overlay.html, sneak-preview.html. */
-const SABER_COLORS = {
-  blue:   { hex:'#4fb8ff', rgb:'79,184,255' },
-  green:  { hex:'#5ef2a6', rgb:'94,242,166' },
-  purple: { hex:'#b06cf2', rgb:'176,108,242' },
-  red:    { hex:'#ff4d6d', rgb:'255,77,109' },
-  yellow: { hex:'#ffd24a', rgb:'255,210,74' },
-  orange: { hex:'#e08a3c', rgb:'224,138,60' }
+/* ---------------- BORDER SKINS (v1.10.0, replaces the flat SABER_COLORS) ----
+   Every in-game overlay picks a full illustrated border skin in ⚙ Overlay
+   Settings → Borders, instead of a flat saber color: a glowing outline,
+   corner brackets (drawn by sw-texture.css off --sw-rgb, unchanged) and a
+   small emblem badge (borderIconSvg() below) overlapping the top edge.
+   Deliberately hand-drawn CSS/SVG rather than sourced art: it scales
+   cleanly to every overlay's own shape (wide HUD, narrow tall lists) with
+   no distortion, unlike a fixed-aspect image would.
+   Each overlay reads its own settings key (border / declutterBorder /
+   rebirthReqBorder / sneakBorder / critGuideBorder) and applies { hex, rgb }
+   to its own --accent / --sw-rgb CSS variables, then fills its
+   .border-badge with borderIconSvg(key) — see applySettings() in
+   overlay.html, declutter.html, rebirth-requirements-overlay.html,
+   sneak-preview.html, crit-guide-overlay.html. */
+const BORDER_SKINS = {
+  rebel:    { hex:'#ff3b3b', rgb:'255,59,59',   label:'Rebel',         sub:'red' },
+  empire:   { hex:'#d8dee3', rgb:'216,222,227', label:'Empire',        sub:'silver' },
+  jedi:     { hex:'#4fa8ff', rgb:'79,168,255',  label:'Jedi',          sub:'blue' },
+  mando:    { hex:'#d4af6a', rgb:'212,175,106', label:'Mandalorian',   sub:'tan' },
+  hunter:   { hex:'#e6483c', rgb:'230,72,60',   label:'Bounty Hunter', sub:'crimson' },
+  tatooine: { hex:'#e08a3c', rgb:'224,138,60',  label:'Tatooine',      sub:'orange' },
+  grogu:    { hex:'#5ef2a6', rgb:'94,242,166',  label:'Grogu',         sub:'green' }
 };
-const SABER_COLOR_ORDER = ['blue', 'green', 'purple', 'red', 'yellow', 'orange'];
+const BORDER_SKIN_ORDER = ['rebel', 'empire', 'jedi', 'mando', 'hunter', 'tatooine', 'grogu'];
+
+/* Small flat emblem for each border skin's badge — fill="currentColor" so
+   the caller just sets `color` (normally var(--accent)) on the wrapping
+   element instead of passing a hex through here; keeps this a 1-argument
+   function no call site can get wrong. Returns '' for an unknown key so a
+   bad/stale settings value never throws, just renders no icon. */
+function borderIconSvg(key, size){
+  const s = size || 20;
+  const open = '<svg width="' + s + '" height="' + s + '" viewBox="0 0 64 64" fill="currentColor">';
+  switch(key){
+    case 'rebel':
+      return open + '<path d="M32 6 L38 26 L58 22 L40 34 L50 54 L32 42 L14 54 L24 34 L6 22 L26 26 Z"/></svg>';
+    case 'empire':
+      return open + '<circle cx="32" cy="32" r="24" fill="none" stroke="currentColor" stroke-width="4"/><circle cx="32" cy="32" r="7"/>' +
+        [0,60,120,180,240,300].map(a => '<rect x="30" y="6" width="4" height="14" transform="rotate(' + a + ' 32 32)"/>').join('') + '</svg>';
+    case 'jedi':
+      return open + '<path d="M32 10 C 40 22 54 24 60 22 C 50 34 40 34 32 30 C 24 34 14 34 4 22 C 10 24 24 22 32 10 Z"/><circle cx="32" cy="16" r="6"/></svg>';
+    case 'mando':
+      return open + '<path d="M32 8 C 48 8 54 22 50 34 C 48 40 40 40 38 46 L 34 46 L 34 38 L 30 38 L 30 46 L 26 46 C 24 40 16 40 14 34 C 10 22 16 8 32 8 Z"/>' +
+        '<path d="M14 20 C 6 18 4 26 10 30 Z"/><path d="M50 20 C 58 18 60 26 54 30 Z"/>' +
+        '<ellipse cx="24" cy="26" rx="3.5" ry="5" fill="#0c1210"/><ellipse cx="40" cy="26" rx="3.5" ry="5" fill="#0c1210"/></svg>';
+    case 'hunter':
+      return open + '<path d="M12 34 C 12 14 22 6 32 6 C 42 6 52 14 52 34 L 52 40 L 12 40 Z"/><rect x="6" y="40" width="52" height="8" rx="2"/>' +
+        '<rect x="29" y="12" width="6" height="28" fill="#0c1210"/><rect x="16" y="22" width="14" height="6" fill="#0c1210"/><rect x="34" y="22" width="14" height="6" fill="#0c1210"/></svg>';
+    case 'tatooine':
+      return open + '<circle cx="24" cy="30" r="15"/><circle cx="42" cy="36" r="10" opacity="0.75"/><rect x="6" y="50" width="52" height="4" rx="2" opacity="0.4"/></svg>';
+    case 'grogu':
+      return open +
+        '<ellipse cx="10" cy="20" rx="8" ry="16" transform="rotate(-18 10 20)"/>' +
+        '<ellipse cx="54" cy="20" rx="8" ry="16" transform="rotate(18 54 20)"/>' +
+        '<circle cx="32" cy="36" r="22"/>' +
+        '<ellipse cx="23" cy="34" rx="6.5" ry="8" fill="#0c1210"/><ellipse cx="41" cy="34" rx="6.5" ry="8" fill="#0c1210"/>' +
+        '<circle cx="21" cy="31" r="2" fill="#eafff3"/><circle cx="39" cy="31" r="2" fill="#eafff3"/></svg>';
+    default:
+      return '';
+  }
+}
 
 /* ---------------- OWNERSHIP HELPERS (moved from tracker.html, 2026-09-25) ----------------
    These four were the last pieces of core tracking logic still living

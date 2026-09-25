@@ -415,6 +415,77 @@ default). Each card shows the droid's icon, name, and either **"Needs
 you've already logged for that droid (from anywhere) already covers what
 next cycle will need — nothing left to chase for that one.
 
+## ⚡ Optimal Crit Guide (v1.10.0)
+
+A fifth in-game overlay — a static reference panel, not tied to your droid
+progress at all. It's the fixed crystal-spend order for one specific build
+(Fortnite, Nova Crystals, Chopper equipped, starting at 80% crit chance /
++110% crit bonus / multi-crit level 0), plus the formula behind how a
+critical hit is actually calculated:
+
+> The standard hit is counted **once**, whatever the number of rolls. Each
+> landed roll then adds the crit bonus (50% base + 50% Chopper + 10% per
+> level) on top of it.
+
+Below that, all 36 purchases in the order that gets the most droid-time
+reduction per crystal spent for this build — each row color-coded by what it
+levels (gold = crit damage, cyan = crit chance, purple = multi-crit), with
+the resulting total, the crystal cost, the running total spent, and the
+droid time after that purchase. Scrolls past the purchase list to the 3
+milestone chips (multi-crit unlocked, multi-crit level 2, after all 36
+buys) and a "why this order, not a universal ranking" callout.
+
+Toggle it with **⚡ Crit Guide** in the toolbar or its hotkey (unbound by
+default — set one in ⚙ Overlay Settings). Same card look, default size/
+position, and hotkey-scrolled viewport as Safe to Retire / Rebirth
+Requirements / Sneak Preview — **Scroll Crit Guide Up / Down**, also unbound
+by default.
+
+## 🛡 Overlay Borders (v1.10.0, replaces the per-overlay Colors tab)
+
+Each of the five in-game overlays now picks a full illustrated **border
+skin** instead of a flat saber color — a glowing outline, corner brackets,
+and a small emblem badge straddling the top edge. Pick one per overlay in
+**⚙ Overlay Settings → Borders**, seven to choose from:
+
+| Skin | Color | Emblem |
+|---|---|---|
+| Rebel | red | starbird |
+| Empire | silver | imperial crest |
+| Jedi | blue | winged emblem |
+| Mandalorian | tan | Mythosaur skull |
+| Bounty Hunter | crimson | T-visor helmet |
+| Tatooine | orange | twin suns |
+| Grogu | green | — the newest addition |
+
+Defaults: Jedi for 🎯 Upcoming RB Req's (the HUD), Grogu for ♻ Safe to
+Retire, Mandalorian for 🧬 Rebirth Requirements, Rebel for 🔮 Sneak Preview,
+Tatooine for ⚡ Optimal Crit Guide. Applies live — no restart needed.
+
+Every emblem is hand-drawn CSS/SVG rather than sourced art, specifically so
+it scales cleanly to each overlay's own shape (the wide HUD, the narrow tall
+lists) with no distortion or 9-slicing needed — a fixed-aspect image would
+have squashed badly on the narrower overlays. The toolbar, settings panel,
+Rebirth Reqs side panel and droid list stay blue, unchanged; this is still a
+per-overlay-window thing, not a whole-app recolor.
+
+**🎨 Per-overlay saber colors (v1.9.0/v1.9.1, superseded above).** The
+original version of this picker offered six flat colors (blue, green,
+purple, red, yellow, orange) instead of illustrated borders. Kept here for
+the changelog record; every overlay now uses the border-skin system above
+instead, and the settings keys were renamed to match (`color` → `border`,
+`declutterColor` → `declutterBorder`, and so on) — an existing install just
+picks fresh border defaults on upgrade, same as any other new setting.
+
+**v1.9.1 hotfix.** v1.9.0 shipped a regression: clicking **Apply** on the
+Read Rebirth Screen confirm dialog silently did nothing (a shared function,
+`cycleCoveredCount()`, gained a required parameter and one call site outside
+tracker.html's own script — in `rebirth-screen-read.js` — never got updated
+to pass it, so the click handler threw immediately). Fixed, and a new test
+now checks every call site of every shared `requirements.js` function passes
+the right number of arguments, specifically to catch this class of bug
+project-wide instead of only inside tracker.html.
+
 ## 🚫 Hide All Overlays (one-way — never toggles back on)
 
 Every other hotkey in this app toggles its own overlay on and off. This one
@@ -459,12 +530,14 @@ changeable from **⚙ Overlay Settings**:
 | Toggle Rebirth Requirements | Show/hide the 🧬 still-needed overlay | `Ctrl+Shift+5` |
 | Trigger Read Rebirth Screen | Fires the 📸 Read Rebirth Screen button | `Ctrl+Shift+6` |
 | Toggle Sneak Preview | Show/hide the 🔮 next-cycle Mythic overlay | *(unbound — set in ⚙ Overlay Settings)* |
+| Toggle Optimal Crit Guide | Show/hide the ⚡ crystal-spend order overlay | *(unbound — set in ⚙ Overlay Settings)* |
 | Scroll List: Up / Down | Pages whichever of the ♻ Safe to Retire / 🧬 Rebirth Requirements lists is open, one screen at a time — one shared pair, not one per overlay | *(unbound)* |
 | Scroll Sneak Preview Up / Down | Same, for the Sneak Preview overlay | *(unbound)* |
+| Scroll Crit Guide Up / Down | Same, for the Optimal Crit Guide overlay | *(unbound)* |
 | Tier Filter: Toggle All Tiers | Shows all five rarity tiers if any is hidden, otherwise hides all — in both Safe to Retire and Rebirth Requirements | *(unbound)* |
 | Tier Filter: Toggle Default / Rare / Epic / Legendary / Mythic | Show or hide that one tier in both the Safe to Retire and Rebirth Requirements overlays | *(unbound, one each)* |
 
-The eleven unbound hotkeys above ship with no key combo on purpose (see the convention note in `main.js`): they only appear on the on-screen hotkey list once you've set them.
+The fourteen unbound hotkeys above ship with no key combo on purpose (see the convention note in `main.js`): they only appear on the on-screen hotkey list once you've set them.
 
 The read-button hotkey doesn't do anything new under the hood — pressing it
 just clicks the real toolbar button for you, so the exact same
@@ -473,16 +546,18 @@ read or written changes based on how you triggered it.
 
 ## ⚙ Overlay Settings: the holo-console (v1.7.6)
 
-The settings panel is now a Star Wars-style ship console with four tabs down
+The settings panel is now a Star Wars-style ship console with five tabs down
 the left side. The active tab is marked by a lightsaber blade that ignites
 out of a small hilt, each tab with its own blade color:
 
 - **⌨ Keybinds** (blue): every hotkey, grouped into Quick actions, Show/hide
   overlays, List scrolling and Tier filter. There's a search box that matches
   names, descriptions and current key combos. Unbound hotkeys show as dashed
-  keys, and the tab shows how many are bound, like `7/18`.
+  keys, and the tab shows how many are bound, like `7/21`.
 - **🧭 Layout** (green): one card per overlay with its 🎯 Drag into place and
   ↺ Reset buttons. The HUD's card also holds its opacity slider.
+- **🛡 Borders** (red, was **🎨 Colors**): one row per overlay, seven
+  illustrated border skins to pick from — see **🛡 Overlay Borders** above.
 - **🔎 Filters** (purple): the shared tier filter for Safe to Retire and
   Rebirth Requirements.
 - **⏱ Timers** (yellow): the mission-timer sync, plus a readout of every
@@ -492,8 +567,8 @@ The app remembers which tab you had open. The console is translucent, so a
 custom 🖼 Background still shows through it. Every control works exactly as
 it did before; only the layout changed.
 
-The in-game overlays (the HUD, Safe to Retire, Rebirth Requirements and
-Sneak Preview) got a matching light touch from `sw-texture.css`:
+The in-game overlays (the HUD, Safe to Retire, Rebirth Requirements, Sneak
+Preview and Optimal Crit Guide) got a matching light touch from `sw-texture.css`:
 targeting-computer corner brackets, faint hull-plate seams and scanlines.
 It only adds art on top. Each overlay's see-through tint, including the
 HUD's opacity setting, is unchanged. To drop the look from one overlay,
@@ -524,26 +599,6 @@ v1.7.6 settings panel to the rest of the app:
 - The droid list itself (the rows you click to log ownership) was deliberately
   left alone — it's the busiest surface in the app, and the plain background
   keeps it easy to scan.
-
-**🎨 Per-overlay saber colors (v1.9.0/v1.9.1).** Each of the four in-game
-overlays has its own color for its border, corner brackets, count badge and
-scrollbar — pick it yourself in **⚙ Overlay Settings → Colors**, one row per
-overlay, six curated swatches (blue, green, purple, red, yellow, orange).
-Defaults: blue for 🎯 Upcoming RB Req's (the HUD), green for ♻ Safe to
-Retire, purple for 🧬 Rebirth Requirements, red for 🔮 Sneak Preview (matches
-the Mythic tier color, since that list is Mythic-only). Applies live — no
-restart needed. The toolbar, settings panel, Rebirth Reqs side panel and
-droid list stay blue, unchanged; this is a per-overlay-window thing, not a
-whole-app recolor.
-
-**v1.9.1 hotfix.** v1.9.0 shipped a regression: clicking **Apply** on the
-Read Rebirth Screen confirm dialog silently did nothing (a shared function,
-`cycleCoveredCount()`, gained a required parameter and one call site outside
-tracker.html's own script — in `rebirth-screen-read.js` — never got updated
-to pass it, so the click handler threw immediately). Fixed, and a new test
-now checks every call site of every shared `requirements.js` function passes
-the right number of arguments, specifically to catch this class of bug
-project-wide instead of only inside tracker.html.
 
 **Command Console layout fix (v1.8.1).** Each toolbar row is now two columns —
 a fixed-width label and a separate button strip next to it — instead of one
@@ -650,9 +705,9 @@ and testing everything above:
 
 ## File map
 
-- `main.js` — Electron main process: all seven windows (tracker, HUD,
+- `main.js` — Electron main process: all eight windows (tracker, HUD,
   timers, Declutter list, Rebirth Requirements overlay, Sneak Preview,
-  hotkey list), the shared JSON store, the twenty global hotkeys (registered together at
+  Optimal Crit Guide, hotkey list), the shared JSON store, the twenty-one global hotkeys (registered together at
   launch via `registerAllHotkeys`, with any that fail to bind reported to
   the tracker window as a toast via `reportHotkeyRegistrationFailures`),
   settings (including the four-step `migrateHotkeyLayout()` pass that
@@ -675,7 +730,8 @@ and testing everything above:
   badge for the ⚙ Overlay Settings console. Layout only; every control is
   still wired by `overlay-controls.js` through its original id.
 - `sw-texture.css` — the holo-console surface art linked into overlay.html,
-  declutter.html, rebirth-requirements-overlay.html and sneak-preview.html.
+  declutter.html, rebirth-requirements-overlay.html, sneak-preview.html and
+  crit-guide-overlay.html.
 - `preload.js` — the only bridge between the pages and Node/IPC.
 - `tracker.html` — your original tracker, functionally unchanged, plus the
   Overlay toolbar controls, the always-visible Manual rebirth-level stepper,
@@ -691,6 +747,12 @@ and testing everything above:
 - `sneak-preview.html` — the 🔮 Sneak Preview overlay (see its section
   above); reuses `getSneakPreview()` from `requirements.js` and the same
   card/scroll-viewport pattern as Rebirth Requirements / Safe to Retire.
+- `crit-guide-overlay.html` — the ⚡ Optimal Crit Guide overlay (see its
+  section above). Unlike the other four, it's a static reference: the
+  purchase-order data is hardcoded for one specific build, so it doesn't
+  read ownership/cycle progress at all — droid-data.js/requirements.js are
+  only loaded for `BORDER_SKINS`/`borderIconSvg`, same as every other
+  overlay's script list.
 - `droid-data.js` — CYCLES + rarity data, shared verbatim by both windows.
   Also holds `DROID_RARITY_CLASS` + `RARITY_CLASS_ORDER` (the separate,
   community-sourced Default/Rare/Epic/Legendary/Mythic tier map the Safe to
@@ -707,7 +769,10 @@ and testing everything above:
   full filter logic, so it can be verified once against the real data
   instead of duplicated in declutter.html), and `getSneakPreview` (next
   cycle's Mythic-only ceiling requirements, 5→1 wrap — the Sneak Preview
-  overlay's data). As of v1.7.5 this is the only copy: tracker.html loads
+  overlay's data), and (v1.10.0) `BORDER_SKINS`/`BORDER_SKIN_ORDER`/
+  `borderIconSvg` — the seven illustrated border skins every overlay picks
+  from in ⚙ Overlay Settings → Borders (replaces the old flat
+  `SABER_COLORS`). As of v1.7.5 this is the only copy: tracker.html loads
   it too instead of keeping its own duplicates, which is what let the
   v1.7.2-v1.7.4 bugs happen. Change logic here and run `npm test`.
 - `test/` — `npm test` (Node's built-in runner, no extra dependencies).

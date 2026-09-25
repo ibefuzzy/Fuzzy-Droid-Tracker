@@ -66,6 +66,13 @@ contextBridge.exposeInMainWorld('overlayAPI', {
   setSneakLocked: (locked) => ipcRenderer.invoke('sneak:setLocked', locked),
   resetSneakPosition: () => ipcRenderer.invoke('sneak:resetPosition'),
 
+  // Optimal Crit Guide — a static crit-investment reference panel
+  // (crit-guide-overlay.html + the toggle button/hotkey in tracker.html)
+  toggleCritGuide: () => ipcRenderer.invoke('critGuide:toggle'),
+  onCritGuideVisibility: (cb) => subscribe('critGuide:visibility-changed', cb), // cb(boolean)
+  setCritGuideLocked: (locked) => ipcRenderer.invoke('critGuide:setLocked', locked),
+  resetCritGuidePosition: () => ipcRenderer.invoke('critGuide:resetPosition'),
+
   // hotkey-triggered button actions: the Ctrl+Shift+5 hotkey fires the same
   // click listener as manually clicking 📸 Read Rebirth Screen — this just
   // tells the renderer which one to click

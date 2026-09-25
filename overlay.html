@@ -26,9 +26,25 @@
     width:100%; height:100%;
   }
   .panel{
+    position:relative;
     display:flex; flex-direction:column; gap:6px;
     width:100%; height:100%; box-sizing:border-box;
-    padding:6px;
+    padding:24px 6px 6px; /* extra top room for .border-badge, see below */
+  }
+  /* ---------------------------------------------------------------------
+     Border badge (v1.10.0): the selected border skin's emblem, straddling
+     the panel's top edge — replaces the old flat saber-color picker with a
+     full illustrated border (glow + corner brackets, already drawn by
+     sw-texture.css off --sw-rgb, plus this badge). Centered on y=24 (the
+     padding-top above) so it sits half in the reserved top margin, half
+     over the content below, matching every other overlay's badge. */
+  .border-badge{
+    position:absolute; top:9px; left:50%; transform:translateX(-50%);
+    width:30px; height:30px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    background:#0c1210; border:2px solid var(--accent); color:var(--accent);
+    box-shadow:0 0 8px -2px var(--accent);
+    z-index:3;
   }
   .drag-handle{
     display:none;
@@ -136,6 +152,7 @@
 </head>
 <body>
   <div class="panel">
+    <div class="border-badge" id="borderBadge"></div>
     <div class="drag-handle" id="dragHandle">
       <span>Drag to position, then Lock</span>
       <button id="lockBtn">Lock</button>
@@ -222,11 +239,13 @@
   function applySettings(settings){
     document.documentElement.style.setProperty('--bg-opacity', settings.opacity != null ? settings.opacity : 0.55);
     document.body.classList.toggle('unlocked', !settings.locked);
-    // v1.9.0: this overlay's own saber color, picked in ⚙ Overlay Settings →
-    // Colors. SABER_COLORS comes from requirements.js, loaded above.
-    const saber = SABER_COLORS[settings.color] || SABER_COLORS.blue;
-    document.documentElement.style.setProperty('--accent', saber.hex);
-    document.documentElement.style.setProperty('--sw-rgb', saber.rgb);
+    // v1.10.0: this overlay's own border skin, picked in ⚙ Overlay Settings →
+    // Borders. BORDER_SKINS/borderIconSvg come from requirements.js, loaded above.
+    const skin = BORDER_SKINS[settings.border] || BORDER_SKINS.jedi;
+    document.documentElement.style.setProperty('--accent', skin.hex);
+    document.documentElement.style.setProperty('--sw-rgb', skin.rgb);
+    const badge = document.getElementById('borderBadge');
+    if(badge) badge.innerHTML = borderIconSvg(settings.border || 'jedi', 18);
   }
   window.overlayAPI.onSettingsChanged(applySettings);
 

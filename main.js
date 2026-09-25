@@ -10,6 +10,9 @@
      - declutterWindow  (declutter.html)   — "safe to retire" Legendary/Mythic droids
      - rebirthReqWindow (rebirth-requirements-overlay.html) — every droid the
        active cycle asks for, same full list as the tracker's own 🧬 panel
+     - sneakWindow (sneak-preview.html) — next cycle's Mythic droids
+     - critGuideWindow (crit-guide-overlay.html) — static crit-investment
+       purchase order + hit-calculation formula for one specific build
      - hotkeyListWindow (hotkey-list.html) — on-screen hotkey reference card
    None of them ever touch Fortnite's process, memory, or input — they only
    ever read/write this app's own JSON store on disk and draw their own
@@ -63,7 +66,7 @@ const DEFAULT_SETTINGS = {
   opacity: 0.55,           // background opacity of the overlay panel, 0.2-0.92
   locked: true,            // false while the user is dragging it into position
   position: null,          // {x,y} in screen pixels; null = use the computed default
-  color: 'blue',           // v1.9.0: this overlay's saber color key, see SABER_COLORS in requirements.js
+  border: 'jedi',          // v1.10.0: this overlay's border skin key, see BORDER_SKINS in requirements.js (replaces the old flat "color")
   timersVisible: true,
   timersLocked: true,
   timersPosition: null,
@@ -92,7 +95,7 @@ const DEFAULT_SETTINGS = {
   // convention comment further down); declutter.html just re-renders off
   // settings:changed. Flat booleans rather than one nested object so
   // loadJson()'s top-level-key merge fills in any one that's missing.
-  declutterColor: 'green', // v1.9.0: this overlay's saber color key
+  declutterBorder: 'grogu', // v1.10.0: this overlay's border skin key (was declutterColor)
   declutterShowDefault: true,
   declutterShowRare: true,
   declutterShowEpic: true,
@@ -108,7 +111,7 @@ const DEFAULT_SETTINGS = {
   rebirthReqVisible: true,
   rebirthReqLocked: true,
   rebirthReqPosition: null,
-  rebirthReqColor: 'purple', // v1.9.0: this overlay's saber color key
+  rebirthReqBorder: 'mando', // v1.10.0: this overlay's border skin key (was rebirthReqColor)
   // rebirthReqScrollUpHotkey / rebirthReqScrollDownHotkey retired 2026-09-24
   // (v1.7.3) — the Rebirth Requirements overlay never actually needed its
   // own separate scroll hotkeys, it just hadn't been wired to share
@@ -127,7 +130,18 @@ const DEFAULT_SETTINGS = {
   sneakVisible: false,
   sneakLocked: true,
   sneakPosition: null,
-  sneakColor: 'red', // v1.9.0: this overlay's saber color key
+  sneakBorder: 'rebel', // v1.10.0: this overlay's border skin key (was sneakColor)
+  // Optimal Crit Guide overlay (v1.10.0): a static reference panel — the
+  // fixed crystal-spend order for one specific crit build, plus the crit-hit
+  // formula. Unbound by default per the "convention" comment above, same as
+  // Sneak Preview's own hotkeys.
+  critGuideHotkey: '',
+  critGuideScrollUpHotkey: '',
+  critGuideScrollDownHotkey: '',
+  critGuideVisible: false,
+  critGuideLocked: true,
+  critGuidePosition: null,
+  critGuideBorder: 'tatooine',
   hasSeenIntroGuide: false, // first-launch walkthrough (guide.js) — set true once dismissed or finished; an existing settings file just merges this in as false via loadJson(), so upgraders see it once too
   hotkeyLayoutVersion: 0   // bumped by the migrations below; never hand-edit
 };
@@ -296,6 +310,7 @@ let timersWindow = null;
 let declutterWindow = null;
 let rebirthReqWindow = null;
 let sneakWindow = null;
+let critGuideWindow = null;
 let hotkeyListWindow = null;
 let hotkeyListVisible = true; // runtime-only — always shown fresh each launch, not persisted
 let storeData = {};
@@ -684,6 +699,59 @@ function createSneakWindow(){
   sneakWindow.on('closed', ()=>{ sneakWindow = null; });
 }
 
+/* Optimal Crit Guide — a static reference panel (fixed purchase order + the
+   crit-hit formula for one build), not tied to any droid/cycle progress.
+   Same window shape as Safe to Retire / Rebirth Requirements / Sneak
+   Preview otherwise, so it reuses their default bounds. */
+function createCritGuideWindow(){
+  const bounds = settings.critGuidePosition ? clampToDisplay({ ...computeDefaultDeclutterBounds(), ...settings.critGuidePosition }) : computeDefaultDeclutterBounds();
+
+  critGuideWindow = new BrowserWindow({
+    ...bounds,
+    frame: false,
+    transparent: true,
+    backgroundColor: '#00000000',
+    hasShadow: false,
+    resizable: false,
+    movable: true,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    focusable: false,
+    show: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false
+    }
+  });
+
+  critGuideWindow.setAlwaysOnTop(true, 'screen-saver');
+  critGuideWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  if(settings.critGuideLocked){
+    critGuideWindow.setIgnoreMouseEvents(true, { forward: true });
+  } else {
+    critGuideWindow.setFocusable(true);
+  }
+  critGuideWindow.loadFile(path.join(__dirname, 'crit-guide-overlay.html'));
+
+  critGuideWindow.once('ready-to-show', ()=>{
+    if(settings.critGuideVisible) critGuideWindow.showInactive();
+  });
+
+  critGuideWindow.on('close', (e)=>{ if(isQuitting) return; e.preventDefault(); setCritGuideVisible(false); });
+  critGuideWindow.on('closed', ()=>{ critGuideWindow = null; });
+}
+
+function toggleCritGuideVisible(){ setCritGuideVisible(!settings.critGuideVisible); }
+function setCritGuideVisible(visible){
+  settings.critGuideVisible = !!visible;
+  persistSettingsNow();
+  if(!critGuideWindow) return;
+  if(settings.critGuideVisible) critGuideWindow.showInactive();
+  else critGuideWindow.hide();
+  broadcast('critGuide:visibility-changed', settings.critGuideVisible);
+}
+
 function toggleDeclutterVisible(){
   setDeclutterVisible(!settings.declutterVisible);
 }
@@ -891,11 +959,12 @@ function hideAllOverlays(){
   setDeclutterVisible(false);
   setRebirthReqVisible(false);
   setSneakVisible(false);
+  setCritGuideVisible(false);
   hideHotkeyList();
 }
 
 /* ---------------- global hotkeys ----------------
-   Eighteen independent named hotkeys share this same register/unregister
+   Twenty-one independent named hotkeys share this same register/unregister
    logic: "hideAll" (turns every overlay off — never back on, see
    hideAllOverlays() above, default Ctrl+Shift+1), "hotkeyList" (toggles
    the on-screen hotkey reference list, default Ctrl+Shift+2), "overlay"
@@ -948,6 +1017,9 @@ const HOTKEY_HANDLERS = {
   sneak: () => toggleSneakVisible(),
   sneakScrollUp: () => broadcast('hotkey:triggered', 'sneakScrollUp'),
   sneakScrollDown: () => broadcast('hotkey:triggered', 'sneakScrollDown'),
+  critGuide: () => toggleCritGuideVisible(),
+  critGuideScrollUp: () => broadcast('hotkey:triggered', 'critGuideScrollUp'),
+  critGuideScrollDown: () => broadcast('hotkey:triggered', 'critGuideScrollDown'),
   // Safe to Retire tier filters live in settings (main process owns them),
   // so these flip the flag here and let the normal settings:changed
   // broadcast re-render declutter.html — no new IPC channel needed.
@@ -1017,7 +1089,10 @@ const HOTKEY_LABELS = {
   declutterTierMythic: 'Tier Filter: Toggle Mythic',
   sneak: 'Toggle Sneak Preview',
   sneakScrollUp: 'Scroll Sneak Preview Up',
-  sneakScrollDown: 'Scroll Sneak Preview Down'
+  sneakScrollDown: 'Scroll Sneak Preview Down',
+  critGuide: 'Toggle Optimal Crit Guide',
+  critGuideScrollUp: 'Scroll Crit Guide Up',
+  critGuideScrollDown: 'Scroll Crit Guide Down'
 };
 const HOTKEY_SETTINGS_KEY = {
   hideAll: 'hideAllHotkey',
@@ -1037,10 +1112,13 @@ const HOTKEY_SETTINGS_KEY = {
   declutterTierMythic: 'declutterTierMythicHotkey',
   sneak: 'sneakHotkey',
   sneakScrollUp: 'sneakScrollUpHotkey',
-  sneakScrollDown: 'sneakScrollDownHotkey'
+  sneakScrollDown: 'sneakScrollDownHotkey',
+  critGuide: 'critGuideHotkey',
+  critGuideScrollUp: 'critGuideScrollUpHotkey',
+  critGuideScrollDown: 'critGuideScrollDownHotkey'
 };
 
-/* Registers all eighteen global hotkeys from current settings and returns each
+/* Registers all twenty-one global hotkeys from current settings and returns each
    one's { ok, reason } result, keyed by name — called once at launch. A
    failure here is otherwise silent (globalShortcut.register() just returns
    false, no exception, no OS-level detail) and was an open, never-confirmed
@@ -1179,6 +1257,9 @@ function wireIpc(){
     if(sneakWindow && (partial.sneakPosition)){
       sneakWindow.setBounds(clampToDisplay({ ...sneakWindow.getBounds(), ...partial.sneakPosition }));
     }
+    if(critGuideWindow && (partial.critGuidePosition)){
+      critGuideWindow.setBounds(clampToDisplay({ ...critGuideWindow.getBounds(), ...partial.critGuidePosition }));
+    }
     broadcast('settings:changed', { ...settings });
     return { settings: { ...settings }, hotkeyResult };
   });
@@ -1205,6 +1286,8 @@ function wireIpc(){
   // off: tracker.html calls this when a cycle completes and the player picks
   // "Sneak Preview" in the prompt below (after it has reset that cycle).
   ipcMain.handle('sneak:show', ()=>{ showSneakFocused(); return settings.sneakVisible; });
+
+  ipcMain.handle('critGuide:toggle', ()=>{ toggleCritGuideVisible(); return settings.critGuideVisible; });
 
   // Cycle-complete prompt (v1.7.1). A native box instead of the renderer's
   // confirm() because confirm() can only say OK/Cancel. Both buttons reset
@@ -1300,6 +1383,14 @@ function wireIpc(){
     return { ...settings };
   });
 
+  ipcMain.handle('critGuide:resetPosition', ()=>{
+    settings.critGuidePosition = null;
+    if(critGuideWindow) critGuideWindow.setBounds(computeDefaultDeclutterBounds());
+    persistSettingsNow();
+    broadcast('settings:changed', { ...settings });
+    return { ...settings };
+  });
+
   ipcMain.handle('timers:setLocked', (evt, locked)=>{
     settings.timersLocked = !!locked;
     if(timersWindow){
@@ -1387,6 +1478,28 @@ function wireIpc(){
     broadcast('settings:changed', { ...settings });
     return { ...settings };
   });
+
+  ipcMain.handle('critGuide:setLocked', (evt, locked)=>{
+    settings.critGuideLocked = !!locked;
+    if(critGuideWindow){
+      if(settings.critGuideLocked){
+        const b = critGuideWindow.getBounds();
+        settings.critGuidePosition = { x: b.x, y: b.y };
+        critGuideWindow.setFocusable(false);
+        critGuideWindow.setIgnoreMouseEvents(true, { forward: true });
+        // See the matching comment in overlay:setLocked.
+        if(!settings.critGuideVisible) critGuideWindow.hide();
+      } else {
+        critGuideWindow.setFocusable(true);
+        critGuideWindow.setIgnoreMouseEvents(false);
+        critGuideWindow.showInactive();
+        critGuideWindow.focus();
+      }
+    }
+    persistSettingsNow();
+    broadcast('settings:changed', { ...settings });
+    return { ...settings };
+  });
 }
 
 /* ---------------- one-time userData migration (2026-09-22 rename) ----------------
@@ -1442,6 +1555,7 @@ app.whenReady().then(()=>{
   createDeclutterWindow();
   createRebirthReqWindow();
   createSneakWindow();
+  createCritGuideWindow();
   createHotkeyListWindow();
   const hotkeyRegResults = registerAllHotkeys();
   // Wait for the tracker window's own scripts (overlay-controls.js's
@@ -1462,6 +1576,7 @@ app.whenReady().then(()=>{
       createDeclutterWindow();
       createRebirthReqWindow();
       createSneakWindow();
+      createCritGuideWindow();
       createHotkeyListWindow();
     }
   });
