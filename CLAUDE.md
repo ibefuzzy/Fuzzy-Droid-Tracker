@@ -123,41 +123,46 @@ plumbing, since it reads no droid/cycle data at all). The tracker itself still
 works normally outside Electron via a localStorage fallback (real progress in
 userData is never touched).
 
-## Current status (2026-09-25): v1.10.0 built + pushed, release page open, NOT YET PUBLISHED
-v1.10.0 shipped two features in one patch, both previewed as artifacts and
-approved by the user before any code was written:
-- **⚡ Optimal Crit Guide** — a 5th overlay (crit-guide-overlay.html), a STATIC
-  reference panel (no ownership/cycle data) with the fixed crystal-spend order
-  for one build plus the hit-calculation formula. Full main.js/preload.js/
-  overlay-controls.js/tracker.html wiring (window, hotkey, 2 scroll hotkeys,
-  toolbar button, Layout card, Keybind rows) — same pattern as Sneak Preview
-  throughout.
-- **🛡 Overlay Borders** — replaced the flat SABER_COLORS 6-color picker with
-  BORDER_SKINS, 7 hand-drawn CSS/SVG border skins (rebel/empire/jedi/mando/
-  hunter/tatooine/grogu: glow outline + corner brackets + emblem badge via
-  `borderIconSvg()`). User's first ask was to reuse real Star Wars frame
-  image assets they'd sourced elsewhere (a 6-image composite, no individual
-  files, no real alpha transparency); that got dropped in favor of this
-  project's own vector look once a side-by-side preview showed the vector
-  version scaling cleanly to narrow overlays where the sourced frames badly
-  distorted. Settings keys renamed (`color`→`border`,
-  `declutterColor`→`declutterBorder`, `rebirthReqColor`→`rebirthReqBorder`,
-  `sneakColor`→`sneakBorder`, new `critGuideBorder`) — Colors tab is now
-  Borders. Every overlay got a `.border-badge` div + bumped top padding
-  (6px→24px) so the badge doesn't clip against the window edge; verified at
-  the real minimum overlay width (260px), not just full-size.
+## Current status (2026-09-25): v1.10.1 built + pushed, release page open, NOT YET PUBLISHED
+v1.10.1 is a small two-fix patch on top of v1.10.0:
+- **🎯 Upcoming RB Req's HUD wraps to the next cycle.** `getUpcomingLevels()`
+  in requirements.js used to stop dead at level 35 (empty HUD once a cycle
+  was complete). It now wraps into the next cycle's levels 1+ instead of
+  clamping, and each returned entry carries its own `cycle` field (not just
+  `level`) so a caller spanning the wrap doesn't have to re-derive which
+  cycle a level belongs to — overlay.html's render() uses that field to add
+  a "· Cycle N" tag on wrapped blocks. Same idea as Sneak Preview, built into
+  the always-on HUD instead of a separate overlay.
+- **⚡ Crit Guide: toggleable info box + bigger rows.** The subtitle +
+  calc-box were wrapped in `#infoSection`, hideable via a new **ℹ Info**
+  button next to the buy counter, backed by a new `critGuideShowInfo`
+  setting (default true, so existing users see no change until they click
+  it). Purchase row fonts/padding were also bumped up (name 9.5px→11px,
+  numbers ~8.5px→10px) — with the info box hidden, noticeably more rows fit
+  without scrolling.
 
-56 tests passing (was 54; +crit-guide-overlay.html's own page-guard tests,
-`borderIconSvg` added to ARITY_CHECKED). Verified live in the browser — the
-static-server + mocked-overlayAPI pattern (see "Smoke-testing" above) run
-against all 5 overlays and the tracker's Borders tab, not just unit tests.
-Source is on GitHub main (two commits: `8508979` for the feature, `ef76f1c`
-for the ARITY_CHECKED addition). The v1.10.0 exe is built and checksummed
-(release/ holds only this one exe now — old 1.8.1/1.9.0/1.9.1 exes deleted
-per the "keep only current build" rule), and its release page is open in the
-browser pane with everything prefilled — the ONLY remaining step is the user
-dragging the exe onto the page and clicking Publish. Check whether that
-already happened before assuming it's still pending.
+57 tests passing (was 56; the `getUpcomingLevels` test was rewritten for the
+wrap behavior instead of the old "clamped to cycle" behavior, plus a new
+cycle-5-wraps-to-1 test). Verified live in the browser — the static-server +
+mocked-overlayAPI pattern (see "Smoke-testing" above) confirmed the HUD's
+wrap tag at currentLevel=35 and the Crit Guide toggle both directions.
+Source is on GitHub main (two commits: one for the 6 root-level files, one
+for test/requirements.test.js — GitHub's upload UI needs a separate
+`.../upload/main/<subdir>` page per target folder, root uploads don't
+preserve subdirectory structure). The v1.10.1 exe is built and checksummed
+(release/ holds only this one exe now — 1.10.0 deleted per the "keep only
+current build" rule, after confirming no running instance still had it
+locked), and its release page is open in the browser pane with everything
+prefilled — the ONLY remaining step is the user dragging the exe onto the
+page and clicking Publish. Check whether that already happened before
+assuming it's still pending.
+
+A project-level `.claude/settings.json` now exists (added 2026-09-25) with a
+read-only permission allowlist (Get-ChildItem, Get-Process, npm test, a few
+browser-tab/nav MCP calls, etc.) — see that file for the full list. It does
+NOT cover anything that writes/deletes/builds or executes arbitrary code
+(npm run dist, Remove-Item, node -e, browser click/type/file_upload) —
+those still prompt every time, deliberately.
 
 No other work is queued. If the user wants a next direction and isn't sure, ask —
 don't assume.
