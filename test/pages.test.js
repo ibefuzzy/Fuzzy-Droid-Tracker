@@ -102,3 +102,67 @@ test('tracker.html has every element id the settings scripts look up, exactly on
 test('tracker.html uses the shared requirements.js', () => {
   assert.ok(scriptsOf('tracker.html').some((s) => s.name === 'requirements.js'));
 });
+
+/* 3. A shared function's signature can change (gain a required parameter)
+   without any redeclaration at all — a stale call site elsewhere then
+   silently passes too few arguments (the missing one is just `undefined`),
+   which throws at RUNTIME instead of failing anything above. This is
+   exactly how the v1.9.0 regression happened: cycleCoveredCount() gained
+   an ownedRank parameter, every call site inside tracker.html's own inline
+   script was updated, but rebirth-screen-read.js — a separate file loaded
+   via <script src>, never scanned for this — still called it with one
+   argument, so clicking "Apply" on the Read Rebirth Screen confirm dialog
+   threw immediately (ownedRank[nk] on undefined) and did nothing. */
+function stripComments(src) {
+  return src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+}
+function arityOf(src, name) {
+  const m = new RegExp(`function\\s+${name}\\s*\\(([^)]*)\\)`).exec(src);
+  if (!m) return null;
+  const params = m[1].trim();
+  return params ? params.split(',').length : 0;
+}
+function callArgCounts(src, name) {
+  const counts = [];
+  const callRe = new RegExp(`(?<!function )\\b${name}\\s*\\(`, 'g');
+  let m;
+  while ((m = callRe.exec(src))) {
+    let i = m.index + m[0].length; // just past the opening (
+    let depth = 1;
+    const argStart = i;
+    let commas = 0;
+    for (; i < src.length && depth > 0; i++) {
+      const c = src[i];
+      if (c === '(' || c === '[' || c === '{') depth++;
+      else if (c === ')' || c === ']' || c === '}') { depth--; if (depth === 0) break; }
+      else if (c === ',' && depth === 1) commas++;
+    }
+    const argsText = src.slice(argStart, i).trim();
+    counts.push(argsText ? commas + 1 : 0);
+  }
+  return counts;
+}
+
+const REQ_SRC = fs.readFileSync(path.join(ROOT, 'requirements.js'), 'utf8');
+const ARITY_CHECKED = [
+  'cycleCoveredCount', 'cycleDroidKeys', 'removeCycleMarks', 'decideOwnedUpdate',
+  'isValidImportPayload', 'getDeclutterList', 'getSneakPreview', 'getUpcomingLevels',
+  'getLevelRequirements', 'cycleCeilings', 'cycleLastNeededLevel', 'borderIconSvg',
+];
+const PROJECT_JS_AND_HTML = fs.readdirSync(ROOT).filter((f) => {
+  if (!(f.endsWith('.js') || f.endsWith('.html'))) return false;
+  return fs.statSync(path.join(ROOT, f)).isFile();
+});
+
+test('every call site of a shared requirements.js function passes the right number of arguments', () => {
+  for (const name of ARITY_CHECKED) {
+    const arity = arityOf(stripComments(REQ_SRC), name);
+    assert.ok(arity !== null, `${name} not found in requirements.js`);
+    for (const f of PROJECT_JS_AND_HTML) {
+      const src = stripComments(fs.readFileSync(path.join(ROOT, f), 'utf8'));
+      for (const n of callArgCounts(src, name)) {
+        assert.equal(n, arity, `${f} calls ${name}() with ${n} argument(s), but requirements.js declares ${arity}`);
+      }
+    }
+  }
+});
