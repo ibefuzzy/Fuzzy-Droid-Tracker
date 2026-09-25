@@ -1346,13 +1346,18 @@ function droidStatus(nk){
 
 async function setOwned(nk, rank){
   const current = ownedRank[nk];
-  const coveredBefore = cycleCoveredCount(activeCycle);
-  if(current === rank){
+  const coveredBefore = cycleCoveredCount(activeCycle, ownedRank);
+  // The clear/set/blocked decision is decideOwnedUpdate() in requirements.js
+  // — shared with the tests, so this three-way click semantic (undo your
+  // current best, claim a genuine upgrade, or refuse a downgrade) is pinned
+  // once instead of only living here.
+  const decision = decideOwnedUpdate(current, rank);
+  if(decision.action === 'clear'){
     delete ownedRank[nk]; // clicking your current best again undoes it
-  } else if(current === undefined || rank > current){
+  } else if(decision.action === 'set'){
     ownedRank[nk] = rank; // new claim, or a genuine upgrade — cascades "covered" down to every lower variant automatically
   } else {
-    // rank < current -> that variant is already covered by something higher.
+    // blocked: that variant is already covered by something higher.
     // Never silently downgrade from a plain click (a stray click on an
     // already-covered cell shouldn't erase real progress) — but don't leave
     // the click looking like it just did nothing, either. A droid can recur
@@ -1381,7 +1386,7 @@ async function markRowObtained(row, opts){
   // reference. Those callers do their own single before/after check
   // wrapping the whole loop instead — see rebirth-screen-read.js.
   const skipCycleCheck = !!(opts && opts.skipCycleCheck);
-  const coveredBefore = skipCycleCheck ? null : cycleCoveredCount(activeCycle);
+  const coveredBefore = skipCycleCheck ? null : cycleCoveredCount(activeCycle, ownedRank);
   row.forEach(d=>{
     const nk = normKey(canonicalName(d[1]));
     setOwnedAtLeast(nk, rankOf(d[0]));
@@ -1408,30 +1413,14 @@ async function markRowObtained(row, opts){
    own on-screen counter is what actually resets it once the player rebirths
    for real — this popup is about the tracker's droid marks, not that
    counter, and stepping on it here would fight the OCR. */
-function cycleCoveredCount(cycle){
-  let covered = 0;
-  CYCLES[cycle].forEach(row=>{
-    row.forEach(d=>{
-      const nk = normKey(canonicalName(d[1]));
-      const owned = ownedRank[nk];
-      if(owned !== undefined && rankOf(d[0]) <= owned) covered++;
-    });
-  });
-  return covered;
-}
-
-function cycleDroidKeys(cycle){
-  const keys = new Set();
-  CYCLES[cycle].forEach(row=>{
-    row.forEach(d=>{ keys.add(normKey(canonicalName(d[1]))); });
-  });
-  return keys;
-}
+/* cycleCoveredCount, cycleDroidKeys, removeCycleMarks, decideOwnedUpdate and
+   isValidImportPayload now live in requirements.js (moved 2026-09-25 so
+   they're testable) — do not redeclare them here. */
 
 function cycleAfter(cycle){ return (cycle >= 5) ? 1 : cycle + 1; }
 
 async function clearCycleMarks(cycle){
-  cycleDroidKeys(cycle).forEach(nk=>{ delete ownedRank[nk]; });
+  ownedRank = removeCycleMarks(cycle, ownedRank);
   await storeSet('rebirth-ownedRank-v2', ownedRank);
 }
 
@@ -1459,7 +1448,7 @@ async function resetCycleForSneakPreview(cycle){
 let cyclePromptOpen = false;
 async function maybeOfferCycleReset(cycle, coveredBefore){
   if(coveredBefore === 105) return; // was already fully marked before this action — don't re-nag on every subsequent click
-  if(cycleCoveredCount(cycle) !== 105) return; // not complete yet
+  if(cycleCoveredCount(cycle, ownedRank) !== 105) return; // not complete yet
   if(cyclePromptOpen) return;
   // Browser (no app): plain OK/Cancel — OK resets + advances, Cancel leaves everything as it is.
   if(!(window.overlayAPI && window.overlayAPI.askCycleComplete)){
@@ -1690,7 +1679,7 @@ function droidCellHtml(nk, occEntry, lastNeeded){
 
 function renderByLevel(){
   getEl('cycleSelect').value = String(activeCycle);
-  const covered = cycleCoveredCount(activeCycle);
+  const covered = cycleCoveredCount(activeCycle, ownedRank);
   getEl('cycleProgress').textContent = covered + ' / 105 covered';
   const q = filterText.trim().toLowerCase();
   const lastNeeded = cycleLastNeededLevel(activeCycle); // once per render, not once per cell
@@ -2006,9 +1995,10 @@ document.getElementById('importFile').addEventListener('change', (e)=>{
       const parsed = JSON.parse(reader.result);
       // Validate before touching anything: a wrong/partial JSON file used to
       // replace all progress with {} silently (parsed.ownedRank || {}).
+      // isValidImportPayload() is the shared, tested check from
+      // requirements.js; isObj() below is only for the two optional fields.
       const isObj = v => v && typeof v === 'object' && !Array.isArray(v);
-      if(!isObj(parsed) || !isObj(parsed.ownedRank) ||
-         Object.values(parsed.ownedRank).some(r => !Number.isInteger(r) || r < 0 || r >= RARITY_ORDER.length)){
+      if(!isValidImportPayload(parsed)){
         alert("That doesn't look like a Droid Tracker export — nothing was changed.");
         return;
       }

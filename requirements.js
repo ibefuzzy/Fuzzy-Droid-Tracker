@@ -260,3 +260,63 @@ function getSneakPreview(cycle, ownedRank){
   out.sort((a,b)=> (b.rank - a.rank) || a.display.localeCompare(b.display));
   return { nextCycle: next, items: out };
 }
+
+/* ---------------- OWNERSHIP HELPERS (moved from tracker.html, 2026-09-25) ----------------
+   These four were the last pieces of core tracking logic still living
+   inline in tracker.html, untested. Pure functions — no DOM, no storage I/O
+   — so tracker.html's own setOwned()/clearCycleMarks()/cycleCoveredCount()
+   now just call these and handle the storeSet()/render()/toast side effects
+   around them. Behavior is unchanged; see test/requirements.test.js. */
+
+/* How many of a cycle's 105 slots (35 levels x 3) are covered by ownedRank
+   (global, keyed by name) at that slot's required rarity or better. */
+function cycleCoveredCount(cycle, ownedRank){
+  let covered = 0;
+  CYCLES[cycle].forEach(row=>{
+    row.forEach(d=>{
+      const nk = normKey(canonicalName(d[1]));
+      const owned = ownedRank[nk];
+      if(owned !== undefined && rankOf(d[0]) <= owned) covered++;
+    });
+  });
+  return covered;
+}
+
+/* The set of normKeys that appear anywhere in a cycle's requirement table. */
+function cycleDroidKeys(cycle){
+  const keys = new Set();
+  CYCLES[cycle].forEach(row=>{
+    row.forEach(d=>{ keys.add(normKey(canonicalName(d[1]))); });
+  });
+  return keys;
+}
+
+/* A NEW ownedRank object with every key belonging to this cycle's table
+   deleted — does not mutate the object passed in, so the caller decides
+   when (and whether) to commit the result to the real ownedRank/storage. */
+function removeCycleMarks(cycle, ownedRank){
+  const next = Object.assign({}, ownedRank);
+  cycleDroidKeys(cycle).forEach(nk=>{ delete next[nk]; });
+  return next;
+}
+
+/* The three-way click semantics every "claim a rarity" control in the app
+   shares (main grid, A-Z pips, Rebirth Reqs panel):
+     - clicking your current best again undoes it            -> 'clear'
+     - nothing logged yet, or a genuine upgrade                -> 'set'
+     - anything lower than what's already on record            -> 'blocked'
+       (never silently downgrades a real claim from a stray click — the
+       caller is expected to point the player at right-click instead) */
+function decideOwnedUpdate(currentRank, requestedRank){
+  if(currentRank === requestedRank) return { action:'clear' };
+  if(currentRank === undefined || requestedRank > currentRank) return { action:'set' };
+  return { action:'blocked' };
+}
+
+/* What Export produces and Import accepts: an object with an ownedRank map
+   of normKey -> integer rarity rank in [0, RARITY_ORDER.length). */
+function isValidImportPayload(parsed){
+  const isObj = v => v !== null && typeof v === 'object' && !Array.isArray(v);
+  if(!isObj(parsed) || !isObj(parsed.ownedRank)) return false;
+  return !Object.values(parsed.ownedRank).some(r => !Number.isInteger(r) || r < 0 || r >= RARITY_ORDER.length);
+}

@@ -525,6 +525,18 @@ v1.7.6 settings panel to the rest of the app:
   left alone — it's the busiest surface in the app, and the plain background
   keeps it easy to scan.
 
+**Per-overlay lightsaber colors (v1.9.0, in progress).** Each of the four
+in-game overlays now has its own signature color for its border, corner
+brackets, count badge and scrollbar — blue for 🎯 Upcoming RB Req's (the
+HUD), green for ♻ Safe to Retire, purple for 🧬 Rebirth Requirements, red for
+🔮 Sneak Preview (matching the Mythic tier color, since that list is
+Mythic-only). Set via two CSS variables per overlay (`--accent`, `--sw-rgb`)
+that `sw-texture.css` now reads instead of a hardcoded blue — the toolbar,
+settings panel, Rebirth Reqs side panel and droid list stay blue, unchanged.
+A user-customizable version (pick your own color per overlay instead of this
+fixed mapping) is the planned next step; the same two variables are what
+that would read from too, so this isn't throwaway work either way.
+
 **Command Console layout fix (v1.8.1).** Each toolbar row is now two columns —
 a fixed-width label and a separate button strip next to it — instead of one
 flat row. Buttons that don't fit wrap to a second line *within that button
