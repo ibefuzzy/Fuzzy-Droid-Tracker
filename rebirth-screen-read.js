@@ -258,7 +258,7 @@
       // completion against leftover writes from the OLD cycle's catch-up.
       // So every iteration skips its own check, and this does one instead,
       // before/after the whole batch, against the same `cycle` throughout.
-      const coveredBefore = cycleCoveredCount(cycle);
+      const coveredBefore = cycleCoveredCount(cycle, ownedRank);
       for(let level = 1; level <= through; level++){
         await markRowObtained(CYCLES[cycle][level-1], { skipCycleCheck: true });
       }

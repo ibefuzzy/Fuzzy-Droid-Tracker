@@ -63,6 +63,7 @@ const DEFAULT_SETTINGS = {
   opacity: 0.55,           // background opacity of the overlay panel, 0.2-0.92
   locked: true,            // false while the user is dragging it into position
   position: null,          // {x,y} in screen pixels; null = use the computed default
+  color: 'blue',           // v1.9.0: this overlay's saber color key, see SABER_COLORS in requirements.js
   timersVisible: true,
   timersLocked: true,
   timersPosition: null,
@@ -91,6 +92,7 @@ const DEFAULT_SETTINGS = {
   // convention comment further down); declutter.html just re-renders off
   // settings:changed. Flat booleans rather than one nested object so
   // loadJson()'s top-level-key merge fills in any one that's missing.
+  declutterColor: 'green', // v1.9.0: this overlay's saber color key
   declutterShowDefault: true,
   declutterShowRare: true,
   declutterShowEpic: true,
@@ -106,6 +108,7 @@ const DEFAULT_SETTINGS = {
   rebirthReqVisible: true,
   rebirthReqLocked: true,
   rebirthReqPosition: null,
+  rebirthReqColor: 'purple', // v1.9.0: this overlay's saber color key
   // rebirthReqScrollUpHotkey / rebirthReqScrollDownHotkey retired 2026-09-24
   // (v1.7.3) — the Rebirth Requirements overlay never actually needed its
   // own separate scroll hotkeys, it just hadn't been wired to share
@@ -124,6 +127,7 @@ const DEFAULT_SETTINGS = {
   sneakVisible: false,
   sneakLocked: true,
   sneakPosition: null,
+  sneakColor: 'red', // v1.9.0: this overlay's saber color key
   hasSeenIntroGuide: false, // first-launch walkthrough (guide.js) — set true once dismissed or finished; an existing settings file just merges this in as false via loadJson(), so upgraders see it once too
   hotkeyLayoutVersion: 0   // bumped by the migrations below; never hand-edit
 };

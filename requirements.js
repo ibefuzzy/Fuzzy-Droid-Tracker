@@ -261,6 +261,26 @@ function getSneakPreview(cycle, ownedRank){
   return { nextCycle: next, items: out };
 }
 
+/* ---------------- SABER COLORS (v1.9.0) ----------------
+   The curated palette every in-game overlay picks its own color from, in
+   ⚙ Overlay Settings → Colors. A curated set, not a full color wheel — every
+   hex here is already used somewhere else in this app (a Settings tab's own
+   saber color, or a rarity/tier color), so nothing here can be illegible
+   against the dark background or clash with the rest of the UI. Each
+   overlay reads its own settings key (color / declutterColor /
+   rebirthReqColor / sneakColor) and applies { hex, rgb } to its own
+   --accent / --sw-rgb CSS variables — see applySettings() in overlay.html,
+   declutter.html, rebirth-requirements-overlay.html, sneak-preview.html. */
+const SABER_COLORS = {
+  blue:   { hex:'#4fb8ff', rgb:'79,184,255' },
+  green:  { hex:'#5ef2a6', rgb:'94,242,166' },
+  purple: { hex:'#b06cf2', rgb:'176,108,242' },
+  red:    { hex:'#ff4d6d', rgb:'255,77,109' },
+  yellow: { hex:'#ffd24a', rgb:'255,210,74' },
+  orange: { hex:'#e08a3c', rgb:'224,138,60' }
+};
+const SABER_COLOR_ORDER = ['blue', 'green', 'purple', 'red', 'yellow', 'orange'];
+
 /* ---------------- OWNERSHIP HELPERS (moved from tracker.html, 2026-09-25) ----------------
    These four were the last pieces of core tracking logic still living
    inline in tracker.html, untested. Pure functions — no DOM, no storage I/O

@@ -740,6 +740,28 @@
   .pos-slider{display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;letter-spacing:.04em;}
   .pos-slider input[type="range"]{accent-color:var(--accent);width:100%;}
 
+  /* ---- Colors tab (v1.9.0): one row per overlay, a swatch button per
+     saber color. Swatches are generated in JS from SABER_COLOR_ORDER
+     (requirements.js) so this list only exists in one place. ---- */
+  .color-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:11px 12px;border-radius:8px;}
+  .color-row:hover{background:rgba(143,214,255,.05);}
+  .color-row + .color-row{border-top:1px solid var(--holo-line);}
+  .color-row-label{display:flex;flex-direction:column;gap:1px;min-width:0;}
+  .color-row-label b{font-size:14px;color:var(--text);font-weight:600;}
+  .color-row-label small{font-size:11.5px;color:var(--text-dim);}
+  .color-swatches{display:flex;gap:9px;flex:0 0 auto;}
+  .swatch{
+    width:26px;height:26px;border-radius:50%;padding:0;cursor:pointer;
+    background:var(--sw);border:2px solid rgba(255,255,255,.15);
+    transition:transform .12s,border-color .12s;position:relative;
+  }
+  .swatch:hover{transform:scale(1.14);}
+  .swatch.active{border-color:#fff;box-shadow:0 0 0 2px rgba(0,0,0,.4),0 0 9px -1px var(--sw);}
+  .swatch.active::after{
+    content:'✓';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-size:12.5px;font-weight:800;color:#08130d;
+  }
+
   .tier-row{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 12px;}
   .holo-console .tier-row .tier-btn{font-size:14px;padding:9px 16px;border-radius:20px;}
   .holo-link{background:none;border:0;padding:0;color:var(--holo);text-decoration:underline;text-underline-offset:2px;cursor:pointer;font:inherit;}
@@ -887,6 +909,10 @@
         <button class="holo-tab" type="button" role="tab" id="setTab-layout" data-tab="layout" aria-controls="setPane-layout" aria-selected="false" tabindex="-1" style="--saber:#5ef2a6">
           <span class="holo-tab-icon" aria-hidden="true">🧭</span>
           <span class="holo-tab-text"><b>Layout</b><small>Nav computer</small></span>
+        </button>
+        <button class="holo-tab" type="button" role="tab" id="setTab-colors" data-tab="colors" aria-controls="setPane-colors" aria-selected="false" tabindex="-1" style="--saber:#ff4d6d">
+          <span class="holo-tab-icon" aria-hidden="true">🎨</span>
+          <span class="holo-tab-text"><b>Colors</b><small>Saber tuning</small></span>
         </button>
         <button class="holo-tab" type="button" role="tab" id="setTab-filters" data-tab="filters" aria-controls="setPane-filters" aria-selected="false" tabindex="-1" style="--saber:#b06cf2">
           <span class="holo-tab-icon" aria-hidden="true">🔎</span>
@@ -1049,6 +1075,32 @@
                 <button class="btn" id="sneakResetPosBtn" title="Snap the Sneak Preview overlay back to its default position">↺ Reset</button>
               </div>
             </div>
+          </div>
+        </section>
+
+        <!-- ============ COLORS ============ -->
+        <section class="holo-pane" id="setPane-colors" role="tabpanel" aria-labelledby="setTab-colors" hidden>
+          <div class="holo-pane-head">
+            <div>
+              <h4>Colors</h4>
+              <p class="overlay-panel-hint">Each in-game overlay has its own saber color — its border, corner brackets, count badge and scrollbar. Pick a color per overlay below; the change applies live.</p>
+            </div>
+          </div>
+          <div class="color-row" data-color-key="color">
+            <div class="color-row-label"><b>🎯 Current Rebirth Requirements</b><small>The HUD</small></div>
+            <div class="color-swatches"></div>
+          </div>
+          <div class="color-row" data-color-key="declutterColor">
+            <div class="color-row-label"><b>♻ Safe to Retire</b><small>Droids this cycle will never ask for again</small></div>
+            <div class="color-swatches"></div>
+          </div>
+          <div class="color-row" data-color-key="rebirthReqColor">
+            <div class="color-row-label"><b>🧬 Rebirth Requirements</b><small>Every droid this cycle still needs</small></div>
+            <div class="color-swatches"></div>
+          </div>
+          <div class="color-row" data-color-key="sneakColor">
+            <div class="color-row-label"><b>🔮 Sneak Preview</b><small>Next cycle's Mythic droids</small></div>
+            <div class="color-swatches"></div>
           </div>
         </section>
 

@@ -77,6 +77,29 @@
   const tierBtns = Array.from(document.querySelectorAll('[data-tier-key]'));
   const tierAllBtn = document.getElementById('declutterTierAllBtn');
 
+  /* Colors tab (v1.9.0): one row per overlay (⚙ Overlay Settings → Colors),
+     each with a swatch button per SABER_COLOR_ORDER entry. Swatches are
+     built here instead of hand-written in tracker.html so the color list
+     only exists in one place — SABER_COLORS/SABER_COLOR_ORDER in
+     requirements.js, the same object each overlay window reads its own
+     saber color from. */
+  const COLOR_ROW_DEFAULT = { color:'blue', declutterColor:'green', rebirthReqColor:'purple', sneakColor:'red' };
+  const colorRows = Array.from(document.querySelectorAll('.color-row[data-color-key]'));
+  colorRows.forEach(row=>{
+    const key = row.dataset.colorKey;
+    const wrap = row.querySelector('.color-swatches');
+    if(!wrap) return;
+    SABER_COLOR_ORDER.forEach(name=>{
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'swatch';
+      b.title = name.charAt(0).toUpperCase() + name.slice(1);
+      b.style.setProperty('--sw', SABER_COLORS[name].hex);
+      b.dataset.colorValue = name;
+      wrap.appendChild(b);
+    });
+  });
+
   toggleBtn.hidden = false;
   settingsBtn.hidden = false;
   if(timersToggleBtn) timersToggleBtn.hidden = false;
@@ -129,6 +152,13 @@
     });
     tierBtns.forEach(b=>{ b.classList.toggle('on', settings[b.dataset.tierKey] !== false); });
     if(tierAllBtn) tierAllBtn.classList.toggle('on', TIER_KEYS.every(k => settings[k] !== false));
+    colorRows.forEach(row=>{
+      const key = row.dataset.colorKey;
+      const active = settings[key] || COLOR_ROW_DEFAULT[key];
+      row.querySelectorAll('.swatch').forEach(b=>{
+        b.classList.toggle('active', b.dataset.colorValue === active);
+      });
+    });
     opacityRange.value = settings.opacity != null ? settings.opacity : 0.55;
     setToggleLabel(settings.visible);
     setTimersToggleLabel(settings.timersVisible);
@@ -306,6 +336,15 @@
       await window.overlayAPI.setSettings(partial);
     });
   }
+
+  colorRows.forEach(row=>{
+    const key = row.dataset.colorKey;
+    row.querySelectorAll('.swatch').forEach(b=>{
+      b.addEventListener('click', async ()=>{
+        await window.overlayAPI.setSettings({ [key]: b.dataset.colorValue });
+      });
+    });
+  });
 
   // Toast bridge for one-off messages the main process pushes (e.g. the
   // startup "hotkey couldn't register" notice).

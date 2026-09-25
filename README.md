@@ -525,17 +525,25 @@ v1.7.6 settings panel to the rest of the app:
   left alone — it's the busiest surface in the app, and the plain background
   keeps it easy to scan.
 
-**Per-overlay lightsaber colors (v1.9.0, in progress).** Each of the four
-in-game overlays now has its own signature color for its border, corner
-brackets, count badge and scrollbar — blue for 🎯 Upcoming RB Req's (the
-HUD), green for ♻ Safe to Retire, purple for 🧬 Rebirth Requirements, red for
-🔮 Sneak Preview (matching the Mythic tier color, since that list is
-Mythic-only). Set via two CSS variables per overlay (`--accent`, `--sw-rgb`)
-that `sw-texture.css` now reads instead of a hardcoded blue — the toolbar,
-settings panel, Rebirth Reqs side panel and droid list stay blue, unchanged.
-A user-customizable version (pick your own color per overlay instead of this
-fixed mapping) is the planned next step; the same two variables are what
-that would read from too, so this isn't throwaway work either way.
+**🎨 Per-overlay saber colors (v1.9.0/v1.9.1).** Each of the four in-game
+overlays has its own color for its border, corner brackets, count badge and
+scrollbar — pick it yourself in **⚙ Overlay Settings → Colors**, one row per
+overlay, six curated swatches (blue, green, purple, red, yellow, orange).
+Defaults: blue for 🎯 Upcoming RB Req's (the HUD), green for ♻ Safe to
+Retire, purple for 🧬 Rebirth Requirements, red for 🔮 Sneak Preview (matches
+the Mythic tier color, since that list is Mythic-only). Applies live — no
+restart needed. The toolbar, settings panel, Rebirth Reqs side panel and
+droid list stay blue, unchanged; this is a per-overlay-window thing, not a
+whole-app recolor.
+
+**v1.9.1 hotfix.** v1.9.0 shipped a regression: clicking **Apply** on the
+Read Rebirth Screen confirm dialog silently did nothing (a shared function,
+`cycleCoveredCount()`, gained a required parameter and one call site outside
+tracker.html's own script — in `rebirth-screen-read.js` — never got updated
+to pass it, so the click handler threw immediately). Fixed, and a new test
+now checks every call site of every shared `requirements.js` function passes
+the right number of arguments, specifically to catch this class of bug
+project-wide instead of only inside tracker.html.
 
 **Command Console layout fix (v1.8.1).** Each toolbar row is now two columns —
 a fixed-width label and a separate button strip next to it — instead of one

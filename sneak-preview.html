@@ -273,6 +273,11 @@
 
   function applySettings(settings){
     document.body.classList.toggle('unlocked', !settings.sneakLocked);
+    // v1.9.0: this overlay's own saber color, picked in ⚙ Overlay Settings →
+    // Colors. SABER_COLORS comes from requirements.js, loaded above.
+    const saber = SABER_COLORS[settings.sneakColor] || SABER_COLORS.red;
+    document.documentElement.style.setProperty('--accent', saber.hex);
+    document.documentElement.style.setProperty('--sw-rgb', saber.rgb);
   }
   window.overlayAPI.onSettingsChanged(applySettings);
 
