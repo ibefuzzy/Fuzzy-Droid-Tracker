@@ -24,6 +24,13 @@ across the whole cycle regardless of what level you were actually on, which
 could (and did) surface a level-25 requirement while you were still on level
 3. Worth knowing if that sounds familiar.
 
+**v1.10.1:** finishing level 35 used to leave the HUD blank until you
+switched cycles. Now it keeps going — once it runs past level 35 it shows the
+next cycle's levels 1+ instead, each block tagged **"· Cycle N"** so it's
+obvious those are next-cycle requirements, not the one you're still on. Same
+idea as 🔮 Sneak Preview, just built into the always-on HUD instead of a
+separate overlay.
+
 ## Why this is safe to run alongside Fortnite
 
 The overlay is a completely separate OS window — Electron's own, not a hook
@@ -440,6 +447,13 @@ default — set one in ⚙ Overlay Settings). Same card look, default size/
 position, and hotkey-scrolled viewport as Safe to Retire / Rebirth
 Requirements / Sneak Preview — **Scroll Crit Guide Up / Down**, also unbound
 by default.
+
+**v1.10.1:** the subtitle + "How a Critical Hit is Calculated" box were
+eating a lot of the panel's height, forcing more scrolling to see the actual
+purchase list. An **ℹ Info** button next to the buy counter now hides/shows
+that block on demand (remembered across restarts); purchase rows are also a
+little bigger and easier to read. Hiding the info box roughly a third more
+rows fit on screen at once.
 
 ## 🛡 Overlay Borders (v1.10.0, replaces the per-overlay Colors tab)
 

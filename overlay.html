@@ -138,15 +138,6 @@
   }
   .d-cell.owned{ opacity:0.42; }
   .d-cell.owned .d-name{ text-decoration:line-through; }
-  .empty-msg{
-    flex:1; display:flex; align-items:center; justify-content:center;
-    color:#dfe8e2; font-size:12px; text-align:center;
-    text-shadow:0 1px 2px rgba(0,0,0,0.9);
-    background:
-      radial-gradient(140% 160% at 50% 0%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 65%),
-      rgba(10,14,12,var(--bg-opacity));
-    border:1px solid rgba(94,242,166,0.35); border-radius:8px; padding:8px;
-  }
 </style>
 <link rel="stylesheet" href="sw-texture.css">
 </head>
@@ -206,16 +197,15 @@
 
   function render(){
     const blocksEl = document.getElementById('blocks');
+    // getUpcomingLevels wraps to the next cycle's levels 1+ once the current
+    // cycle runs out, so this is never empty at 35/35 — it previews the next
+    // cycle's first rebirths instead, same idea as Sneak Preview.
     const upcoming = getUpcomingLevels(currentCycle, currentLevel, ownedRankLocal, 4);
-
-    if(!upcoming.length){
-      blocksEl.innerHTML = '<div class="empty-msg">All 35 rebirths done for Cycle ' + currentCycle + ' 🎉</div>';
-      return;
-    }
 
     blocksEl.innerHTML = upcoming.map((u, i)=>{
       const isCurrent = i === 0;
-      const tag = isCurrent ? ('NOW · Lvl ' + u.level) : ('Lvl ' + u.level);
+      const cycleTag = u.cycle !== currentCycle ? (' · Cycle ' + u.cycle) : '';
+      const tag = (isCurrent ? 'NOW · Lvl ' : 'Lvl ') + u.level + cycleTag;
       return '<div class="block' + (isCurrent ? ' current' : '') + '">' +
         '<span class="tag">' + tag + '</span>' +
         '<div class="d-row">' + u.droids.map(cellHtml).join('') + '</div>' +

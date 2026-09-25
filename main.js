@@ -142,6 +142,7 @@ const DEFAULT_SETTINGS = {
   critGuideLocked: true,
   critGuidePosition: null,
   critGuideBorder: 'tatooine',
+  critGuideShowInfo: true, // v1.10.1: the "How a Critical Hit is Calculated" box is toggleable in-overlay (see the ℹ button) — the subtitle + calc-box eat a lot of vertical space, so hiding it leaves more room for the purchase list before scrolling kicks in
   hasSeenIntroGuide: false, // first-launch walkthrough (guide.js) — set true once dismissed or finished; an existing settings file just merges this in as false via loadJson(), so upgraders see it once too
   hotkeyLayoutVersion: 0   // bumped by the migrations below; never hand-edit
 };

@@ -131,12 +131,25 @@ function getLevelRequirements(cycle, level, ownedRank){
 }
 
 /* currentLevel = last rebirth completed (0 if none yet). Returns up to
-   `count` upcoming levels starting at currentLevel+1, i.e. "NOW" first. */
+   `count` upcoming levels starting at currentLevel+1, i.e. "NOW" first. When
+   the current cycle runs out (currentLevel 32+, since count is 4), wraps to
+   the next cycle's levels 1+ instead of stopping short — so the "Upcoming RB
+   Req's" HUD (overlay.html) is never empty at the end of a cycle, it shows
+   what's coming in the next one, same idea as Sneak Preview. Each entry
+   carries its own `cycle` (not just `level`) so a caller spanning the wrap
+   can tell which levels belong to the next cycle without re-deriving it. */
 function getUpcomingLevels(cycle, currentLevel, ownedRank, count){
-  const start = Math.max(0, currentLevel) + 1;
   const out = [];
-  for(let level = start; level <= 35 && out.length < count; level++){
-    out.push({ level, droids: getLevelRequirements(cycle, level, ownedRank) });
+  let workingCycle = cycle;
+  let workingLevel = Math.max(0, currentLevel) + 1;
+
+  while(out.length < count){
+    if(workingLevel > 35){
+      workingCycle = nextCycleOf(workingCycle);
+      workingLevel = 1;
+    }
+    out.push({ cycle: workingCycle, level: workingLevel, droids: getLevelRequirements(workingCycle, workingLevel, ownedRank) });
+    workingLevel++;
   }
   return out;
 }

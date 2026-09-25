@@ -76,6 +76,17 @@
     background:var(--accent); border-radius:999px;
     padding:1px 7px; letter-spacing:0;
   }
+  .info-toggle{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px; font-weight:700; color:#dfe8e2;
+    background:rgba(255,255,255,0.12);
+    border:1px solid rgba(255,255,255,0.25);
+    border-radius:999px;
+    padding:1px 7px; margin:0; line-height:1.3; letter-spacing:0;
+    cursor:pointer; outline:none;
+  }
+  .info-toggle:hover{ filter:brightness(1.2); }
+  .info-toggle.active{ background:var(--accent); border-color:var(--accent); color:#08130d; }
   .subtitle{
     font-size:9.5px; color:rgba(255,255,255,0.55); letter-spacing:.02em;
     margin-top:-4px;
@@ -103,11 +114,11 @@
   }
   .col-header{
     flex:0 0 auto;
-    display:grid; grid-template-columns:18px 1fr 48px 44px 56px 50px 30px;
-    gap:4px; padding:0 4px 3px;
+    display:grid; grid-template-columns:20px 1fr 54px 50px 62px 56px 34px;
+    gap:5px; padding:0 4px 4px;
     border-bottom:1px solid rgba(255,255,255,0.14);
     font-family:'IBM Plex Mono',monospace;
-    font-size:8px; font-weight:700; letter-spacing:.04em; text-transform:uppercase;
+    font-size:8.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase;
     color:rgba(255,255,255,0.45);
   }
   .col-header span:nth-child(n+3){ text-align:right; }
@@ -135,20 +146,20 @@
   @media (prefers-reduced-motion:reduce){ .g-row,.g-milestones,.g-takeaway,.g-footnote{ animation:none!important; } }
   .g-row{
     animation:fdt-in .18s ease-out both;
-    display:grid; grid-template-columns:18px 1fr 48px 44px 56px 50px 30px;
-    gap:4px; align-items:center;
-    padding:2.5px 4px;
+    display:grid; grid-template-columns:20px 1fr 54px 50px 62px 56px 34px;
+    gap:5px; align-items:center;
+    padding:4.5px 5px;
     border-left:3px solid var(--tc, var(--r-gold));
     border-radius:4px;
     background:rgba(255,255,255,0.03);
   }
-  .g-row .n{ font-family:'IBM Plex Mono',monospace; font-size:8.5px; color:rgba(255,255,255,0.4); }
-  .g-row .name{ font-size:9.5px; font-weight:700; color:#f2f6f4; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .g-row .total{ font-family:'IBM Plex Mono',monospace; font-size:9px; font-weight:700; color:var(--tc, var(--r-gold)); text-align:right; }
-  .g-row .cost{ font-family:'IBM Plex Mono',monospace; font-size:8.5px; color:#dfe8e2; text-align:right; }
-  .g-row .running{ font-family:'IBM Plex Mono',monospace; font-size:8.5px; color:rgba(255,255,255,0.55); text-align:right; }
-  .g-row .time{ font-family:'IBM Plex Mono',monospace; font-size:8.5px; font-weight:600; color:#5ef2a6; text-align:right; }
-  .g-row .eff{ position:relative; height:6px; background:rgba(255,255,255,0.08); border-radius:3px; overflow:hidden; }
+  .g-row .n{ font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:rgba(255,255,255,0.4); }
+  .g-row .name{ font-size:11px; font-weight:700; color:#f2f6f4; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .g-row .total{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; font-weight:700; color:var(--tc, var(--r-gold)); text-align:right; }
+  .g-row .cost{ font-family:'IBM Plex Mono',monospace; font-size:10px; color:#dfe8e2; text-align:right; }
+  .g-row .running{ font-family:'IBM Plex Mono',monospace; font-size:10px; color:rgba(255,255,255,0.55); text-align:right; }
+  .g-row .time{ font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:600; color:#5ef2a6; text-align:right; }
+  .g-row .eff{ position:relative; height:7px; background:rgba(255,255,255,0.08); border-radius:3px; overflow:hidden; }
   .g-row .eff .bar{ position:absolute; left:0; top:0; bottom:0; background:var(--tc, var(--r-gold)); border-radius:3px; }
   .g-milestones{
     animation:fdt-in .18s ease-out both;
@@ -193,14 +204,16 @@
     <div class="card">
       <h1>
         <span>⚡ Optimal Crit Guide</span>
-        <span class="tags"><span class="count" id="countTag">36 buys</span></span>
+        <span class="tags"><button class="info-toggle" id="infoToggleBtn" title="Show/hide the calculation info box">ℹ Info</button><span class="count" id="countTag">36 buys</span></span>
       </h1>
-      <div class="subtitle">Fortnite · Nova Crystals · Chopper equipped — start: 80% chance / +110% bonus / MC lv.0 (34m 21s)</div>
-      <div class="calc-box">
-        <div class="calc-title">How a Critical Hit is Calculated</div>
-        <p>The standard hit (39.6 s) is counted ONCE, whatever the number of rolls.</p>
-        <p>Each landed roll then adds the crit bonus: 50% base + 50% Chopper + 10% per level</p>
-        <div class="formula">Perk lv. 1: 39.6 s + 1 × 43.56 s = 83.16 s &nbsp;·&nbsp; 2 rolls: 39.6 + 2 × 43.56 = 126.72 s</div>
+      <div id="infoSection">
+        <div class="subtitle">Fortnite · Nova Crystals · Chopper equipped — start: 80% chance / +110% bonus / MC lv.0 (34m 21s)</div>
+        <div class="calc-box">
+          <div class="calc-title">How a Critical Hit is Calculated</div>
+          <p>The standard hit (39.6 s) is counted ONCE, whatever the number of rolls.</p>
+          <p>Each landed roll then adds the crit bonus: 50% base + 50% Chopper + 10% per level</p>
+          <div class="formula">Perk lv. 1: 39.6 s + 1 × 43.56 s = 83.16 s &nbsp;·&nbsp; 2 rolls: 39.6 + 2 × 43.56 = 126.72 s</div>
+        </div>
       </div>
       <div class="col-header">
         <span>#</span><span>Purchase</span><span>Total</span><span>Cost</span><span>Running</span><span>Time</span><span>Eff</span>
@@ -342,11 +355,26 @@
     document.documentElement.style.setProperty('--sw-rgb', skin.rgb);
     const badge = document.getElementById('borderBadge');
     if(badge) badge.innerHTML = borderIconSvg(settings.critGuideBorder || 'tatooine', 18);
+    // v1.10.1: the subtitle + "How a Critical Hit is Calculated" box are
+    // toggleable via the ℹ button — hiding them gives the scrollable purchase
+    // list the freed-up vertical space (they sit above .list-wrap in the
+    // flex column, so hiding them doesn't just hide content, it grows the
+    // viewport). Default true so existing users see no change until they
+    // click it.
+    const showInfo = settings.critGuideShowInfo !== false;
+    document.getElementById('infoSection').style.display = showInfo ? '' : 'none';
+    document.getElementById('infoToggleBtn').classList.toggle('active', showInfo);
+    updateScrollbar();
   }
   window.overlayAPI.onSettingsChanged(applySettings);
 
   document.getElementById('lockBtn').addEventListener('click', ()=>{
     window.overlayAPI.setCritGuideLocked(true);
+  });
+
+  document.getElementById('infoToggleBtn').addEventListener('click', async ()=>{
+    const settings = await window.overlayAPI.getSettings();
+    window.overlayAPI.setSettings({ critGuideShowInfo: !(settings.critGuideShowInfo !== false) });
   });
 
   (async function init(){
