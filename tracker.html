@@ -126,16 +126,23 @@
     -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px);
     box-shadow:0 12px 30px -14px rgba(0,0,0,.8), inset 0 0 50px -30px rgba(143,214,255,.5);
   }
-  .console-row{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:11px 16px;}
+  /* Label sits in its own fixed-width column and buttons flow in a second,
+     separate flex container (v1.8.0 fix) — two nested flex boxes instead of
+     one flat one, so a row's own overflow wraps flush under the FIRST
+     button, never back under the label. Every row's button column starts at
+     the same x since the label column width is fixed, not per-row content. */
+  .console-row{display:flex;align-items:flex-start;gap:0;padding:10px 16px;}
   .console-row + .console-row{border-top:1px solid var(--holo-line);}
   .console-row-label{
     font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.14em;
-    text-transform:uppercase;color:var(--holo-dim);flex:0 0 100px;white-space:nowrap;
+    text-transform:uppercase;color:var(--holo-dim);flex:0 0 92px;white-space:nowrap;padding-top:9px;
   }
+  .console-row-buttons{display:flex;align-items:center;flex-wrap:wrap;gap:8px;flex:1;min-width:0;}
   @media (max-width:760px){
-    .console-row-label{flex-basis:100%;margin-bottom:2px;}
+    .console-row{flex-direction:column;align-items:stretch;gap:4px;}
+    .console-row-label{flex-basis:auto;padding-top:0;}
   }
-  .searchbox{position:relative;flex:1;min-width:180px;max-width:320px;}
+  .searchbox{position:relative;flex:1 1 180px;min-width:140px;max-width:240px;}
   .searchbox input{
     background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:7px;
     padding:9px 14px 9px 33px;font-size:15px;width:100%;font-family:'Inter',sans-serif;
@@ -151,6 +158,11 @@
   .btn.on{color:var(--accent);border-color:var(--accent-dim);background:rgba(94,242,166,0.08);}
   .btn[hidden]{display:none;}
   #rebirthLevelBtn{white-space:normal;text-align:center;line-height:1.25;padding-top:6px;padding-bottom:6px;}
+  /* Command Console buttons only (v1.8.0 tightening): smaller padding/font
+     than .btn's default so more fit per row before wrapping. Scoped to
+     .console-row so every other use of .btn elsewhere is unaffected. */
+  .console-row .btn{padding:7px 11px;font-size:13px;}
+  .console-row .rl-manual .btn{padding:4px 9px;}
 
   /* ---- content row: main list + optional rebirth-requirements side panel ---- */
   .content-row{display:flex;gap:22px;align-items:flex-start;}
@@ -252,7 +264,41 @@
   }
 
   /* ---- quick panel: the by-droid keep/let-go list ---- */
-  .quick-panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px;}
+  /* Same holo surface as .rebirth-panel (v1.8.1) — the droid list was the
+     last major panel still on the plain --panel background, and next to the
+     holo-bordered Rebirth Requirements panel that contrast read as unfinished
+     rather than deliberate. Border/corner-brackets/scanlines only; the dense
+     table/list content inside is untouched. */
+  .quick-panel{
+    --holo:#8fd6ff; --holo-dim:rgba(143,214,255,.62); --holo-line:rgba(143,214,255,.2); --hb:rgba(143,214,255,.6);
+    position:relative; overflow:hidden;
+    border:1px solid var(--holo-line); border-radius:10px; padding:10px;
+    background-color:rgba(9,14,20,.72);
+    background-image:
+      linear-gradient(var(--hb),var(--hb)), linear-gradient(var(--hb),var(--hb)),
+      linear-gradient(var(--hb),var(--hb)), linear-gradient(var(--hb),var(--hb)),
+      linear-gradient(var(--hb),var(--hb)), linear-gradient(var(--hb),var(--hb)),
+      linear-gradient(var(--hb),var(--hb)), linear-gradient(var(--hb),var(--hb)),
+      radial-gradient(1px 1px at 20% 15%, rgba(255,255,255,.5), transparent 70%),
+      radial-gradient(1px 1px at 75% 60%, rgba(200,230,255,.4), transparent 70%),
+      radial-gradient(1.5px 1.5px at 45% 85%, rgba(255,255,255,.3), transparent 70%),
+      linear-gradient(90deg, transparent calc(100% - 1px), rgba(143,214,255,.04) 0),
+      linear-gradient(180deg, transparent calc(100% - 1px), rgba(143,214,255,.04) 0),
+      repeating-linear-gradient(180deg, rgba(143,214,255,.02) 0 1px, transparent 1px 3px),
+      radial-gradient(120% 60% at 0% 0%, rgba(79,184,255,.08), transparent 60%);
+    background-size:
+      14px 2px, 2px 14px, 14px 2px, 2px 14px, 14px 2px, 2px 14px, 14px 2px, 2px 14px,
+      260px 190px, 340px 230px, 210px 270px,
+      96px 56px, 96px 56px, auto, auto;
+    background-position:
+      left 6px top 6px, left 6px top 6px, right 6px top 6px, right 6px top 6px,
+      left 6px bottom 6px, left 6px bottom 6px, right 6px bottom 6px, right 6px bottom 6px,
+      0 0, 60px 120px, 140px 40px,
+      0 0, 0 0, 0 0, 0 0;
+    background-repeat:
+      no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat,
+      repeat, repeat, repeat, repeat, repeat, repeat, no-repeat;
+  }
   .dq-empty{padding:26px;text-align:center;color:var(--text-dim);font-size:14.5px;}
   .dq-row{display:flex;align-items:center;gap:14px;padding:11px 10px;border-radius:8px;transition:.12s;}
   .dq-row:hover{background:rgba(255,255,255,0.03);}
@@ -754,55 +800,65 @@
   <div class="toolbar command-console">
     <div class="console-row">
       <span class="console-row-label">Find</span>
-      <div class="searchbox" id="searchBoxWrap"><input id="search" type="text" placeholder="Search a droid…"></div>
-      <div class="sort-toggle" id="sortToggleWrap">
-        <button class="btn on" data-sort="alpha" title="Needs-work first, then A–Z">A–Z</button>
-        <button class="btn" data-sort="level" title="Grouped in trios by the level they unlock at, for whichever cycle is selected">By Rebirth Level</button>
+      <div class="console-row-buttons">
+        <button class="btn" id="pipBtn" hidden title="Pop this panel into a small always-on-top window">⧉ Pop out</button>
+        <div class="searchbox" id="searchBoxWrap"><input id="search" type="text" placeholder="Search a droid…"></div>
+        <div class="sort-toggle" id="sortToggleWrap">
+          <button class="btn on" data-sort="alpha" title="Needs-work first, then A–Z">A–Z</button>
+          <button class="btn" data-sort="level" title="Grouped in trios by the level they unlock at, for whichever cycle is selected">By Rebirth Level</button>
+        </div>
       </div>
-      <button class="btn" id="pipBtn" hidden title="Pop this panel into a small always-on-top window">⧉ Pop out</button>
     </div>
     <div class="console-row">
       <span class="console-row-label">Rebirth Lvl</span>
-      <button class="btn" id="liveBtn" hidden title="Watch your screen and suggest what to log as you play">🔴 Live Detect</button>
-      <button class="btn" id="rebirthLevelBtn" hidden title="Read your current rebirth level from the screen automatically, to drive the overlay HUD">🔢 Draw Rebirth<br>Level Box</button>
-      <span class="rl-manual" id="rlManualToolbar" title="Set your current rebirth level — drives which upcoming levels the overlay HUD shows">
-        <span class="rl-manual-label">Rebirth Lvl</span>
-        <button class="btn" id="rlDec">−</button>
-        <span id="rlLevelDisplay" class="rl-level-display">Lvl 0</span>
-        <button class="btn" id="rlInc">+</button>
-      </span>
-      <button class="btn" id="rebirthScreenBtn" hidden title="Open the in-game Rebirth menu, then click this to read it and mark everything up to that point as owned">📸 Read Rebirth Screen</button>
-      <button class="btn" id="rebirthScreenRecalibBtn" hidden title="Redraw the box around the Rank number (only needed once, or if it starts reading wrong)">↺</button>
+      <div class="console-row-buttons">
+        <button class="btn" id="rebirthScreenRecalibBtn" hidden title="Redraw the box around the Rank number (only needed once, or if it starts reading wrong)">↺</button>
+        <button class="btn" id="liveBtn" hidden title="Watch your screen and suggest what to log as you play">🔴 Live Detect</button>
+        <button class="btn" id="rebirthLevelBtn" hidden title="Read your current rebirth level from the screen automatically, to drive the overlay HUD">🔢 Draw Rebirth<br>Level Box</button>
+        <span class="rl-manual" id="rlManualToolbar" title="Set your current rebirth level — drives which upcoming levels the overlay HUD shows">
+          <span class="rl-manual-label">Rebirth Lvl</span>
+          <button class="btn" id="rlDec">−</button>
+          <span id="rlLevelDisplay" class="rl-level-display">Lvl 0</span>
+          <button class="btn" id="rlInc">+</button>
+        </span>
+        <button class="btn" id="rebirthScreenBtn" hidden title="Open the in-game Rebirth menu, then click this to read it and mark everything up to that point as owned">📸 Read Rebirth Screen</button>
+      </div>
     </div>
     <div class="console-row">
       <span class="console-row-label">Tools</span>
-      <button class="btn" id="editToggle" title="Click a name to fix a misread, or rename it to match another droid to merge them">✎ Rename</button>
-      <button class="btn" id="reqPanelToggle" title="Show a side panel of the droids needed for rebirth 35, at the rarity each cycle requires">🧬 Rebirth Reqs</button>
-      <button class="btn" id="bgBtn" title="Set a custom background image">🖼 Background</button>
-      <div class="bg-controls" id="bgControls" hidden>
-        <span class="bg-dim-label">Dim</span>
-        <input type="range" id="bgDimRange" min="0.2" max="0.92" step="0.02" value="0.72">
-        <button class="btn" id="bgClearBtn" title="Remove custom background">✕</button>
+      <div class="console-row-buttons">
+        <button class="btn" id="guideOpenBtn" hidden title="Replay the first-launch tour of the app's tools">❔ Guide</button>
+        <button class="btn" id="editToggle" title="Click a name to fix a misread, or rename it to match another droid to merge them">✎ Rename</button>
+        <button class="btn" id="reqPanelToggle" title="Show a side panel of the droids needed for rebirth 35, at the rarity each cycle requires">🧬 Rebirth Reqs</button>
+        <button class="btn" id="bgBtn" title="Set a custom background image">🖼 Background</button>
+        <div class="bg-controls" id="bgControls" hidden>
+          <span class="bg-dim-label">Dim</span>
+          <input type="range" id="bgDimRange" min="0.2" max="0.92" step="0.02" value="0.72">
+          <button class="btn" id="bgClearBtn" title="Remove custom background">✕</button>
+        </div>
       </div>
-      <button class="btn" id="guideOpenBtn" hidden title="Replay the first-launch tour of the app's tools">❔ Guide</button>
     </div>
     <div class="console-row">
       <span class="console-row-label">Overlays</span>
-      <button class="btn" id="overlayToggleBtn" hidden title="Show or hide the in-game HUD (toggle with the hotkey too)">🎯 Upcoming RB Req's: On</button>
-      <button class="btn" id="overlaySettingsBtn" hidden title="Overlay hotkey, opacity, and position">⚙ Overlay Settings</button>
-      <button class="btn" id="timersToggleBtn" hidden title="Show or hide the Stellar/Mythic/Galactic/Mission countdown banners (toggle with the hotkey too)">⏱ Timers: On</button>
-      <button class="btn" id="hotkeyListToggleBtn" hidden title="Show or hide the on-screen hotkey reference list (toggle with the hotkey too, shown automatically on launch)">⌨ Hotkeys: On</button>
-      <button class="btn" id="declutterToggleBtn" hidden title="Show or hide the on-screen list of Legendary/Mythic droids you can safely retire this cycle (toggle with the hotkey too)">♻ Declutter: On</button>
-      <button class="btn" id="rebirthReqToggleBtn" hidden title="Show or hide the standalone Rebirth Requirements overlay — every droid this cycle needs, in-game (toggle with the hotkey too)">🧬 Rebirth Req: On</button>
-      <button class="btn" id="sneakToggleBtn" hidden title="Show or hide the Sneak Preview — next cycle's Mythic droids">🔮 Sneak Preview: Off</button>
+      <div class="console-row-buttons">
+        <button class="btn" id="overlayToggleBtn" hidden title="Show or hide the in-game HUD (toggle with the hotkey too)">🎯 Upcoming RB Req's: On</button>
+        <button class="btn" id="overlaySettingsBtn" hidden title="Overlay hotkey, opacity, and position">⚙ Overlay Settings</button>
+        <button class="btn" id="timersToggleBtn" hidden title="Show or hide the Stellar/Mythic/Galactic/Mission countdown banners (toggle with the hotkey too)">⏱ Timers: On</button>
+        <button class="btn" id="hotkeyListToggleBtn" hidden title="Show or hide the on-screen hotkey reference list (toggle with the hotkey too, shown automatically on launch)">⌨ Hotkeys: On</button>
+        <button class="btn" id="declutterToggleBtn" hidden title="Show or hide the on-screen list of Legendary/Mythic droids you can safely retire this cycle (toggle with the hotkey too)">♻ Declutter: On</button>
+        <button class="btn" id="sneakToggleBtn" hidden title="Show or hide the Sneak Preview — next cycle's Mythic droids">🔮 Sneak Preview: Off</button>
+        <button class="btn" id="rebirthReqToggleBtn" hidden title="Show or hide the standalone Rebirth Requirements overlay — every droid this cycle needs, in-game (toggle with the hotkey too)">🧬 Rebirth Req: On</button>
+      </div>
     </div>
     <div class="console-row">
       <span class="console-row-label">Data</span>
-      <button class="btn" id="exportBtn">Export</button>
-      <button class="btn" id="importBtn">Import</button>
-      <button class="btn" id="resetBtn">Reset all</button>
-      <input type="file" id="importFile" accept="application/json" style="display:none">
-      <input type="file" id="bgFile" accept="image/*" style="display:none">
+      <div class="console-row-buttons">
+        <button class="btn" id="resetBtn">Reset all</button>
+        <button class="btn" id="exportBtn">Export</button>
+        <button class="btn" id="importBtn">Import</button>
+        <input type="file" id="importFile" accept="application/json" style="display:none">
+        <input type="file" id="bgFile" accept="image/*" style="display:none">
+      </div>
     </div>
   </div>
 

@@ -525,6 +525,14 @@ v1.7.6 settings panel to the rest of the app:
   left alone — it's the busiest surface in the app, and the plain background
   keeps it easy to scan.
 
+**Command Console layout fix (v1.8.1).** Each toolbar row is now two columns —
+a fixed-width label and a separate button strip next to it — instead of one
+flat row. Buttons that don't fit wrap to a second line *within that button
+column*, lined up under the first button, rather than falling back to the
+left edge under the row's own label. Small buttons (Pop out, ↺, Guide, Reset
+all) also moved to the front of their row so a lone button doesn't get
+stranded alone on an otherwise-empty wrapped line.
+
 ## Quality-of-life additions
 
 A few small fixes aimed at specific rough edges that came up while building
