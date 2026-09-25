@@ -1,12 +1,13 @@
 {
   "name": "fuzzys-droid-tracker",
-  "version": "1.7.4",
+  "version": "1.7.6",
   "description": "Fuzzy's Droid Tracker — a Droid Tycoon rebirth tracker with an always-on-top requirements HUD",
   "main": "main.js",
   "author": "Fuzzy",
   "private": true,
   "scripts": {
     "start": "electron .",
+    "test": "node --test \"test/**/*.test.js\"",
     "dist": "electron-builder"
   },
   "dependencies": {
@@ -30,6 +31,10 @@
       "!safe-to-retire-icons/**",
       "!safe-to-retire-icons*.zip",
       "!src/**",
+      "!test/**",
+      "!.claude/**",
+      "!CLAUDE.md",
+      "!.gitignore",
       "!build-log.txt",
       "!build-release.bat",
       "!gh-check.*",

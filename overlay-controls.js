@@ -67,7 +67,7 @@
     ['sneakScrollDownHotkeyBtn', 'sneakScrollDownHotkey', 'Scroll Sneak Preview Down']
   ].map(([id, settingsKey, label]) => ({ btn: document.getElementById(id), settingsKey, label }));
 
-  /* Tier filter buttons (⚙ Overlay Settings → Display & Position) —
+  /* Tier filter buttons (⚙ Overlay Settings → Filters tab) —
      clickable equivalents of the declutterTier* hotkeys, so the filter works
      without binding any of them. Same settings keys main.js's
      toggleDeclutterTier() flips; both declutter.html AND

@@ -1,16 +1,16 @@
 /* ---------------------------------------------------------------------------
-   Overlay-side copy of the tracker's requirement logic.
+   The ONE copy of the requirement logic, loaded by every window: tracker.html
+   and all the overlays. Until v1.7.5 tracker.html kept its own private
+   copies of normKey / canonicalName / buildIndex / cycleCeilings /
+   cycleLastNeededLevel; they were proven byte-for-byte equivalent across all
+   5 cycles (with and without renames) and then deleted, because drift
+   between copies caused the v1.7.2 / v1.7.3 / v1.7.4 bugs.
 
-   Kept deliberately self-contained (rather than sharing tracker.html's inline
-   <script> directly) so the proven, working tracker code is never touched.
-   These functions are copied verbatim from tracker.html as of the Electron
-   overlay build — normKey / canonicalName / buildIndex / cycleCeilings are
-   byte-for-byte the same logic the main app uses for its Rebirth Requirements
-   panel, so the overlay can never disagree with what the tracker itself shows.
-   If those functions are ever changed in tracker.html, mirror the change here.
+   Change behavior here, then run `npm test`. test/pages.test.js fails if any
+   page redefines one of these functions or redeclares one of these globals.
 
    Depends on droid-data.js being loaded first (CYCLES, RARITY_ORDER, RNAME,
-   RCLASS, rankOf).
+   RCLASS, rankOf, DROID_RARITY_CLASS, RARITY_CLASS_ORDER).
 --------------------------------------------------------------------------- */
 
 /* ---------------- NAME NORMALIZATION / MERGES ---------------- */
@@ -153,7 +153,7 @@ function getUpcomingLevels(cycle, currentLevel, ownedRank, count){
    several levels before its true final appearance if the same max rarity is
    asked for again later. Verified against the real CYCLES data this
    actually happens 13 times across the 5 cycles — e.g. cycle 1's Proto
-   Roller first hits Galactic at level 28 but is asked for again at Galactic
+   Roller first hits Galactic at level 28 but is asked for again (at Beskar)
    at level 31, so using cycleCeilings' level here would call it safe to
    retire 3 rebirths too early. This function instead tracks the latest
    level seen for each droid, independent of rarity. */

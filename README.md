@@ -321,7 +321,7 @@ game's rebirth requirement tables at all, so they're correctly absent.)
 **A correctness note worth knowing:** this is *not* the same check as "have
 I already seen this droid hit its max colorway" — a droid can reach its
 ceiling colorway at one level and then reappear at a *later* level in the
-same cycle (this happens for 13 of the 223 droid/cycle combinations in the
+same cycle (this happens for 13 of the 224 droid/cycle combinations in the
 real requirement data). The list tracks each droid's true final appearance
 level, so it won't tell you something's safe to retire while the cycle could
 still ask for it again.
@@ -471,10 +471,47 @@ just clicks the real toolbar button for you, so the exact same
 screen-capture-and-confirm flow runs either way; nothing about what gets
 read or written changes based on how you triggered it.
 
+## ⚙ Overlay Settings: the holo-console (v1.7.6)
+
+The settings panel is now a Star Wars-style ship console with four tabs down
+the left side. The active tab is marked by a lightsaber blade that ignites
+out of a small hilt, each tab with its own blade color:
+
+- **⌨ Keybinds** (blue): every hotkey, grouped into Quick actions, Show/hide
+  overlays, List scrolling and Tier filter. There's a search box that matches
+  names, descriptions and current key combos. Unbound hotkeys show as dashed
+  keys, and the tab shows how many are bound, like `7/18`.
+- **🧭 Layout** (green): one card per overlay with its 🎯 Drag into place and
+  ↺ Reset buttons. The HUD's card also holds its opacity slider.
+- **🔎 Filters** (purple): the shared tier filter for Safe to Retire and
+  Rebirth Requirements.
+- **⏱ Timers** (yellow): the mission-timer sync, plus a readout of every
+  banner's schedule.
+
+The app remembers which tab you had open. The console is translucent, so a
+custom 🖼 Background still shows through it. Every control works exactly as
+it did before; only the layout changed.
+
+The in-game overlays (the HUD, Safe to Retire, Rebirth Requirements and
+Sneak Preview) got a matching light touch from `sw-texture.css`:
+targeting-computer corner brackets, faint hull-plate seams and scanlines.
+It only adds art on top. Each overlay's see-through tint, including the
+HUD's opacity setting, is unchanged. To drop the look from one overlay,
+delete the `sw-texture.css` link from its HTML file.
+
 ## Quality-of-life additions
 
 A few small fixes aimed at specific rough edges that came up while building
 and testing everything above:
+
+- **Crash-safe saving (v1.7.6).** Progress used to be written straight into
+  the save file, so a crash or power cut mid-save could leave it empty and
+  the next launch would start with no progress. Saves now go to a temporary
+  file first and replace the real one in a single step, so the save file is
+  always either the old version or the new one. The previous good save is
+  also kept as `droid-tycoon-store.json.bak`. If the main file is ever
+  unreadable anyway, the app keeps a copy of the broken file and loads the
+  backup instead of starting empty. The save format itself didn't change.
 
 - **Hide the droid list to jump straight to a panel (v1.6.0).** Press the
   already-active **A–Z** or **By Rebirth Level** button again to turn the
@@ -576,6 +613,15 @@ and testing everything above:
   hotkey shouldn't need this trick at all, see the "convention" comment
   above `DEFAULT_SETTINGS`), and each movable window's "reset to default
   position" handler.
+- `persistence.js` — crash-safe `loadJson` / `saveJsonNow` used by
+  `main.js` for the store and settings files (temp file + rename, `.bak`
+  of the last good save, recovery from it). Tested in
+  `test/persistence.test.js`.
+- `settings-tabs.js` — tab switching, keybind search and the bound-count
+  badge for the ⚙ Overlay Settings console. Layout only; every control is
+  still wired by `overlay-controls.js` through its original id.
+- `sw-texture.css` — the holo-console surface art linked into overlay.html,
+  declutter.html, rebirth-requirements-overlay.html and sneak-preview.html.
 - `preload.js` — the only bridge between the pages and Node/IPC.
 - `tracker.html` — your original tracker, functionally unchanged, plus the
   Overlay toolbar controls, the always-visible Manual rebirth-level stepper,
@@ -607,8 +653,14 @@ and testing everything above:
   full filter logic, so it can be verified once against the real data
   instead of duplicated in declutter.html), and `getSneakPreview` (next
   cycle's Mythic-only ceiling requirements, 5→1 wrap — the Sneak Preview
-  overlay's data). Mirror any change here if you edit the equivalent logic
-  in tracker.html.
+  overlay's data). As of v1.7.5 this is the only copy: tracker.html loads
+  it too instead of keeping its own duplicates, which is what let the
+  v1.7.2-v1.7.4 bugs happen. Change logic here and run `npm test`.
+- `test/` — `npm test` (Node's built-in runner, no extra dependencies).
+  `requirements.test.js` pins the requirement logic against the real cycle
+  data; `pages.test.js` fails if any page's scripts would collide or
+  redefine a shared function. Not packaged into the .exe.
+- `CLAUDE.md` — working notes for Claude sessions. Not packaged.
 - `rebirth-level-detect.js` — continuous badge-watching OCR: its own
   screen-capture call (independent of Live Detect), calibration, sampling,
   debounce, and the manual stepper.

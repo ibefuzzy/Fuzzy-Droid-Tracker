@@ -1,0 +1,22 @@
+# dependencies
+node_modules/
+
+# build output (electron-builder)
+release/
+dist/
+
+# local build artefacts and scratch
+build-log.txt
+gh-check.txt
+*.zip
+*.7z
+
+# stale snapshot folder (the live source is the repo root)
+src/
+
+# per-machine Claude settings (launch.json is shared and stays tracked)
+.claude/settings.local.json
+
+# OS noise
+Thumbs.db
+.DS_Store

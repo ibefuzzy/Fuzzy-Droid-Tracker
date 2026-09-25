@@ -23,6 +23,7 @@
 const { app, BrowserWindow, ipcMain, globalShortcut, screen, session, desktopCapturer, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const { loadJson, saveJsonNow } = require('./persistence');
 
 // Two instances would each independently load their own copy of the JSON
 // store/settings into memory and each debounce-write to the SAME files on
@@ -298,37 +299,11 @@ let settings = { ...DEFAULT_SETTINGS };
 let storeWriteTimer = null;
 let registeredHotkeys = {}; // name -> accelerator currently bound via globalShortcut
 
-/* ---------------- persistence ---------------- */
-function loadJson(filePath, fallback){
-  let raw;
-  try{
-    raw = fs.readFileSync(filePath, 'utf8');
-  }catch(e){
-    return { ...fallback }; // no file yet -- the normal first-launch case, nothing to lose
-  }
-  try{
-    return { ...fallback, ...JSON.parse(raw) };
-  }catch(e){
-    // The file exists but isn't valid JSON (a crash mid-write, a manual
-    // edit gone wrong, disk corruption...). Back it up before falling
-    // through to defaults instead of silently discarding it -- this file
-    // can hold a player's whole tracked rebirth history, so losing it
-    // without a trace on the next save (which would overwrite it with
-    // fresh defaults) is worse than leaving a recoverable copy on disk.
-    // Best-effort: if even the backup fails, still fall through and start
-    // the app rather than crash on launch.
-    try{ fs.copyFileSync(filePath, filePath + '.corrupt-' + Date.now() + '.bak'); }catch(e2){ /* best-effort */ }
-    return { ...fallback };
-  }
-}
-function saveJsonNow(filePath, data){
-  try{
-    fs.mkdirSync(path.dirname(filePath), { recursive: true });
-    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
-  }catch(e){
-    console.error('Failed to write', filePath, e);
-  }
-}
+/* ---------------- persistence ----------------
+   loadJson / saveJsonNow live in persistence.js (required at the top): saves
+   go through a temp file + rename so a crash mid-write can't truncate the
+   store, and an unreadable store is recovered from its .bak copy. Covered by
+   test/persistence.test.js. */
 function persistStoreDebounced(){
   if(storeWriteTimer) clearTimeout(storeWriteTimer);
   storeWriteTimer = setTimeout(()=>{ saveJsonNow(STORE_PATH, storeData); storeWriteTimer = null; }, 200);

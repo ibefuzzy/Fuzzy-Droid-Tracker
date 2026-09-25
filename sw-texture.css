@@ -1,0 +1,72 @@
+/* ---------------------------------------------------------------------------
+   sw-texture.css — "holo-console" surface art for the in-game overlays (v1.7.6).
+
+   Adds ONLY background-image layers to each overlay's main surface:
+   targeting-computer corner brackets, faint hull-plate seams and scanlines.
+   background-color, which carries each overlay's see-through tint (and the
+   HUD's opacity setting), is never touched, and the art is 3-6% alpha apart
+   from the thin brackets, so the game still shows through.
+
+   Linked LAST in each overlay's <head>, so these rules replace the page's own
+   background-image at equal specificity. The .block rules re-add the HUD's
+   original corner highlight as the bottom layer so nothing is lost.
+   To remove the look entirely: delete the <link> from that overlay.
+--------------------------------------------------------------------------- */
+:root{
+  --sw-bracket: rgba(150,215,255,0.55);
+  --sw-seam: rgba(150,215,255,0.06);
+  --sw-scan: rgba(150,215,255,0.03);
+  --sw-arm: 9px;
+  --sw-in: 4px;
+
+  --sw-art:
+    linear-gradient(var(--sw-bracket), var(--sw-bracket)),
+    linear-gradient(var(--sw-bracket), var(--sw-bracket)),
+    linear-gradient(var(--sw-bracket), var(--sw-bracket)),
+    linear-gradient(var(--sw-bracket), var(--sw-bracket)),
+    linear-gradient(var(--sw-bracket), var(--sw-bracket)),
+    linear-gradient(var(--sw-bracket), var(--sw-bracket)),
+    linear-gradient(var(--sw-bracket), var(--sw-bracket)),
+    linear-gradient(var(--sw-bracket), var(--sw-bracket)),
+    linear-gradient(90deg, transparent calc(100% - 1px), var(--sw-seam) 0),
+    linear-gradient(180deg, transparent calc(100% - 1px), var(--sw-seam) 0),
+    repeating-linear-gradient(180deg, var(--sw-scan) 0 1px, transparent 1px 3px);
+  --sw-size:
+    var(--sw-arm) 1.5px, 1.5px var(--sw-arm),
+    var(--sw-arm) 1.5px, 1.5px var(--sw-arm),
+    var(--sw-arm) 1.5px, 1.5px var(--sw-arm),
+    var(--sw-arm) 1.5px, 1.5px var(--sw-arm),
+    72px 44px, 72px 44px, auto;
+  --sw-pos:
+    left var(--sw-in) top var(--sw-in), left var(--sw-in) top var(--sw-in),
+    right var(--sw-in) top var(--sw-in), right var(--sw-in) top var(--sw-in),
+    left var(--sw-in) bottom var(--sw-in), left var(--sw-in) bottom var(--sw-in),
+    right var(--sw-in) bottom var(--sw-in), right var(--sw-in) bottom var(--sw-in),
+    0 0, 0 0, 0 0;
+  --sw-rep:
+    no-repeat, no-repeat, no-repeat, no-repeat,
+    no-repeat, no-repeat, no-repeat, no-repeat,
+    repeat, repeat, repeat;
+}
+
+/* Safe to Retire, Rebirth Requirements, Sneak Preview: one big .card each */
+.card{
+  background-image: var(--sw-art);
+  background-size: var(--sw-size);
+  background-position: var(--sw-pos);
+  background-repeat: var(--sw-rep);
+}
+
+/* HUD level blocks (overlay.html), keeping their original corner highlight */
+.block{
+  background-image: var(--sw-art), radial-gradient(140% 160% at 0% 0%, rgba(255,255,255,0.05), transparent 60%);
+  background-size: var(--sw-size), auto;
+  background-position: var(--sw-pos), 0 0;
+  background-repeat: var(--sw-rep), no-repeat;
+}
+.block.current{
+  background-image: var(--sw-art), radial-gradient(140% 160% at 0% 0%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 60%);
+  background-size: var(--sw-size), auto;
+  background-position: var(--sw-pos), 0 0;
+  background-repeat: var(--sw-rep), no-repeat;
+}

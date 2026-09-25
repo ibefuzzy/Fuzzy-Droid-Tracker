@@ -455,6 +455,147 @@
   .rb-context-item.current{background:rgba(94,242,166,0.14);}
   .rb-context-swatch{width:12px;height:12px;border-radius:3px;flex:0 0 auto;}
   .rb-context-check{margin-left:auto;color:var(--accent);font-weight:700;}
+
+  /* ---- ⚙ Overlay Settings: holo-console layout (v1.7.6) ----
+     A Star Wars-style ship console. Translucent so a custom background still
+     shows through, textured with simple CSS-only art (targeting brackets, a
+     sparse starfield, hull-plate seams, scanlines), and a lightsaber blade
+     that ignites on the active tab. Everything is scoped under .holo-console
+     so the rest of the tracker is unchanged. */
+  .overlay-panel.holo-console{
+    --holo:#8fd6ff; --holo-dim:rgba(143,214,255,.62); --holo-line:rgba(143,214,255,.2); --hb:rgba(143,214,255,.6);
+    position:relative; overflow:hidden; padding:0; gap:0;
+    border:1px solid var(--holo-line); border-radius:10px;
+    background-color:rgba(9,14,20,.72);
+    background-image:
+      linear-gradient(var(--hb),var(--hb)), linear-gradient(var(--hb),var(--hb)),
+      linear-gradient(var(--hb),var(--hb)), linear-gradient(var(--hb),var(--hb)),
+      linear-gradient(var(--hb),var(--hb)), linear-gradient(var(--hb),var(--hb)),
+      linear-gradient(var(--hb),var(--hb)), linear-gradient(var(--hb),var(--hb)),
+      radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,.55), transparent 70%),
+      radial-gradient(1px 1px at 70% 80%, rgba(200,230,255,.45), transparent 70%),
+      radial-gradient(1.5px 1.5px at 45% 60%, rgba(255,255,255,.35), transparent 70%),
+      linear-gradient(90deg, transparent calc(100% - 1px), rgba(143,214,255,.05) 0),
+      linear-gradient(180deg, transparent calc(100% - 1px), rgba(143,214,255,.05) 0),
+      repeating-linear-gradient(180deg, rgba(143,214,255,.025) 0 1px, transparent 1px 3px),
+      radial-gradient(120% 90% at 0% 0%, rgba(79,184,255,.10), transparent 60%);
+    background-size:
+      14px 2px, 2px 14px, 14px 2px, 2px 14px, 14px 2px, 2px 14px, 14px 2px, 2px 14px,
+      230px 170px, 310px 210px, 190px 250px,
+      96px 56px, 96px 56px, auto, auto;
+    background-position:
+      left 6px top 6px, left 6px top 6px, right 6px top 6px, right 6px top 6px,
+      left 6px bottom 6px, left 6px bottom 6px, right 6px bottom 6px, right 6px bottom 6px,
+      0 0, 40px 90px, 120px 30px,
+      0 0, 0 0, 0 0, 0 0;
+    background-repeat:
+      no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat,
+      repeat, repeat, repeat, repeat, repeat, repeat, no-repeat;
+    -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px);
+    box-shadow:0 12px 30px -14px rgba(0,0,0,.8), inset 0 0 50px -30px rgba(143,214,255,.5);
+  }
+  .holo-head{
+    display:flex; align-items:center; gap:12px; padding:12px 18px;
+    border-bottom:1px solid var(--holo-line);
+    background:
+      linear-gradient(90deg, transparent 8%, rgba(255,255,255,.22) 26%, transparent 44%) 0 28%/100% 1px no-repeat,
+      linear-gradient(90deg, transparent 30%, rgba(143,214,255,.32) 55%, transparent 80%) 0 52%/100% 1px no-repeat,
+      linear-gradient(90deg, transparent 55%, rgba(255,255,255,.16) 72%, transparent 92%) 0 74%/100% 1px no-repeat,
+      linear-gradient(90deg, rgba(79,184,255,.12), transparent 70%);
+  }
+  .holo-emblem{width:30px;height:30px;flex:0 0 30px;color:var(--holo);filter:drop-shadow(0 0 4px rgba(143,214,255,.6));}
+  .holo-title{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:18px;letter-spacing:.14em;text-transform:uppercase;color:var(--text);line-height:1.1;}
+  .holo-title span{display:block;font-family:'IBM Plex Mono',monospace;font-weight:500;font-size:10.5px;letter-spacing:.12em;color:var(--holo-dim);}
+  .holo-status{margin-left:auto;display:flex;align-items:center;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.12em;color:var(--accent);}
+  .holo-status i{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);animation:holoBlink 2.4s ease-in-out infinite;}
+  @keyframes holoBlink{0%,100%{opacity:1}50%{opacity:.35}}
+
+  .holo-body{display:grid;grid-template-columns:205px minmax(0,1fr);min-height:320px;}
+  .holo-tabs{display:flex;flex-direction:column;gap:4px;padding:12px 10px;border-right:1px solid var(--holo-line);background:rgba(0,0,0,.18);}
+  .holo-tab{position:relative;display:flex;align-items:center;gap:10px;width:100%;text-align:left;
+    background:transparent;border:0;border-radius:7px;padding:10px 10px 10px 24px;
+    color:var(--text-dim);cursor:pointer;font:inherit;transition:background .15s,color .15s;}
+  .holo-tab:hover{background:rgba(143,214,255,.06);color:var(--text);}
+  .holo-tab:focus-visible{outline:1px solid var(--holo-dim);outline-offset:1px;}
+  .holo-tab[aria-selected="true"]{color:var(--text);background:linear-gradient(90deg, color-mix(in srgb, var(--saber) 18%, transparent), transparent 90%);}
+  .holo-tab-icon{font-size:17px;width:22px;text-align:center;flex:0 0 22px;}
+  .holo-tab-text{display:flex;flex-direction:column;line-height:1.2;min-width:0;}
+  .holo-tab-text b{font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700;letter-spacing:.04em;}
+  .holo-tab-text small{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);opacity:.85;}
+  .holo-tab-count{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--holo-dim);border:1px solid var(--holo-line);border-radius:10px;padding:1px 7px;}
+  .holo-tab-count:empty{display:none;}
+  /* the lightsaber: a small hilt, and a blade that ignites upward out of it */
+  .holo-tab::before{content:'';position:absolute;left:10px;bottom:24%;width:3px;height:0;border-radius:3px 3px 1px 1px;
+    background:linear-gradient(90deg,var(--saber),#fff 40%,#fff 60%,var(--saber));
+    box-shadow:0 0 3px var(--saber),0 0 8px var(--saber),0 0 16px color-mix(in srgb,var(--saber) 55%,transparent);
+    opacity:0;transition:height .3s cubic-bezier(.2,.9,.3,1.15),opacity .12s;}
+  .holo-tab::after{content:'';position:absolute;left:8px;bottom:calc(24% - 9px);width:7px;height:9px;border-radius:1.5px;
+    background:linear-gradient(90deg,#5d656c,#d7dde2 45%,#8a9299);box-shadow:inset 0 2px 0 rgba(0,0,0,.4),inset 0 5px 0 -3px rgba(0,0,0,.25);
+    opacity:0;transition:opacity .12s;}
+  .holo-tab[aria-selected="true"]::before{height:52%;opacity:1;}
+  .holo-tab[aria-selected="true"]::after{opacity:1;}
+
+  .holo-panes{padding:14px 18px 18px;min-width:0;}
+  .holo-pane[hidden], .kb-row[hidden], .kb-group[hidden], .holo-empty[hidden]{display:none !important;}
+  .holo-pane-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:12px;}
+  .holo-pane-head h4{margin:0 0 3px;font-family:'Rajdhani',sans-serif;font-size:20px;letter-spacing:.06em;color:var(--text);}
+  .holo-pane-head .overlay-panel-hint{max-width:62ch;line-height:1.45;margin:0;}
+  .holo-search{background:rgba(0,0,0,.3);border:1px solid var(--holo-line);color:var(--text);border-radius:7px;padding:8px 11px;font:13px 'IBM Plex Mono',monospace;width:220px;max-width:100%;}
+  .holo-search:focus{outline:none;border-color:var(--holo-dim);box-shadow:0 0 0 3px rgba(143,214,255,.12);}
+
+  .kb-group + .kb-group{margin-top:14px;}
+  .kb-group-title{display:flex;align-items:center;gap:10px;margin:0 0 6px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--holo);}
+  .kb-group-title::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--holo-line),transparent);}
+  .kb-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:14px;padding:8px 10px;border-radius:7px;border-left:2px solid transparent;}
+  .kb-row:hover{background:rgba(143,214,255,.05);}
+  .kb-label{display:flex;flex-direction:column;gap:2px;min-width:0;}
+  .kb-label b{font-weight:600;font-size:14px;color:var(--text);}
+  .kb-label small{font-size:11.5px;color:var(--text-dim);line-height:1.35;}
+  .kb-label .overlay-panel-hint:empty{display:none;}
+  .kb-row.danger{border-left-color:rgba(255,92,92,.7);}
+  .kb-row.danger .kb-label b{color:#ff8a8a;}
+  .holo-console .kb-key{font-family:'IBM Plex Mono',monospace;font-size:12.5px;min-width:168px;max-width:280px;text-align:center;white-space:normal;
+    color:var(--text);background:linear-gradient(#1c2732,#111a22);border:1px solid rgba(143,214,255,.3);border-bottom-width:3px;border-radius:7px;padding:7px 12px;}
+  .holo-console .kb-key:hover{border-color:var(--holo-dim);}
+  .holo-console .kb-row.unbound .kb-key{color:var(--text-dim);background:transparent;border-style:dashed;border-bottom-width:1px;}
+  .tier-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--c);margin-right:7px;vertical-align:1px;box-shadow:0 0 6px var(--c);}
+  .holo-empty{color:var(--text-dim);font-size:13px;padding:10px;}
+
+  .pos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;}
+  .pos-card{position:relative;display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:9px;border:1px solid var(--holo-line);background:rgba(0,0,0,.22);}
+  .pos-card::before{content:'';position:absolute;left:12px;right:12px;top:0;height:2px;background:linear-gradient(90deg,var(--accent),transparent);opacity:.7;}
+  .pos-title{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:15.5px;letter-spacing:.03em;color:var(--text);}
+  .pos-hint{font-size:11.5px;color:var(--text-dim);line-height:1.4;}
+  .pos-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:auto;}
+  .pos-actions .btn{font-size:12.5px;padding:6px 10px;white-space:normal;text-align:left;}
+  .pos-slider{display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;letter-spacing:.04em;}
+  .pos-slider input[type="range"]{accent-color:var(--accent);width:100%;}
+
+  .tier-row{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 12px;}
+  .holo-console .tier-row .tier-btn{font-size:14px;padding:9px 16px;border-radius:20px;}
+  .holo-link{background:none;border:0;padding:0;color:var(--holo);text-decoration:underline;text-underline-offset:2px;cursor:pointer;font:inherit;}
+
+  .sync-box{display:flex;flex-direction:column;gap:8px;max-width:560px;margin-bottom:16px;padding:12px;border-radius:9px;border:1px solid var(--holo-line);background:rgba(0,0,0,.22);}
+  .sync-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .sched-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;}
+  .sched-list li{display:grid;grid-template-columns:auto 190px minmax(0,1fr);align-items:center;gap:10px;font-size:13px;padding:6px 8px;border-radius:6px;background:rgba(143,214,255,.035);}
+  .sched-list li span:last-child{color:var(--text-dim);font-family:'IBM Plex Mono',monospace;font-size:12px;}
+  .sched-dot{width:9px;height:9px;border-radius:50%;background:var(--c);box-shadow:0 0 8px var(--c);}
+
+  @media (max-width:760px){
+    .holo-body{grid-template-columns:1fr;}
+    .holo-tabs{flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--holo-line);}
+    .holo-tab{flex:0 0 auto;width:auto;}
+    .holo-tab-text small{display:none;}
+    .kb-row{grid-template-columns:1fr;}
+    .holo-console .kb-key{justify-self:start;}
+    .sched-list li{grid-template-columns:auto minmax(0,1fr);}
+    .sched-list li span:last-child{grid-column:2;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .holo-tab::before,.holo-tab::after{transition:none;}
+    .holo-status i{animation:none;}
+  }
 </style>
 </head>
 <body>
@@ -528,152 +669,242 @@
     <input type="file" id="bgFile" accept="image/*" style="display:none">
   </div>
 
-  <div class="overlay-panel" id="overlaySettingsPanel" hidden>
-    <div class="overlay-panel-heading">⌨ Hotkeys</div>
-    <div class="overlay-panel-hint">Click a button, then press a combo with Ctrl/Alt/Shift. While it's waiting: Esc cancels, Backspace clears the hotkey. Anything showing "(none set)" is optional — bind it only if you want it.</div>
-    <div class="overlay-panel-row">
-      <span class="overlay-panel-label">Hide ALL Overlays</span>
-      <button class="btn" id="hideAllHotkeyBtn">Control+Shift+1</button>
-      <span class="overlay-panel-hint">One-way only — instantly hides every overlay below (including this app's own hotkey list). Doesn't toggle them back on; bring them back individually when ready.</span>
-    </div>
-    <div class="overlay-panel-row">
-      <span class="overlay-panel-label">Toggle Current Rebirth Requirements</span>
-      <button class="btn" id="overlayHotkeyBtn">Control+Shift+3</button>
-      <span class="overlay-panel-hint" id="overlayHotkeyHint"></span>
-    </div>
-    <div class="overlay-panel-row">
-      <span class="overlay-panel-label">Toggle Timers</span>
-      <button class="btn" id="timersHotkeyBtn">Alt+Shift+T</button>
-      <span class="overlay-panel-hint">Shows/hides the Stellar/Mythic/Galactic/Mission countdown banners.</span>
-    </div>
-    <div class="overlay-panel-row">
-      <span class="overlay-panel-label">Toggle Hotkey List</span>
-      <button class="btn" id="hotkeyListHotkeyBtn">Control+Shift+2</button>
-      <span class="overlay-panel-hint">Shows/hides the on-screen hotkey reference list (it's also shown automatically each time the app launches).</span>
-    </div>
-    <div class="overlay-panel-row">
-      <span class="overlay-panel-label">Toggle Declutter List</span>
-      <button class="btn" id="declutterHotkeyBtn">Control+Shift+4</button>
-      <span class="overlay-panel-hint">Shows/hides the "safe to retire" droid list (every tier, filterable below).</span>
-    </div>
-    <div class="overlay-panel-row">
-      <span class="overlay-panel-label">Scroll List: Up</span>
-      <button class="btn" id="declutterScrollUpHotkeyBtn">(none set)</button>
-      <span class="overlay-panel-hint">Pages whichever list is open — both ♻ Safe to Retire and 🧬 Rebirth Requirements — up one screen (unbound until you set it, one hotkey covers both).</span>
-    </div>
-    <div class="overlay-panel-row">
-      <span class="overlay-panel-label">Scroll List: Down</span>
-      <button class="btn" id="declutterScrollDownHotkeyBtn">(none set)</button>
-      <span class="overlay-panel-hint">Pages whichever list is open — both overlays — down one screen.</span>
-    </div>
-    <div class="overlay-panel-row">
-      <span class="overlay-panel-label">Tier Filter: Toggle All Tiers</span>
-      <button class="btn" id="declutterTierAllHotkeyBtn">(none set)</button>
-      <span class="overlay-panel-hint">Shows all five tiers if any is hidden, otherwise hides all five — in both Safe to Retire and Rebirth Requirements.</span>
-    </div>
-    <div class="overlay-panel-row">
-      <span class="overlay-panel-label">Tier Filter: Toggle Default</span>
-      <button class="btn" id="declutterTierDefaultHotkeyBtn">(none set)</button>
-      <span class="overlay-panel-hint">Show/hide Default-tier droids in both the Safe to Retire and Rebirth Requirements overlays.</span>
-    </div>
-    <div class="overlay-panel-row">
-      <span class="overlay-panel-label">Tier Filter: Toggle Rare</span>
-      <button class="btn" id="declutterTierRareHotkeyBtn">(none set)</button>
-      <span class="overlay-panel-hint">Show/hide Rare-tier droids in both overlays.</span>
-    </div>
-    <div class="overlay-panel-row">
-      <span class="overlay-panel-label">Tier Filter: Toggle Epic</span>
-      <button class="btn" id="declutterTierEpicHotkeyBtn">(none set)</button>
-      <span class="overlay-panel-hint">Show/hide Epic-tier droids in both overlays.</span>
-    </div>
-    <div class="overlay-panel-row">
-      <span class="overlay-panel-label">Tier Filter: Toggle Legendary</span>
-      <button class="btn" id="declutterTierLegendaryHotkeyBtn">(none set)</button>
-      <span class="overlay-panel-hint">Show/hide Legendary-tier droids in both overlays.</span>
-    </div>
-    <div class="overlay-panel-row">
-      <span class="overlay-panel-label">Tier Filter: Toggle Mythic</span>
-      <button class="btn" id="declutterTierMythicHotkeyBtn">(none set)</button>
-      <span class="overlay-panel-hint">Show/hide Mythic-tier droids in both overlays.</span>
-    </div>
-    <div class="overlay-panel-row">
-      <span class="overlay-panel-label">Toggle Rebirth Requirements</span>
-      <button class="btn" id="rebirthReqHotkeyBtn">Control+Shift+5</button>
-      <span class="overlay-panel-hint">Shows/hides the standalone overlay listing every droid this cycle needs (same data as the 🧬 Rebirth Reqs panel below).</span>
-    </div>
-    <div class="overlay-panel-row">
-      <span class="overlay-panel-label">Toggle Sneak Preview</span>
-      <button class="btn" id="sneakHotkeyBtn">(none set)</button>
-      <span class="overlay-panel-hint">Shows/hides the Sneak Preview overlay — the next cycle's Mythic droids, at their highest required variety.</span>
-    </div>
-    <div class="overlay-panel-row">
-      <span class="overlay-panel-label">Scroll Sneak Preview Up</span>
-      <button class="btn" id="sneakScrollUpHotkeyBtn">(none set)</button>
-      <span class="overlay-panel-hint">Pages the Sneak Preview overlay up one screen.</span>
-    </div>
-    <div class="overlay-panel-row">
-      <span class="overlay-panel-label">Scroll Sneak Preview Down</span>
-      <button class="btn" id="sneakScrollDownHotkeyBtn">(none set)</button>
-      <span class="overlay-panel-hint">Pages the Sneak Preview overlay down one screen.</span>
-    </div>
-    <div class="overlay-panel-row">
-      <span class="overlay-panel-label">Trigger Read Rebirth Screen</span>
-      <button class="btn" id="rebirthScreenHotkeyBtn">Control+Shift+6</button>
-      <span class="overlay-panel-hint">Fires the 📸 Read Rebirth Screen button without alt-tabbing out of the game.</span>
+  <!-- ⚙ Overlay Settings: holo-console layout (v1.7.6). Every control keeps its
+       original id; overlay-controls.js wires them and settings-tabs.js only
+       switches tabs. test/pages.test.js checks every looked-up id exists once. -->
+  <div class="overlay-panel holo-console" id="overlaySettingsPanel" hidden>
+    <div class="holo-head">
+      <svg class="holo-emblem" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+        <circle cx="16" cy="16" r="11"/>
+        <circle cx="16" cy="16" r="5" stroke-opacity=".55"/>
+        <path d="M16 1v7M16 24v7M1 16h7M24 16h7"/>
+        <circle cx="16" cy="16" r="1.3" fill="currentColor" stroke="none"/>
+      </svg>
+      <div class="holo-title">Overlay Settings<span>// ship systems console</span></div>
+      <div class="holo-status"><i></i>ONLINE</div>
     </div>
 
-    <div class="overlay-panel-heading">Display &amp; Position</div>
-    <div class="overlay-panel-row">
-      <span class="overlay-panel-label">Tier filter</span>
-      <button class="btn tier-btn" id="declutterTierAllBtn" title="Show every tier if any is hidden, otherwise hide them all">All</button>
-      <button class="btn tier-btn" data-tier-key="declutterShowDefault">Default</button>
-      <button class="btn tier-btn" data-tier-key="declutterShowRare">Rare</button>
-      <button class="btn tier-btn" data-tier-key="declutterShowEpic">Epic</button>
-      <button class="btn tier-btn" data-tier-key="declutterShowLegendary">Legendary</button>
-      <button class="btn tier-btn" data-tier-key="declutterShowMythic">Mythic</button>
-      <span class="overlay-panel-hint">Click to show/hide a tier in both the ♻ Safe to Retire and 🧬 Rebirth Requirements overlays — same as the tier hotkeys above, no binding needed.</span>
-    </div>
-    <div class="overlay-panel-row">
-      <span class="overlay-panel-label">Panel opacity</span>
-      <input type="range" id="overlayOpacityRange" min="0.2" max="0.92" step="0.02" value="0.55">
-    </div>
-    <div class="overlay-panel-row">
-      <span class="overlay-panel-label">Reposition Current Rebirth Requirements</span>
-      <button class="btn" id="overlayRepositionBtn">🎯 Drag into place</button>
-      <button class="btn" id="overlayResetPosBtn" title="Snap the HUD back to its default position">↺ Reset</button>
-      <span class="overlay-panel-hint">Unlocks the HUD so you can drag it, then click the HUD's own Lock button.</span>
-    </div>
-    <div class="overlay-panel-row">
-      <span class="overlay-panel-label">Reposition Timers</span>
-      <button class="btn" id="timersRepositionBtn">🎯 Drag into place</button>
-      <button class="btn" id="timersResetPosBtn" title="Snap the timer banners back to their default position">↺ Reset</button>
-      <span class="overlay-panel-hint">Unlocks the timer banners so you can drag them, then click their own Lock button.</span>
-    </div>
-    <div class="overlay-panel-row">
-      <span class="overlay-panel-label">Reposition Declutter List</span>
-      <button class="btn" id="declutterRepositionBtn">🎯 Drag into place</button>
-      <button class="btn" id="declutterResetPosBtn" title="Snap the declutter list back to its default position">↺ Reset</button>
-      <span class="overlay-panel-hint">Unlocks the declutter list so you can drag it under your in-game player counter, then click its own Lock button.</span>
-    </div>
-    <div class="overlay-panel-row">
-      <span class="overlay-panel-label">Reposition Rebirth Requirements</span>
-      <button class="btn" id="rebirthReqRepositionBtn">🎯 Drag into place</button>
-      <button class="btn" id="rebirthReqResetPosBtn" title="Snap the Rebirth Requirements overlay back to its default position">↺ Reset</button>
-      <span class="overlay-panel-hint">Defaults to the exact same spot as the Declutter List, so drag it if you want the two apart before showing them together.</span>
-    </div>
-    <div class="overlay-panel-row">
-      <span class="overlay-panel-label">Reposition Sneak Preview</span>
-      <button class="btn" id="sneakRepositionBtn">🎯 Drag into place</button>
-      <button class="btn" id="sneakResetPosBtn" title="Snap the Sneak Preview overlay back to its default position">↺ Reset</button>
-      <span class="overlay-panel-hint">Defaults to the exact same spot as the Declutter List / Rebirth Requirements, so drag it if you want them apart before showing them together.</span>
-    </div>
-    <div class="overlay-panel-row">
-      <span class="overlay-panel-label">Sync mission timer</span>
-      <input type="number" class="ms-sync-input" id="missionSyncMin" min="0" max="44" placeholder="mm">
-      <span>:</span>
-      <input type="number" class="ms-sync-input" id="missionSyncSec" min="0" max="59" placeholder="ss">
-      <button class="btn" id="missionSyncBtn">🔄 Sync</button>
-      <span class="overlay-panel-hint">Type the mm:ss shown right now on the game's own "NEXT MISSION" banner and click Sync — locks our countdown to the real one exactly instead of guessing.</span>
+    <div class="holo-body">
+      <nav class="holo-tabs" role="tablist" aria-label="Settings sections" aria-orientation="vertical">
+        <button class="holo-tab" type="button" role="tab" id="setTab-keys" data-tab="keys" aria-controls="setPane-keys" aria-selected="true" style="--saber:#4fb8ff">
+          <span class="holo-tab-icon" aria-hidden="true">⌨</span>
+          <span class="holo-tab-text"><b>Keybinds</b><small>Comlink channels</small></span>
+          <span class="holo-tab-count" id="keybindCount"></span>
+        </button>
+        <button class="holo-tab" type="button" role="tab" id="setTab-layout" data-tab="layout" aria-controls="setPane-layout" aria-selected="false" tabindex="-1" style="--saber:#5ef2a6">
+          <span class="holo-tab-icon" aria-hidden="true">🧭</span>
+          <span class="holo-tab-text"><b>Layout</b><small>Nav computer</small></span>
+        </button>
+        <button class="holo-tab" type="button" role="tab" id="setTab-filters" data-tab="filters" aria-controls="setPane-filters" aria-selected="false" tabindex="-1" style="--saber:#b06cf2">
+          <span class="holo-tab-icon" aria-hidden="true">🔎</span>
+          <span class="holo-tab-text"><b>Filters</b><small>Droid scanner</small></span>
+        </button>
+        <button class="holo-tab" type="button" role="tab" id="setTab-timers" data-tab="timers" aria-controls="setPane-timers" aria-selected="false" tabindex="-1" style="--saber:#ffd24a">
+          <span class="holo-tab-icon" aria-hidden="true">⏱</span>
+          <span class="holo-tab-text"><b>Timers</b><small>Chrono sync</small></span>
+        </button>
+      </nav>
+
+      <div class="holo-panes">
+        <!-- ============ KEYBINDS ============ -->
+        <section class="holo-pane" id="setPane-keys" role="tabpanel" aria-labelledby="setTab-keys">
+          <div class="holo-pane-head">
+            <div>
+              <h4>Keybinds</h4>
+              <p class="overlay-panel-hint">Click a key, then press a combo with Ctrl/Alt/Shift. While it's waiting, <b>Esc</b> cancels and <b>Backspace</b> clears it. Dashed keys are unbound and optional.</p>
+            </div>
+            <input type="search" class="holo-search" id="keybindSearch" placeholder="Search keybinds…" aria-label="Search keybinds" autocomplete="off" spellcheck="false">
+          </div>
+
+          <div class="kb-group">
+            <div class="kb-group-title">Quick actions</div>
+            <div class="kb-row danger">
+              <div class="kb-label"><b>Hide ALL overlays</b><small>One-way only: instantly hides every overlay, including the hotkey list. Bring them back individually when ready.</small></div>
+              <button class="btn kb-key" id="hideAllHotkeyBtn">Control+Shift+1</button>
+            </div>
+            <div class="kb-row">
+              <div class="kb-label"><b>📸 Read Rebirth Screen</b><small>Fires the Read Rebirth Screen button without alt-tabbing out of the game.</small></div>
+              <button class="btn kb-key" id="rebirthScreenHotkeyBtn">Control+Shift+6</button>
+            </div>
+            <div class="kb-row">
+              <div class="kb-label"><b>⌨ Hotkey list</b><small>Shows/hides the on-screen reference card. It also appears on every launch.</small></div>
+              <button class="btn kb-key" id="hotkeyListHotkeyBtn">Control+Shift+2</button>
+            </div>
+          </div>
+
+          <div class="kb-group">
+            <div class="kb-group-title">Show / hide overlays</div>
+            <div class="kb-row">
+              <div class="kb-label"><b>🎯 Current Rebirth Requirements</b><small>The HUD: your current level plus the next three.</small><span class="overlay-panel-hint" id="overlayHotkeyHint"></span></div>
+              <button class="btn kb-key" id="overlayHotkeyBtn">Control+Shift+3</button>
+            </div>
+            <div class="kb-row">
+              <div class="kb-label"><b>♻ Safe to Retire list</b><small>Droids this cycle will never ask for again, every tier, filterable.</small></div>
+              <button class="btn kb-key" id="declutterHotkeyBtn">Control+Shift+4</button>
+            </div>
+            <div class="kb-row">
+              <div class="kb-label"><b>🧬 Rebirth Requirements</b><small>Every droid this cycle still needs at the rarity it needs.</small></div>
+              <button class="btn kb-key" id="rebirthReqHotkeyBtn">Control+Shift+5</button>
+            </div>
+            <div class="kb-row">
+              <div class="kb-label"><b>⏱ Timers</b><small>The Stellar / Mythic / Galactic / Mission countdown banners.</small></div>
+              <button class="btn kb-key" id="timersHotkeyBtn">Alt+Shift+T</button>
+            </div>
+            <div class="kb-row">
+              <div class="kb-label"><b>🔮 Sneak Preview</b><small>Next cycle's Mythic droids at their highest required variety.</small></div>
+              <button class="btn kb-key" id="sneakHotkeyBtn">(none set)</button>
+            </div>
+          </div>
+
+          <div class="kb-group">
+            <div class="kb-group-title">List scrolling</div>
+            <div class="kb-row">
+              <div class="kb-label"><b>Scroll list up</b><small>Pages whichever of ♻ Safe to Retire / 🧬 Rebirth Requirements is open. One pair covers both.</small></div>
+              <button class="btn kb-key" id="declutterScrollUpHotkeyBtn">(none set)</button>
+            </div>
+            <div class="kb-row">
+              <div class="kb-label"><b>Scroll list down</b><small>Same two lists, one screen down.</small></div>
+              <button class="btn kb-key" id="declutterScrollDownHotkeyBtn">(none set)</button>
+            </div>
+            <div class="kb-row">
+              <div class="kb-label"><b>Scroll Sneak Preview up</b><small>Pages the Sneak Preview overlay up one screen.</small></div>
+              <button class="btn kb-key" id="sneakScrollUpHotkeyBtn">(none set)</button>
+            </div>
+            <div class="kb-row">
+              <div class="kb-label"><b>Scroll Sneak Preview down</b><small>Pages the Sneak Preview overlay down one screen.</small></div>
+              <button class="btn kb-key" id="sneakScrollDownHotkeyBtn">(none set)</button>
+            </div>
+          </div>
+
+          <div class="kb-group">
+            <div class="kb-group-title">Tier filter</div>
+            <div class="kb-row">
+              <div class="kb-label"><b>All tiers</b><small>Shows all five if any is hidden, otherwise hides all five. Applies to Safe to Retire and Rebirth Requirements.</small></div>
+              <button class="btn kb-key" id="declutterTierAllHotkeyBtn">(none set)</button>
+            </div>
+            <div class="kb-row">
+              <div class="kb-label"><b><span class="tier-dot" style="--c:#9aa39d"></span>Default</b><small>Show/hide Default-tier droids in both lists.</small></div>
+              <button class="btn kb-key" id="declutterTierDefaultHotkeyBtn">(none set)</button>
+            </div>
+            <div class="kb-row">
+              <div class="kb-label"><b><span class="tier-dot" style="--c:#4fa3e8"></span>Rare</b><small>Show/hide Rare-tier droids in both lists.</small></div>
+              <button class="btn kb-key" id="declutterTierRareHotkeyBtn">(none set)</button>
+            </div>
+            <div class="kb-row">
+              <div class="kb-label"><b><span class="tier-dot" style="--c:#b06cf2"></span>Epic</b><small>Show/hide Epic-tier droids in both lists.</small></div>
+              <button class="btn kb-key" id="declutterTierEpicHotkeyBtn">(none set)</button>
+            </div>
+            <div class="kb-row">
+              <div class="kb-label"><b><span class="tier-dot" style="--c:#f4a93b"></span>Legendary</b><small>Show/hide Legendary-tier droids in both lists.</small></div>
+              <button class="btn kb-key" id="declutterTierLegendaryHotkeyBtn">(none set)</button>
+            </div>
+            <div class="kb-row">
+              <div class="kb-label"><b><span class="tier-dot" style="--c:#ff4d6d"></span>Mythic</b><small>Show/hide Mythic-tier droids in both lists.</small></div>
+              <button class="btn kb-key" id="declutterTierMythicHotkeyBtn">(none set)</button>
+            </div>
+          </div>
+          <p class="holo-empty" id="keybindNoMatch" hidden>No keybinds match that search.</p>
+        </section>
+
+        <!-- ============ LAYOUT ============ -->
+        <section class="holo-pane" id="setPane-layout" role="tabpanel" aria-labelledby="setTab-layout" hidden>
+          <div class="holo-pane-head">
+            <div>
+              <h4>Layout</h4>
+              <p class="overlay-panel-hint"><b>🎯 Drag into place</b> unlocks an overlay so you can drag it, then click <b>Lock</b> on the overlay itself. <b>↺ Reset</b> snaps it back to its default spot.</p>
+            </div>
+          </div>
+          <div class="pos-grid">
+            <div class="pos-card">
+              <div class="pos-title">🎯 Current Rebirth Requirements</div>
+              <div class="pos-hint">The HUD. Sits in the gap under the game's top-left stats by default.</div>
+              <label class="pos-slider"><span>Background opacity</span><input type="range" id="overlayOpacityRange" min="0.2" max="0.92" step="0.02" value="0.55"></label>
+              <div class="pos-actions">
+                <button class="btn" id="overlayRepositionBtn">🎯 Drag into place</button>
+                <button class="btn" id="overlayResetPosBtn" title="Snap the HUD back to its default position">↺ Reset</button>
+              </div>
+            </div>
+            <div class="pos-card">
+              <div class="pos-title">⏱ Timers</div>
+              <div class="pos-hint">The countdown banner strip near the top of the screen.</div>
+              <div class="pos-actions">
+                <button class="btn" id="timersRepositionBtn">🎯 Drag into place</button>
+                <button class="btn" id="timersResetPosBtn" title="Snap the timer banners back to their default position">↺ Reset</button>
+              </div>
+            </div>
+            <div class="pos-card">
+              <div class="pos-title">♻ Safe to Retire</div>
+              <div class="pos-hint">Made to sit under your in-game player counter.</div>
+              <div class="pos-actions">
+                <button class="btn" id="declutterRepositionBtn">🎯 Drag into place</button>
+                <button class="btn" id="declutterResetPosBtn" title="Snap the declutter list back to its default position">↺ Reset</button>
+              </div>
+            </div>
+            <div class="pos-card">
+              <div class="pos-title">🧬 Rebirth Requirements</div>
+              <div class="pos-hint">Starts in the same spot as Safe to Retire. Move one if you show both.</div>
+              <div class="pos-actions">
+                <button class="btn" id="rebirthReqRepositionBtn">🎯 Drag into place</button>
+                <button class="btn" id="rebirthReqResetPosBtn" title="Snap the Rebirth Requirements overlay back to its default position">↺ Reset</button>
+              </div>
+            </div>
+            <div class="pos-card">
+              <div class="pos-title">🔮 Sneak Preview</div>
+              <div class="pos-hint">Also starts in that same spot. Drag it clear before showing it with the others.</div>
+              <div class="pos-actions">
+                <button class="btn" id="sneakRepositionBtn">🎯 Drag into place</button>
+                <button class="btn" id="sneakResetPosBtn" title="Snap the Sneak Preview overlay back to its default position">↺ Reset</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ FILTERS ============ -->
+        <section class="holo-pane" id="setPane-filters" role="tabpanel" aria-labelledby="setTab-filters" hidden>
+          <div class="holo-pane-head">
+            <div>
+              <h4>Filters</h4>
+              <p class="overlay-panel-hint">Choose which droid tiers the ♻ Safe to Retire and 🧬 Rebirth Requirements overlays list. It's one shared filter, so both change together.</p>
+            </div>
+          </div>
+          <div class="tier-row">
+            <button class="btn tier-btn" id="declutterTierAllBtn" title="Show every tier if any is hidden, otherwise hide them all">All</button>
+            <button class="btn tier-btn" data-tier-key="declutterShowDefault">Default</button>
+            <button class="btn tier-btn" data-tier-key="declutterShowRare">Rare</button>
+            <button class="btn tier-btn" data-tier-key="declutterShowEpic">Epic</button>
+            <button class="btn tier-btn" data-tier-key="declutterShowLegendary">Legendary</button>
+            <button class="btn tier-btn" data-tier-key="declutterShowMythic">Mythic</button>
+          </div>
+          <p class="overlay-panel-hint">Want to flip tiers mid-game? Each one has an optional hotkey under <button type="button" class="holo-link" data-goto="keys">Keybinds → Tier filter</button>.</p>
+        </section>
+
+        <!-- ============ TIMERS ============ -->
+        <section class="holo-pane" id="setPane-timers" role="tabpanel" aria-labelledby="setTab-timers" hidden>
+          <div class="holo-pane-head">
+            <div>
+              <h4>Timers</h4>
+              <p class="overlay-panel-hint">The ⏱ banners run on the clock alone and never read the screen. If the mission countdown drifts, sync it to the game here.</p>
+            </div>
+          </div>
+          <div class="sync-box">
+            <div class="pos-title">🔄 Sync mission timer</div>
+            <div class="pos-hint">Type the mm:ss shown right now on the game's own "NEXT MISSION" banner, then click Sync. The correction is remembered between launches.</div>
+            <div class="sync-row">
+              <input type="number" class="ms-sync-input" id="missionSyncMin" min="0" max="44" placeholder="mm">
+              <span>:</span>
+              <input type="number" class="ms-sync-input" id="missionSyncSec" min="0" max="59" placeholder="ss">
+              <button class="btn" id="missionSyncBtn">🔄 Sync</button>
+            </div>
+          </div>
+          <div class="kb-group-title">Schedule readout</div>
+          <ul class="sched-list">
+            <li><span class="sched-dot" style="--c:#e08a3c"></span><b>✨ Stellar Blueprint</b><span>every hour, on the hour</span></li>
+            <li><span class="sched-dot" style="--c:#ff4d6d"></span><b>🌌 Mythic Blueprint</b><span>every hour at :55</span></li>
+            <li><span class="sched-dot" style="--c:#c96bf2"></span><b>🪐 Galactic Blueprint</b><span>every 30 minutes, at :15 and :45</span></li>
+            <li><span class="sched-dot" style="--c:#5ef2a6"></span><b>🎯 Mission</b><span>every 50 minutes: Stormtrooper → Fishing → D-0 → Mining</span></li>
+          </ul>
+        </section>
+      </div>
     </div>
   </div>
 
@@ -836,6 +1067,7 @@
 
 <script src="icons-data.js"></script>
 <script src="droid-data.js"></script>
+<script src="requirements.js"></script>
 <script>
 /* ---------------- DATA ---------------- */
 const COSTS = ["10K","150K","975K","2.95M","5.35M","9.85M","14.5M","36M","89M","220M",
@@ -895,55 +1127,12 @@ function qsa(sel){
   return results;
 }
 
-/* ---------------- NAME NORMALIZATION / MERGES ---------------- */
-function normKey(name){
-  return name.toLowerCase().replace(/[^a-z0-9]/g,'');
-}
-let nameMerges = {};        // rawName (as it appears in CYCLES) -> canonical display name
-let displayOverrides = {};  // normKey -> preferred display name
-function canonicalName(rawName){
-  return nameMerges[rawName] || rawName;
-}
-
-/* ---------------- BUILD DROID INDEX FROM CYCLES ---------------- */
-let DROID_INDEX = {};  // normKey -> {display, entries:[{cycle,level,slot,code,rank}], ceilingRank}
-let RAW_GROUPS = {};   // normKey -> {names:{rawName:count}, entries:[...]}  (kept for merge lookups)
-
-function buildIndex(){
-  const groups = {};
-  for(let c=1;c<=5;c++){
-    for(let l=1;l<=35;l++){
-      const row = CYCLES[c][l-1];
-      row.forEach((d,i)=>{
-        const code = d[0], rawName = d[1];
-        const canon = canonicalName(rawName);
-        const nk = normKey(canon);
-        if(!groups[nk]) groups[nk] = { names:{}, entries:[] };
-        groups[nk].names[canon] = (groups[nk].names[canon]||0)+1;
-        groups[nk].entries.push({cycle:c, level:l, slot:i, code:code, rank:rankOf(code)});
-      });
-    }
-  }
-  const idx = {};
-  Object.keys(groups).forEach(nk=>{
-    const g = groups[nk];
-    let display = displayOverrides[nk];
-    if(!display){
-      display = Object.keys(g.names).sort((a,b)=>g.names[b]-g.names[a])[0];
-    }
-    let ceilingRank = 0;
-    let minLevel = null, minLevelCycle = null;
-    g.entries.forEach(e=>{
-      if(e.rank > ceilingRank) ceilingRank = e.rank;
-      if(minLevel === null || e.level < minLevel || (e.level === minLevel && e.cycle < minLevelCycle)){
-        minLevel = e.level; minLevelCycle = e.cycle;
-      }
-    });
-    idx[nk] = { display:display, entries:g.entries, ceilingRank:ceilingRank, minLevel:minLevel, minLevelCycle:minLevelCycle };
-  });
-  DROID_INDEX = idx;
-  RAW_GROUPS = groups;
-}
+/* ---------------- NAME NORMALIZATION / DROID INDEX ----------------
+   normKey, canonicalName, nameMerges, displayOverrides, DROID_INDEX,
+   RAW_GROUPS and buildIndex() come from requirements.js (loaded above this
+   script). Do not redeclare them here: a second top-level `let` is a
+   SyntaxError that kills this whole script, and a second `function` silently
+   replaces the shared one. test/pages.test.js checks both. */
 
 /* ---------------- OWNERSHIP ---------------- */
 let ownedRank = {}; // normKey -> highest rarity rank owned
@@ -1395,56 +1584,10 @@ function renderList(){
    what's left from Gold up to Stellar. Marking one here calls the same
    setOwned() the main list pips use, so it fills in every lower variety
    of that droid on the left too. */
-function cycleCeilings(cycle){
-  const ceilings = {}; // nk -> {rank, cycle, level, slot, code}
-  for(let l=1;l<=35;l++){
-    const row = CYCLES[cycle][l-1];
-    row.forEach((d,i)=>{
-      const code = d[0];
-      const nk = normKey(canonicalName(d[1]));
-      const rank = rankOf(code);
-      if(!ceilings[nk] || rank > ceilings[nk].rank){
-        ceilings[nk] = { rank:rank, cycle:cycle, level:l, slot:i, code:code };
-      }
-    });
-  }
-  return ceilings;
-}
-
-/* For one cycle, the LAST (highest-numbered) level that still requires a
-   given droid, at ANY rarity. Deliberately NOT the same thing as
-   cycleCeilings' level: cycleCeilings records the FIRST level a droid hits
-   its ceiling/max rarity, which can be several levels before its true final
-   appearance if the same max rarity (or a lower one) is asked for again
-   later. Verified against the real CYCLES data this happens 13 times across
-   the 5 cycles — e.g. cycle 1's Proto Roller first hits Galactic at level 28
-   but is asked for again at Galactic at level 31, so a level-28 SELL tag
-   would be 3 rebirths too early. Was previously only defined in
-   requirements.js for the Safe to Retire overlay's own per-cycle safety
-   check — added here 2026-09-24 so droidCellHtml's SELL tag below (the "By
-   Rebirth Level" grid) uses the exact same, already-correct definition
-   instead of its own cross-cycle one. See that fix's note on
-   droidCellHtml for why the old one under-reported SELL by 162/525
-   occurrences (31%): it compared cycle NUMBERS (1-5) as if cycle 5 were an
-   absolute end rather than a label that wraps back to cycle 1 forever, so a
-   droid appearing in a later-numbered cycle almost never showed SELL in an
-   earlier one, even on its own true last need within that cycle. Since
-   completing a cycle wipes tracked ownership for every droid in it
-   (clearCycleMarks) regardless of what a LATER cycle table asks for, the
-   only question that matters for "can I sell this now" is whether this
-   cycle's own table will ask for it again — cross-cycle comparisons were
-   never meaningful here. */
-function cycleLastNeededLevel(cycle){
-  const lastLevel = {}; // nk -> highest level number requiring this droid, any rarity
-  for(let l=1;l<=35;l++){
-    const row = CYCLES[cycle][l-1];
-    row.forEach(d=>{
-      const nk = normKey(canonicalName(d[1]));
-      lastLevel[nk] = l; // levels visited in increasing order, so the last write is the true max
-    });
-  }
-  return lastLevel;
-}
+/* cycleCeilings(cycle) and cycleLastNeededLevel(cycle) live in requirements.js,
+   shared with every overlay window. Ceiling = FIRST level a droid hits its max
+   rarity; last-needed = LAST level it is asked for at any rarity. SELL tags and
+   Safe to Retire must use last-needed (see test/requirements.test.js). */
 
 function rebirthCellHtml(nk, info){
   const entry = DROID_INDEX[nk];
@@ -2105,6 +2248,7 @@ document.getElementById('bgDimRange').addEventListener('change', async (e)=>{
 <script src="rebirth-level-detect.js"></script>
 <script src="rebirth-screen-read.js"></script>
 <script src="overlay-controls.js"></script>
+<script src="settings-tabs.js"></script>
 <script src="guide.js"></script>
 </body>
 </html>
