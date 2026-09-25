@@ -499,6 +499,32 @@ It only adds art on top. Each overlay's see-through tint, including the
 HUD's opacity setting, is unchanged. To drop the look from one overlay,
 delete the `sw-texture.css` link from its HTML file.
 
+## Visual polish pass (v1.8.0)
+
+Functionality was stable, so this pass is styling only — no droid data, ownership
+logic, or hotkeys changed. Everything below extends the holo-console look from the
+v1.7.6 settings panel to the rest of the app:
+
+- **Overlay typography.** The four in-game overlays (HUD, Safe to Retire, Rebirth
+  Requirements, Sneak Preview) now use the same Rajdhani/IBM Plex Mono pairing as
+  the tracker window instead of the system font.
+- **Fade-in on refresh.** Cards and HUD level blocks ease in instead of popping in
+  instantly when a droid gets logged or you switch levels. Honors "reduce motion."
+- **Command Console toolbar.** The tracker's main button row is now a holo-console
+  surface (same corner brackets and scanlines as ⚙ Overlay Settings), with the ~24
+  buttons grouped into five labeled rows — Find, Rebirth Lvl, Tools, Overlays, Data
+  — instead of one unsorted wall.
+- **Rebirth Requirements panel** got the same holo surface, and its rarity-tier
+  headers (Base, Gold, Diamond…) now have a fading divider line like the keybind
+  groups in ⚙ Overlay Settings.
+- **Header polish.** The sticky rarity legend and the "droids maxed" counter sit in
+  a subtle blue-tinted holo chip instead of a flat background.
+- The screen-capture calibration box and the first-launch guide dialog got the
+  same holo border/background treatment.
+- The droid list itself (the rows you click to log ownership) was deliberately
+  left alone — it's the busiest surface in the app, and the plain background
+  keeps it easy to scan.
+
 ## Quality-of-life additions
 
 A few small fixes aimed at specific rough edges that came up while building

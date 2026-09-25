@@ -67,18 +67,74 @@
     border-radius:999px; padding:2px 9px; letter-spacing:0.02em;
   }
   .title-block p{margin:0;color:var(--text-dim);font-size:14.5px;max-width:50ch;line-height:1.45;}
-  .overall{text-align:right;min-width:180px;}
+  .overall{
+    text-align:right;min-width:180px;padding:8px 16px;border-radius:9px;
+    border:1px solid rgba(143,214,255,.2);background:rgba(9,14,20,.5);
+  }
   .overall .num{font-family:'IBM Plex Mono',monospace;font-size:28px;color:var(--accent);font-weight:600;}
-  .overall .lbl{font-size:11.5px;color:var(--text-dim);letter-spacing:.03em;}
+  .overall .lbl{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:rgba(143,214,255,.62);letter-spacing:.12em;text-transform:uppercase;}
   .bar{height:7px;border-radius:4px;background:var(--panel2);overflow:hidden;margin-top:7px;border:1px solid var(--line);}
   .bar > div{height:100%;background:linear-gradient(90deg,var(--accent-dim),var(--accent));transition:width .35s ease;}
 
-  .legend{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:16px;font-size:12.5px;color:var(--text-dim);align-items:center;position:sticky;top:0;background:var(--bg);z-index:5;padding:9px 0;}
+  .legend{
+    display:flex;flex-wrap:wrap;gap:12px;margin-bottom:16px;font-size:12.5px;color:var(--text-dim);align-items:center;
+    position:sticky;top:0;z-index:5;padding:9px 14px;border-radius:9px;
+    background:rgba(9,14,20,.85);border:1px solid rgba(143,214,255,.15);
+    -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+  }
   .legend .item{display:flex;align-items:center;gap:6px;}
   .legend .dot{width:10px;height:10px;border-radius:3px;flex:0 0 10px;}
 
   .toolbar{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin-bottom:16px;}
   .spacer{flex:1;}
+
+  /* ---- toolbar reworked as a "command console" (v1.8): same holo-console
+     surface as #overlaySettingsPanel (copied, not shared, so the settings
+     panel's own rule can't be affected by a change here), buttons grouped
+     into labeled rows instead of one undifferentiated wall. Every button
+     keeps its original id; this only changes the markup that wraps them. */
+  .toolbar.command-console{
+    display:flex; flex-direction:column; gap:0;
+    --holo:#8fd6ff; --holo-dim:rgba(143,214,255,.62); --holo-line:rgba(143,214,255,.2); --hb:rgba(143,214,255,.6);
+    position:relative; overflow:hidden;
+    border:1px solid var(--holo-line); border-radius:10px;
+    background-color:rgba(9,14,20,.72);
+    background-image:
+      linear-gradient(var(--hb),var(--hb)), linear-gradient(var(--hb),var(--hb)),
+      linear-gradient(var(--hb),var(--hb)), linear-gradient(var(--hb),var(--hb)),
+      linear-gradient(var(--hb),var(--hb)), linear-gradient(var(--hb),var(--hb)),
+      linear-gradient(var(--hb),var(--hb)), linear-gradient(var(--hb),var(--hb)),
+      radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,.55), transparent 70%),
+      radial-gradient(1px 1px at 70% 80%, rgba(200,230,255,.45), transparent 70%),
+      radial-gradient(1.5px 1.5px at 45% 60%, rgba(255,255,255,.35), transparent 70%),
+      linear-gradient(90deg, transparent calc(100% - 1px), rgba(143,214,255,.05) 0),
+      linear-gradient(180deg, transparent calc(100% - 1px), rgba(143,214,255,.05) 0),
+      repeating-linear-gradient(180deg, rgba(143,214,255,.025) 0 1px, transparent 1px 3px),
+      radial-gradient(120% 90% at 0% 0%, rgba(79,184,255,.10), transparent 60%);
+    background-size:
+      14px 2px, 2px 14px, 14px 2px, 2px 14px, 14px 2px, 2px 14px, 14px 2px, 2px 14px,
+      230px 170px, 310px 210px, 190px 250px,
+      96px 56px, 96px 56px, auto, auto;
+    background-position:
+      left 6px top 6px, left 6px top 6px, right 6px top 6px, right 6px top 6px,
+      left 6px bottom 6px, left 6px bottom 6px, right 6px bottom 6px, right 6px bottom 6px,
+      0 0, 40px 90px, 120px 30px,
+      0 0, 0 0, 0 0, 0 0;
+    background-repeat:
+      no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat,
+      repeat, repeat, repeat, repeat, repeat, repeat, no-repeat;
+    -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px);
+    box-shadow:0 12px 30px -14px rgba(0,0,0,.8), inset 0 0 50px -30px rgba(143,214,255,.5);
+  }
+  .console-row{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:11px 16px;}
+  .console-row + .console-row{border-top:1px solid var(--holo-line);}
+  .console-row-label{
+    font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--holo-dim);flex:0 0 100px;white-space:nowrap;
+  }
+  @media (max-width:760px){
+    .console-row-label{flex-basis:100%;margin-bottom:2px;}
+  }
   .searchbox{position:relative;flex:1;min-width:180px;max-width:320px;}
   .searchbox input{
     background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:7px;
@@ -110,29 +166,64 @@
   .wrap.with-rebirth{max-width:1300px;}
 
   .rebirth-panel{
-    display:none;flex:0 0 300px;background:var(--panel);border:1px solid var(--line);
-    border-radius:10px;padding:14px;
-    position:sticky;top:58px;max-height:calc(100vh - 78px);overflow-y:auto;
+    display:none;flex:0 0 300px;
+    --holo:#8fd6ff; --holo-dim:rgba(143,214,255,.62); --holo-line:rgba(143,214,255,.2); --hb:rgba(143,214,255,.6);
+    position:sticky;top:58px;max-height:calc(100vh - 78px);overflow-x:hidden;overflow-y:auto;
+    border:1px solid var(--holo-line);border-radius:10px;padding:14px;
+    background-color:rgba(9,14,20,.72);
+    background-image:
+      linear-gradient(var(--hb),var(--hb)), linear-gradient(var(--hb),var(--hb)),
+      linear-gradient(var(--hb),var(--hb)), linear-gradient(var(--hb),var(--hb)),
+      linear-gradient(var(--hb),var(--hb)), linear-gradient(var(--hb),var(--hb)),
+      linear-gradient(var(--hb),var(--hb)), linear-gradient(var(--hb),var(--hb)),
+      radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,.55), transparent 70%),
+      radial-gradient(1px 1px at 70% 80%, rgba(200,230,255,.45), transparent 70%),
+      radial-gradient(1.5px 1.5px at 45% 60%, rgba(255,255,255,.35), transparent 70%),
+      linear-gradient(90deg, transparent calc(100% - 1px), rgba(143,214,255,.05) 0),
+      linear-gradient(180deg, transparent calc(100% - 1px), rgba(143,214,255,.05) 0),
+      repeating-linear-gradient(180deg, rgba(143,214,255,.025) 0 1px, transparent 1px 3px),
+      radial-gradient(120% 90% at 0% 0%, rgba(79,184,255,.10), transparent 60%);
+    background-size:
+      14px 2px, 2px 14px, 14px 2px, 2px 14px, 14px 2px, 2px 14px, 14px 2px, 2px 14px,
+      230px 170px, 310px 210px, 190px 250px,
+      96px 56px, 96px 56px, auto, auto;
+    background-position:
+      left 6px top 6px, left 6px top 6px, right 6px top 6px, right 6px top 6px,
+      left 6px bottom 6px, left 6px bottom 6px, right 6px bottom 6px, right 6px bottom 6px,
+      0 0, 40px 90px, 120px 30px,
+      0 0, 0 0, 0 0, 0 0;
+    background-repeat:
+      no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat,
+      repeat, repeat, repeat, repeat, repeat, repeat, no-repeat;
   }
   .rebirth-panel.show{display:block;}
-  .rebirth-panel-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;}
-  .rebirth-panel-head h3{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:17px;margin:0;color:var(--accent);letter-spacing:.02em;}
+  .rebirth-panel-head{
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+    margin:-14px -14px 12px;padding:12px 14px;border-bottom:1px solid var(--holo-line);
+    background:linear-gradient(90deg, rgba(143,214,255,.10), transparent 75%);
+  }
+  .rebirth-panel-head h3{
+    font-family:'Rajdhani',sans-serif;font-weight:700;font-size:15px;margin:0;
+    color:var(--text);letter-spacing:.12em;text-transform:uppercase;
+  }
   .rebirth-panel-head .btn{padding:4px 9px;font-size:12px;}
   .rebirth-cycle-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
   .rebirth-cycle-row label{font-size:11.5px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;letter-spacing:.03em;}
   .rb-cycle-select{
-    background:var(--panel2);border:1px solid var(--line);color:var(--text);
+    background:rgba(0,0,0,.3);border:1px solid var(--holo-line);color:var(--text);
     border-radius:6px;padding:5px 9px;font-size:13.5px;font-family:'Rajdhani',sans-serif;
     font-weight:600;cursor:pointer;flex:1;
   }
-  .rb-cycle-select:focus{outline:none;border-color:var(--accent-dim);}
+  .rb-cycle-select:focus{outline:none;border-color:var(--holo-dim);}
   .rebirth-sub{font-size:11.5px;color:var(--text-dim);line-height:1.45;margin:0 0 14px;}
   .rebirth-tier-block{margin-bottom:16px;}
   .rebirth-tier-block:last-child{margin-bottom:0;}
   .rebirth-tier-label{
+    display:flex;align-items:center;gap:10px;
     font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;
     letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px;
   }
+  .rebirth-tier-label::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,currentColor,transparent);opacity:.4;}
   .rebirth-tier-label.B{color:var(--r-base);}
   .rebirth-tier-label.G{color:var(--r-gold);}
   .rebirth-tier-label.D{color:var(--r-diamond);}
@@ -229,7 +320,7 @@
 
   .cycle-picker-row{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
   .cycle-select{
-    background:var(--panel);border:1px solid var(--line);color:var(--text);
+    background:rgba(9,14,20,.6);border:1px solid rgba(143,214,255,.22);color:var(--text);
     border-radius:7px;padding:9px 13px;font-size:16.5px;font-family:'Rajdhani',sans-serif;
     font-weight:600;cursor:pointer;
   }
@@ -317,8 +408,24 @@
     position:fixed;inset:0;background:rgba(5,8,7,0.88);z-index:80;
     display:flex;align-items:center;justify-content:center;padding:24px;
   }
-  .calib-box{background:var(--panel);border:1px solid var(--line-bright);border-radius:12px;padding:22px;max-width:820px;width:100%;max-height:88vh;overflow:auto;}
-  .calib-box h3{font-family:'Rajdhani',sans-serif;font-size:20px;margin:0 0 8px;color:var(--text);}
+  .calib-box{
+    --holo:#8fd6ff; --holo-dim:rgba(143,214,255,.62); --holo-line:rgba(143,214,255,.2); --hb:rgba(143,214,255,.6);
+    border:1px solid var(--holo-line);border-radius:12px;padding:22px;max-width:820px;width:100%;max-height:88vh;overflow:auto;
+    background-color:rgba(9,14,20,.82);
+    background-image:
+      linear-gradient(var(--hb),var(--hb)), linear-gradient(var(--hb),var(--hb)),
+      linear-gradient(var(--hb),var(--hb)), linear-gradient(var(--hb),var(--hb)),
+      linear-gradient(var(--hb),var(--hb)), linear-gradient(var(--hb),var(--hb)),
+      linear-gradient(var(--hb),var(--hb)), linear-gradient(var(--hb),var(--hb)),
+      radial-gradient(120% 90% at 0% 0%, rgba(79,184,255,.08), transparent 60%);
+    background-size:14px 2px, 2px 14px, 14px 2px, 2px 14px, 14px 2px, 2px 14px, 14px 2px, 2px 14px, auto;
+    background-position:
+      left 8px top 8px, left 8px top 8px, right 8px top 8px, right 8px top 8px,
+      left 8px bottom 8px, left 8px bottom 8px, right 8px bottom 8px, right 8px bottom 8px, 0 0;
+    background-repeat:no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat;
+    box-shadow:0 20px 50px -20px rgba(0,0,0,.8), inset 0 0 60px -40px rgba(143,214,255,.5);
+  }
+  .calib-box h3{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:20px;letter-spacing:.04em;margin:0 0 8px;color:var(--text);}
   .calib-box p{color:var(--text-dim);font-size:13.5px;margin:0 0 12px;line-height:1.5;}
   .calib-canvas-wrap canvas{
     width:100%;height:auto;display:block;border-radius:8px;border:1px solid var(--line);
@@ -333,9 +440,25 @@
     display:flex;align-items:center;justify-content:center;padding:24px;
   }
   .guide-overlay[hidden]{display:none;}
-  .guide-box{background:var(--panel);border:1px solid var(--line-bright);border-radius:12px;padding:26px;max-width:560px;width:100%;max-height:88vh;overflow:auto;}
-  .guide-progress{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;color:var(--text-dim);letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px;}
-  .guide-box h3{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:22px;margin:0 0 14px;color:var(--accent);}
+  .guide-box{
+    --holo:#8fd6ff; --holo-dim:rgba(143,214,255,.62); --holo-line:rgba(143,214,255,.2); --hb:rgba(143,214,255,.6);
+    border:1px solid var(--holo-line);border-radius:12px;padding:26px;max-width:560px;width:100%;max-height:88vh;overflow:auto;
+    background-color:rgba(9,14,20,.82);
+    background-image:
+      linear-gradient(var(--hb),var(--hb)), linear-gradient(var(--hb),var(--hb)),
+      linear-gradient(var(--hb),var(--hb)), linear-gradient(var(--hb),var(--hb)),
+      linear-gradient(var(--hb),var(--hb)), linear-gradient(var(--hb),var(--hb)),
+      linear-gradient(var(--hb),var(--hb)), linear-gradient(var(--hb),var(--hb)),
+      radial-gradient(120% 90% at 0% 0%, rgba(79,184,255,.08), transparent 60%);
+    background-size:14px 2px, 2px 14px, 14px 2px, 2px 14px, 14px 2px, 2px 14px, 14px 2px, 2px 14px, auto;
+    background-position:
+      left 8px top 8px, left 8px top 8px, right 8px top 8px, right 8px top 8px,
+      left 8px bottom 8px, left 8px bottom 8px, right 8px bottom 8px, right 8px bottom 8px, 0 0;
+    background-repeat:no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat;
+    box-shadow:0 20px 50px -20px rgba(0,0,0,.8), inset 0 0 60px -40px rgba(143,214,255,.5);
+  }
+  .guide-progress{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;color:var(--holo-dim, var(--text-dim));letter-spacing:.14em;text-transform:uppercase;margin-bottom:10px;}
+  .guide-box h3{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:22px;letter-spacing:.02em;margin:0 0 14px;color:var(--text);}
   .guide-body{color:var(--text);font-size:14px;line-height:1.6;}
   .guide-body p{margin:0 0 12px;}
   .guide-body p:last-child{margin-bottom:0;}
@@ -628,45 +751,59 @@
     <span class="cycle-progress-label" id="cycleProgress"></span>
   </div>
 
-  <div class="toolbar">
-    <div class="searchbox" id="searchBoxWrap"><input id="search" type="text" placeholder="Search a droid…"></div>
-    <div class="sort-toggle" id="sortToggleWrap">
-      <button class="btn on" data-sort="alpha" title="Needs-work first, then A–Z">A–Z</button>
-      <button class="btn" data-sort="level" title="Grouped in trios by the level they unlock at, for whichever cycle is selected">By Rebirth Level</button>
+  <div class="toolbar command-console">
+    <div class="console-row">
+      <span class="console-row-label">Find</span>
+      <div class="searchbox" id="searchBoxWrap"><input id="search" type="text" placeholder="Search a droid…"></div>
+      <div class="sort-toggle" id="sortToggleWrap">
+        <button class="btn on" data-sort="alpha" title="Needs-work first, then A–Z">A–Z</button>
+        <button class="btn" data-sort="level" title="Grouped in trios by the level they unlock at, for whichever cycle is selected">By Rebirth Level</button>
+      </div>
+      <button class="btn" id="pipBtn" hidden title="Pop this panel into a small always-on-top window">⧉ Pop out</button>
     </div>
-    <div class="spacer"></div>
-    <button class="btn" id="pipBtn" hidden title="Pop this panel into a small always-on-top window">⧉ Pop out</button>
-    <button class="btn" id="liveBtn" hidden title="Watch your screen and suggest what to log as you play">🔴 Live Detect</button>
-    <button class="btn" id="rebirthLevelBtn" hidden title="Read your current rebirth level from the screen automatically, to drive the overlay HUD">🔢 Draw Rebirth<br>Level Box</button>
-    <span class="rl-manual" id="rlManualToolbar" title="Set your current rebirth level — drives which upcoming levels the overlay HUD shows">
-      <span class="rl-manual-label">Rebirth Lvl</span>
-      <button class="btn" id="rlDec">−</button>
-      <span id="rlLevelDisplay" class="rl-level-display">Lvl 0</span>
-      <button class="btn" id="rlInc">+</button>
-    </span>
-    <button class="btn" id="rebirthScreenBtn" hidden title="Open the in-game Rebirth menu, then click this to read it and mark everything up to that point as owned">📸 Read Rebirth Screen</button>
-    <button class="btn" id="rebirthScreenRecalibBtn" hidden title="Redraw the box around the Rank number (only needed once, or if it starts reading wrong)">↺</button>
-    <button class="btn" id="editToggle" title="Click a name to fix a misread, or rename it to match another droid to merge them">✎ Rename</button>
-    <button class="btn" id="reqPanelToggle" title="Show a side panel of the droids needed for rebirth 35, at the rarity each cycle requires">🧬 Rebirth Reqs</button>
-    <button class="btn" id="bgBtn" title="Set a custom background image">🖼 Background</button>
-    <div class="bg-controls" id="bgControls" hidden>
-      <span class="bg-dim-label">Dim</span>
-      <input type="range" id="bgDimRange" min="0.2" max="0.92" step="0.02" value="0.72">
-      <button class="btn" id="bgClearBtn" title="Remove custom background">✕</button>
+    <div class="console-row">
+      <span class="console-row-label">Rebirth Lvl</span>
+      <button class="btn" id="liveBtn" hidden title="Watch your screen and suggest what to log as you play">🔴 Live Detect</button>
+      <button class="btn" id="rebirthLevelBtn" hidden title="Read your current rebirth level from the screen automatically, to drive the overlay HUD">🔢 Draw Rebirth<br>Level Box</button>
+      <span class="rl-manual" id="rlManualToolbar" title="Set your current rebirth level — drives which upcoming levels the overlay HUD shows">
+        <span class="rl-manual-label">Rebirth Lvl</span>
+        <button class="btn" id="rlDec">−</button>
+        <span id="rlLevelDisplay" class="rl-level-display">Lvl 0</span>
+        <button class="btn" id="rlInc">+</button>
+      </span>
+      <button class="btn" id="rebirthScreenBtn" hidden title="Open the in-game Rebirth menu, then click this to read it and mark everything up to that point as owned">📸 Read Rebirth Screen</button>
+      <button class="btn" id="rebirthScreenRecalibBtn" hidden title="Redraw the box around the Rank number (only needed once, or if it starts reading wrong)">↺</button>
     </div>
-    <button class="btn" id="guideOpenBtn" hidden title="Replay the first-launch tour of the app's tools">❔ Guide</button>
-    <button class="btn" id="overlayToggleBtn" hidden title="Show or hide the in-game HUD (toggle with the hotkey too)">🎯 Upcoming RB Req's: On</button>
-    <button class="btn" id="overlaySettingsBtn" hidden title="Overlay hotkey, opacity, and position">⚙ Overlay Settings</button>
-    <button class="btn" id="timersToggleBtn" hidden title="Show or hide the Stellar/Mythic/Galactic/Mission countdown banners (toggle with the hotkey too)">⏱ Timers: On</button>
-    <button class="btn" id="hotkeyListToggleBtn" hidden title="Show or hide the on-screen hotkey reference list (toggle with the hotkey too, shown automatically on launch)">⌨ Hotkeys: On</button>
-    <button class="btn" id="declutterToggleBtn" hidden title="Show or hide the on-screen list of Legendary/Mythic droids you can safely retire this cycle (toggle with the hotkey too)">♻ Declutter: On</button>
-    <button class="btn" id="rebirthReqToggleBtn" hidden title="Show or hide the standalone Rebirth Requirements overlay — every droid this cycle needs, in-game (toggle with the hotkey too)">🧬 Rebirth Req: On</button>
-    <button class="btn" id="sneakToggleBtn" hidden title="Show or hide the Sneak Preview — next cycle's Mythic droids">🔮 Sneak Preview: Off</button>
-    <button class="btn" id="exportBtn">Export</button>
-    <button class="btn" id="importBtn">Import</button>
-    <button class="btn" id="resetBtn">Reset all</button>
-    <input type="file" id="importFile" accept="application/json" style="display:none">
-    <input type="file" id="bgFile" accept="image/*" style="display:none">
+    <div class="console-row">
+      <span class="console-row-label">Tools</span>
+      <button class="btn" id="editToggle" title="Click a name to fix a misread, or rename it to match another droid to merge them">✎ Rename</button>
+      <button class="btn" id="reqPanelToggle" title="Show a side panel of the droids needed for rebirth 35, at the rarity each cycle requires">🧬 Rebirth Reqs</button>
+      <button class="btn" id="bgBtn" title="Set a custom background image">🖼 Background</button>
+      <div class="bg-controls" id="bgControls" hidden>
+        <span class="bg-dim-label">Dim</span>
+        <input type="range" id="bgDimRange" min="0.2" max="0.92" step="0.02" value="0.72">
+        <button class="btn" id="bgClearBtn" title="Remove custom background">✕</button>
+      </div>
+      <button class="btn" id="guideOpenBtn" hidden title="Replay the first-launch tour of the app's tools">❔ Guide</button>
+    </div>
+    <div class="console-row">
+      <span class="console-row-label">Overlays</span>
+      <button class="btn" id="overlayToggleBtn" hidden title="Show or hide the in-game HUD (toggle with the hotkey too)">🎯 Upcoming RB Req's: On</button>
+      <button class="btn" id="overlaySettingsBtn" hidden title="Overlay hotkey, opacity, and position">⚙ Overlay Settings</button>
+      <button class="btn" id="timersToggleBtn" hidden title="Show or hide the Stellar/Mythic/Galactic/Mission countdown banners (toggle with the hotkey too)">⏱ Timers: On</button>
+      <button class="btn" id="hotkeyListToggleBtn" hidden title="Show or hide the on-screen hotkey reference list (toggle with the hotkey too, shown automatically on launch)">⌨ Hotkeys: On</button>
+      <button class="btn" id="declutterToggleBtn" hidden title="Show or hide the on-screen list of Legendary/Mythic droids you can safely retire this cycle (toggle with the hotkey too)">♻ Declutter: On</button>
+      <button class="btn" id="rebirthReqToggleBtn" hidden title="Show or hide the standalone Rebirth Requirements overlay — every droid this cycle needs, in-game (toggle with the hotkey too)">🧬 Rebirth Req: On</button>
+      <button class="btn" id="sneakToggleBtn" hidden title="Show or hide the Sneak Preview — next cycle's Mythic droids">🔮 Sneak Preview: Off</button>
+    </div>
+    <div class="console-row">
+      <span class="console-row-label">Data</span>
+      <button class="btn" id="exportBtn">Export</button>
+      <button class="btn" id="importBtn">Import</button>
+      <button class="btn" id="resetBtn">Reset all</button>
+      <input type="file" id="importFile" accept="application/json" style="display:none">
+      <input type="file" id="bgFile" accept="image/*" style="display:none">
+    </div>
   </div>
 
   <!-- ⚙ Overlay Settings: holo-console layout (v1.7.6). Every control keeps its

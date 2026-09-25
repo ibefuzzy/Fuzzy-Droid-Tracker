@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <title>Fuzzy's Droid Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
     --r-base: #9aa39d;
@@ -18,7 +20,7 @@
   }
   html,body{
     margin:0; padding:0; background:transparent; overflow:hidden;
-    font-family:-apple-system,'Segoe UI',system-ui,sans-serif;
+    font-family:'Rajdhani','Segoe UI',system-ui,sans-serif;
     -webkit-user-select:none; user-select:none;
     width:100%; height:100%;
   }
@@ -46,7 +48,10 @@
     font-size:11px; font-weight:700; padding:3px 9px; cursor:pointer;
   }
   .blocks{ display:flex; flex-direction:column; gap:4px; flex:1; min-height:0; }
+  @keyframes fdt-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+  @media (prefers-reduced-motion:reduce){ .block{ animation:none!important; } }
   .block{
+    animation:fdt-in .22s ease-out both;
     /* Padding/gap trimmed 2026-09-19 alongside the panel's own width/height
        cut in main.js — a real screenshot showed these blocks' background
        running well past their 2-3 chip content. */
@@ -70,6 +75,7 @@
     box-shadow: 0 0 0 1px rgba(94,242,166,0.35) inset, 0 0 10px -2px rgba(94,242,166,0.4);
   }
   .block .tag{
+    font-family:'IBM Plex Mono',monospace;
     font-size:10px; font-weight:800; letter-spacing:.06em;
     color:#0b0f0d; background:rgba(255,255,255,0.22);
     border-radius:999px; padding:2px 8px; display:inline-block; width:fit-content;
@@ -109,6 +115,7 @@
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;
   }
   .d-owned{
+    font-family:'IBM Plex Mono',monospace;
     font-size:7.5px; font-weight:600; text-align:center;
     text-shadow:0 1px 2px rgba(0,0,0,0.9); opacity:0.85;
   }

@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <title>Fuzzy's Droid Tracker — Rebirth Requirements</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
     --r-base: #9aa39d;
@@ -22,7 +24,7 @@
   }
   html,body{
     margin:0; padding:0; background:transparent; overflow:hidden;
-    font-family:-apple-system,'Segoe UI',system-ui,sans-serif;
+    font-family:'Rajdhani','Segoe UI',system-ui,sans-serif;
     -webkit-user-select:none; user-select:none;
     width:100%; height:100%;
   }
@@ -68,11 +70,13 @@
   }
   .card h1 .tags{ display:flex; align-items:center; gap:5px; flex:0 0 auto; }
   .card h1 .cycle-tag{
+    font-family:'IBM Plex Mono',monospace;
     font-size:9.5px; font-weight:700; color:#dfe8e2;
     background:rgba(255,255,255,0.12); border-radius:999px;
     padding:1px 7px; letter-spacing:0; text-transform:none;
   }
   .card h1 .count{
+    font-family:'IBM Plex Mono',monospace;
     font-size:10px; font-weight:700; color:#08130d;
     background:var(--accent); border-radius:999px;
     padding:1px 7px; letter-spacing:0;
@@ -109,7 +113,10 @@
     background:var(--accent); border-radius:2px;
     box-shadow:0 0 4px -1px var(--accent);
   }
+  @keyframes fdt-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+  @media (prefers-reduced-motion:reduce){ .d-cell{ animation:none!important; } }
   .d-cell{
+    animation:fdt-in .22s ease-out both;
     display:flex; flex-direction:column; align-items:center; gap:2px;
     min-width:0; padding:2px 1px;
   }
@@ -136,6 +143,7 @@
     display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
   }
   .d-owned{
+    font-family:'IBM Plex Mono',monospace;
     font-size:7.5px; font-weight:600; text-align:center;
     text-shadow:0 1px 2px rgba(0,0,0,0.9);
     opacity:0.85;
