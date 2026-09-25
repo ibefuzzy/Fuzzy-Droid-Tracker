@@ -141,14 +141,26 @@ test('getLevelRequirements marks a slot owned when the owned rank is at or above
   assert.equal(need({ r9: 6 }).ownedRankValue, 6);
 });
 
-test('getUpcomingLevels returns NOW plus the next levels, clamped to the cycle', () => {
+test('getUpcomingLevels returns NOW plus the next levels, wrapping into the next cycle', () => {
   const s = fresh();
   const levels = (cur) => s.getUpcomingLevels(1, cur, {}, 4).map((b) => b.level);
+  const cycles = (cur) => s.getUpcomingLevels(1, cur, {}, 4).map((b) => b.cycle);
   assert.deepEqual(plain(levels(0)), [1, 2, 3, 4]);
   assert.deepEqual(plain(levels(-3)), [1, 2, 3, 4]); // bad input never shows level 0 or below
   assert.deepEqual(plain(levels(10)), [11, 12, 13, 14]);
-  assert.deepEqual(plain(levels(33)), [34, 35]);
-  assert.deepEqual(plain(levels(35)), []); // cycle complete: nothing left to show
+  // Cycle complete (or nearly): wraps to cycle 2's levels 1+ instead of
+  // stopping short, so the HUD always shows 4 upcoming levels.
+  assert.deepEqual(plain(levels(33)), [34, 35, 1, 2]);
+  assert.deepEqual(plain(cycles(33)), [1, 1, 2, 2]);
+  assert.deepEqual(plain(levels(35)), [1, 2, 3, 4]);
+  assert.deepEqual(plain(cycles(35)), [2, 2, 2, 2]);
+});
+
+test('getUpcomingLevels wraps cycle 5 back to cycle 1', () => {
+  const s = fresh();
+  const entries = s.getUpcomingLevels(5, 35, {}, 4);
+  assert.deepEqual(plain(entries.map((b) => b.cycle)), [1, 1, 1, 1]);
+  assert.deepEqual(plain(entries.map((b) => b.level)), [1, 2, 3, 4]);
 });
 
 /* ---------------- Safe to Retire (declutter) ---------------- */
@@ -235,4 +247,85 @@ test('Sneak Preview reports what you already own', () => {
   const mt = items.find((d) => d.nk === 'motrak');
   assert.ok(mt, 'Mo-Trak should be in cycle 1');
   assert.equal(mt.ownedCode, 'K');
+});
+
+/* ---------------- ownership helpers (moved from tracker.html, 2026-09-25) ---------------- */
+
+test('cycleCoveredCount counts only slots met at their required rarity or better', () => {
+  const s = fresh();
+  assert.equal(s.cycleCoveredCount(1, {}), 0, 'nothing owned -> nothing covered');
+  const occ = occurrences(s, 1);
+  // own every slot's exact required rarity (taking the highest per droid,
+  // since the same droid can appear at more than one rank in a cycle) ->
+  // every slot counted
+  const exact = {};
+  occ.forEach((o) => { exact[o.nk] = Math.max(o.rank, exact[o.nk] ?? -1); });
+  assert.equal(s.cycleCoveredCount(1, exact), occ.length);
+});
+
+test('cycleCoveredCount matches a manual count for a real cycle/ownedRank pair', () => {
+  const s = fresh();
+  const occ = occurrences(s, 3);
+  const owned = {};
+  // own the first half of cycle 3's droids at their exact required rank
+  const half = occ.slice(0, Math.floor(occ.length / 2));
+  half.forEach((o) => { owned[o.nk] = Math.max(o.rank, owned[o.nk] ?? -1); });
+  let manual = 0;
+  occ.forEach((o) => { if (owned[o.nk] !== undefined && o.rank <= owned[o.nk]) manual++; });
+  assert.equal(s.cycleCoveredCount(3, owned), manual);
+});
+
+test('cycleDroidKeys returns exactly the normKeys that appear in that cycle', () => {
+  const s = fresh();
+  for (const c of [1, 3, 5]) {
+    const expected = new Set(occurrences(s, c).map((o) => o.nk));
+    const actual = s.cycleDroidKeys(c);
+    assert.equal(actual.size, expected.size, `cycle ${c} key count`);
+    for (const nk of expected) assert.ok(actual.has(nk), `cycle ${c} missing ${nk}`);
+  }
+});
+
+test('removeCycleMarks drops only that cycle\'s keys and never mutates the input', () => {
+  const s = fresh();
+  const before = { r6: 3, notincycle1xyz: 5 };
+  const beforeCopy = plain(before);
+  const after = plain(s.removeCycleMarks(1, before));
+  assert.deepEqual(before, beforeCopy, 'input object was mutated');
+  assert.ok(!('r6' in after), 'r6 (in cycle 1) should be removed');
+  assert.equal(after.notincycle1xyz, 5, 'unrelated key should survive');
+});
+
+test('decideOwnedUpdate: clicking the current best again clears it', () => {
+  const s = fresh();
+  assert.deepEqual(plain(s.decideOwnedUpdate(3, 3)), { action: 'clear' });
+});
+
+test('decideOwnedUpdate: no prior claim, or a genuine upgrade, sets it', () => {
+  const s = fresh();
+  assert.deepEqual(plain(s.decideOwnedUpdate(undefined, 0)), { action: 'set' });
+  assert.deepEqual(plain(s.decideOwnedUpdate(2, 5)), { action: 'set' });
+});
+
+test('decideOwnedUpdate: anything lower than the current record is blocked, never a silent downgrade', () => {
+  const s = fresh();
+  assert.deepEqual(plain(s.decideOwnedUpdate(5, 2)), { action: 'blocked' });
+  assert.deepEqual(plain(s.decideOwnedUpdate(1, 0)), { action: 'blocked' });
+});
+
+test('isValidImportPayload accepts a real export shape', () => {
+  const s = fresh();
+  assert.equal(s.isValidImportPayload({ v: 2, ownedRank: { r9: 0, bb9: 6 }, nameMerges: {}, displayOverrides: {} }), true);
+  assert.equal(s.isValidImportPayload({ ownedRank: {} }), true, 'an empty ownedRank is still a valid (fresh) export');
+});
+
+test('isValidImportPayload rejects malformed or out-of-range payloads', () => {
+  const s = fresh();
+  assert.equal(s.isValidImportPayload(null), false);
+  assert.equal(s.isValidImportPayload('not json'), false);
+  assert.equal(s.isValidImportPayload([]), false, 'an array is not a valid payload');
+  assert.equal(s.isValidImportPayload({}), false, 'missing ownedRank entirely');
+  assert.equal(s.isValidImportPayload({ ownedRank: [] }), false, 'ownedRank must be an object, not an array');
+  assert.equal(s.isValidImportPayload({ ownedRank: { r9: 1.5 } }), false, 'non-integer rank');
+  assert.equal(s.isValidImportPayload({ ownedRank: { r9: -1 } }), false, 'negative rank');
+  assert.equal(s.isValidImportPayload({ ownedRank: { r9: s.RARITY_ORDER.length } }), false, 'rank past the top of RARITY_ORDER');
 });
