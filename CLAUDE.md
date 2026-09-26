@@ -185,6 +185,21 @@ schedule was confirmed, not the color. If a *future* Kyber-rate event
 happens, it needs its own `KYBER_EVENT_START_MS`/`_END_MS` window added the
 same way; this one was deliberately written as a one-off, not a recurring
 rule.
+
+**Found while checking Kyber had a sound option (it should have): a
+pre-existing sound bug affecting Stellar and Mythic too, not just Kyber.**
+`playTimerSound(timerType, settings)` in timers.html looked up
+`settings[timerType + 'SoundChoice']` — i.e. literally
+`stellarSoundChoice`/`mythicSoundChoice`/`kyberSoundChoice` — but
+DEFAULT_SETTINGS only ever defined `missionSoundChoice` and
+`blueprintSoundChoice` (Settings → Timers only has Mission and Blueprint
+sound groups; Stellar/Mythic/Kyber are meant to share the one "Blueprint"
+setting). So the lookup silently failed and **timer-expiry sound has never
+worked for Stellar or Mythic**, only Mission — since v1.10.2. Fixed by
+mapping any non-mission timerType to the `blueprint` settings prefix. The
+save side (overlay-controls.js) was always correct; only this read side was
+wrong. Worth a mention in the next release notes since it's a real,
+user-visible fix, not just internal cleanup.
 A full bug-check/declutter pass (prompted by "the app is a little slow to open") found
 and fixed several real issues, all now covered by tests (60 passing, up from 57):
 

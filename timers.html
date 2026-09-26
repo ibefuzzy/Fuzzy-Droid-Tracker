@@ -381,13 +381,25 @@
   function playTimerSound(timerType, settings) {
     if (!settings.timerSoundEnabled) return;
 
-    const choice = settings[timerType + 'SoundChoice'];
+    // Stellar/Mythic/Kyber all share one "Blueprint" sound configuration -
+    // Settings > Timers only has Mission and Blueprint groups, no separate
+    // per-type UI for these three. This mapping was missing entirely before
+    // (this function used to look up `timerType + 'SoundChoice'` literally,
+    // i.e. "stellarSoundChoice"/"mythicSoundChoice"/"kyberSoundChoice" -
+    // none of which exist in DEFAULT_SETTINGS, only missionSoundChoice and
+    // blueprintSoundChoice do), so sound silently never played for any of
+    // the three blueprint timers, only ever for Mission. Found while
+    // wiring up the new Kyber timer and checking it actually had a sound
+    // option like the others claimed to.
+    const settingsPrefix = (timerType === 'mission') ? 'mission' : 'blueprint';
+
+    const choice = settings[settingsPrefix + 'SoundChoice'];
     if (!choice || choice === 'off') return;
 
     // Determine volume: use override if enabled, otherwise use master
     let volume = settings.timerSoundVolume || 0.35;
-    const overrideKey = timerType + 'SoundVolumeOverride';
-    const volumeKey = timerType + 'SoundVolume';
+    const overrideKey = settingsPrefix + 'SoundVolumeOverride';
+    const volumeKey = settingsPrefix + 'SoundVolume';
     if (settings[overrideKey]) {
       volume = settings[volumeKey] || 0.35;
     }
