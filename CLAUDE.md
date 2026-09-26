@@ -210,9 +210,9 @@ and would have reintroduced the exact mismatch this fix corrects. Verified:
 unchanged (slot order doesn't affect any ceiling/last-needed/pairs
 computation, only which physical position a name+icon sit in).
 
-**Still needs the user's confirmation:** relaunch the app with these two
-files in place and confirm levels 36-40 show real droid portraits, not
-blank boxes. If they don't, the icon-reuse mapping needs a second look.
+**Confirmed by the user (2026-09-26):** both files work after relaunch —
+levels 36-40 show real droid portraits with correct slot order. No further
+action needed on droid-data.js/icons-data.js from this effort.
 
 **Also still outstanding from the reconciliation:** `overlay.html`,
 `rebirth-requirements-overlay.html`, and `preload.js` were never sent by
