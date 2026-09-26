@@ -15,6 +15,7 @@
     --r-beskar: #b9c2cc;
     --r-galactic: #c96bf2;
     --r-stellar: #e08a3c;
+    --r-kyber: #d0a0ff; /* placeholder, see timers.html --kyber */
     --rarity-default: #9aa39d;
     --rarity-rare: #4fa3e8;
     --rarity-epic: #b06cf2;
@@ -271,7 +272,8 @@
       item.ownedCode === 'D' ? 'diamond' :
       item.ownedCode === 'R' ? 'rainbow2' :
       item.ownedCode === 'K' ? 'beskar' :
-      item.ownedCode === 'X' ? 'galactic' : 'stellar'
+      item.ownedCode === 'X' ? 'galactic' :
+      item.ownedCode === 'Y' ? 'kyber' : 'stellar' // was falling through to stellar for Kyber too, not just S
     ) + ')';
     const title = item.display + ' — ' + item.rarityClass + ' — you have ' + RNAME[item.ownedCode] + ' — not needed again this cycle';
     return '<div class="d-cell" title="' + title + '">' +

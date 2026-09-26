@@ -55,7 +55,17 @@ const shared = loadSharedFunctions();
 // the other's changes, with real tracked progress lost and no warning on
 // either side. Refuse a second launch outright and just focus the window
 // the first instance already has open.
-if(!app.requestSingleInstanceLock()){
+// app.quit() below only REQUESTS a quit — it doesn't synchronously abort
+// this module, so without gating app.whenReady() itself on the lock result,
+// a second instance would still register its whenReady callback and (per
+// Electron's own docs, this is undocumented/version-dependent timing, not
+// guaranteed) could go on to load its own copy of the store/settings,
+// create a full window set, etc. before the requested quit actually lands —
+// exactly the two-instances-both-writing scenario the comment below warns
+// about. Gate on the captured gotLock value explicitly instead of relying
+// on quit() timing.
+const gotLock = app.requestSingleInstanceLock();
+if(!gotLock){
   app.quit();
 } else {
   app.on('second-instance', ()=>{
@@ -1684,7 +1694,7 @@ function createSecondaryWindows(){
   createHotkeyListWindow();
 }
 
-app.whenReady().then(()=>{
+if(gotLock) app.whenReady().then(()=>{
   migrateUserDataFromOldAppName();
   storeData = loadJson(STORE_PATH, {});
   settings = loadJson(SETTINGS_PATH, DEFAULT_SETTINGS);

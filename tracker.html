@@ -28,6 +28,7 @@
     --r-beskar: #b9c2cc;
     --r-galactic: #c96bf2;
     --r-stellar: #e08a3c;
+    --r-kyber: #d0a0ff; /* placeholder, same as timers.html's --kyber — update both together once the real in-game color is confirmed */
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;}
@@ -243,6 +244,7 @@
   .rebirth-tier-label.K{color:var(--r-beskar);}
   .rebirth-tier-label.X{color:var(--r-galactic);}
   .rebirth-tier-label.S{color:var(--r-stellar);}
+  .rebirth-tier-label.Y{color:var(--r-kyber);}
   .rebirth-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
   .rb-cell{display:flex;flex-direction:column;align-items:center;gap:5px;padding:7px 4px;border-radius:8px;cursor:pointer;transition:.12s;text-align:center;}
   .rb-cell:hover{background:rgba(255,255,255,0.05);}
@@ -256,6 +258,7 @@
   .rb-name.K{color:var(--r-beskar);}
   .rb-name.X{color:var(--r-galactic);}
   .rb-name.S{color:var(--r-stellar);}
+  .rb-name.Y{color:var(--r-kyber);}
 
   @media (max-width:900px){
     .content-row{flex-direction:column;}
@@ -319,7 +322,8 @@
   .rarity-beskar{background:linear-gradient(155deg,#6b7178 0%,#c9ced3 35%,#f5f7f8 50%,#aab0b6 65%,#4c5157 100%);}
   .rarity-galactic{background:linear-gradient(155deg,#3d1a63 0%,#9b4de0 38%,#e2c3ff 50%,#8536d6 62%,#2c0f4d 100%);}
   .rarity-stellar{background:linear-gradient(155deg,#7a3d0a 0%,#e2841f 30%,#ffe2a6 48%,#ffb545 58%,#c9670f 75%,#5c2a05 100%);}
-  .icon-badge.rarity-beskar::before, .icon-badge.rarity-stellar::before{
+  .rarity-kyber{background:linear-gradient(155deg,#4a2d73 0%,#a06be0 35%,#f0e2ff 50%,#c39bff 65%,#3a1f5c 100%);} /* placeholder gradient, see --r-kyber above */
+  .icon-badge.rarity-beskar::before, .icon-badge.rarity-stellar::before, .icon-badge.rarity-kyber::before{
     content:'';position:absolute;inset:0;z-index:0;
     background:linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.55) 46%, transparent 58%);
     mix-blend-mode:overlay;
@@ -335,7 +339,7 @@
   .badge-half{position:absolute;inset:0;z-index:0;}
   .badge-half-owned{clip-path:polygon(0 0, 100% 0, 0 100%);}
   .badge-half-req{clip-path:polygon(100% 0, 100% 100%, 0 100%);}
-  .badge-half.rarity-beskar::after, .badge-half.rarity-stellar::after{
+  .badge-half.rarity-beskar::after, .badge-half.rarity-stellar::after, .badge-half.rarity-kyber::after{
     content:'';position:absolute;inset:0;
     background:linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.55) 46%, transparent 58%);
     mix-blend-mode:overlay;
@@ -404,6 +408,7 @@
   .droid-cell.K{color:var(--r-beskar);}
   .droid-cell.X{color:var(--r-galactic);}
   .droid-cell.S{color:var(--r-stellar);}
+  .droid-cell.Y{color:var(--r-kyber);}
 
   .pip-row{display:flex;gap:6px;align-items:center;flex:0 0 auto;}
   .pip{
@@ -419,6 +424,7 @@
   .pip.filled.K{background:var(--r-beskar);}
   .pip.filled.X{background:var(--r-galactic);}
   .pip.filled.S{background:var(--r-stellar);}
+  .pip.filled.Y{background:var(--r-kyber);}
   .pip.next{box-shadow:0 0 0 2px var(--amber);border-color:var(--amber);}
 
   .status-badge{
@@ -1484,7 +1490,7 @@
       <p class="rebirth-sub">That means rebirths 1 through <span id="rsThroughLevel">?</span> are complete — every droid at those levels gets marked owned, and the current level is set to <span id="rsThroughLevel2">?</span>. Fix the number below first if it looks wrong.</p>
       <div class="rs-confirm-row">
         <label for="rsManualRank">Rank</label>
-        <input type="number" id="rsManualRank" min="1" max="35">
+        <input type="number" id="rsManualRank" min="1" max="40">
         <button class="btn on" id="rsApply">Apply</button>
         <button class="btn" id="rsRecalib">Box was wrong — redraw</button>
         <button class="btn" id="rsCancelApply">Cancel</button>
@@ -1818,7 +1824,7 @@ async function handleRename(nk, newVal){
 
 /* ---------------- RENDER: LEGEND ---------------- */
 function renderLegend(){
-  const order = ["B","G","D","R","K","X","S"];
+  const order = RARITY_ORDER; // was a hardcoded ["B",...,"S"] that silently dropped Kyber ("Y") when it was added
   const legendEl = getEl('legend');
   legendEl.innerHTML = order.map(code=>{
     return '<span class="item"><span class="dot ' + RCLASS[code] + '"></span>' + RNAME[code] + '</span>';
@@ -2061,7 +2067,7 @@ function renderRebirthPanel(){
   });
 
   let html = '';
-  for(let rank=0; rank<=6; rank++){
+  for(let rank=0; rank<RARITY_ORDER.length; rank++){ // was hardcoded <=6, silently dropping Kyber (rank 7) ceiling droids
     const nks = tiers[rank];
     if(!nks || !nks.length) continue;
     nks.sort((a,b)=> DROID_INDEX[a].display.localeCompare(DROID_INDEX[b].display));
@@ -2676,16 +2682,22 @@ document.getElementById('bgDimRange').addEventListener('change', async (e)=>{
   renderStats();
   renderList();
 
-  // Listen for store changes from overlays (e.g. marking from overlay.html or rebirth-requirements-overlay.html)
-  window.overlayAPI.onStoreChanged(({ key, value })=>{
-    if(key === 'rebirth-ownedRank-v2'){ ownedRank = value || {}; renderList(); renderStats(); }
-    else if(key === 'rebirth-activeCycle'){ activeCycle = value || 1; renderList(); renderStats(); }
-    else if(key === 'rebirth-nameMerges' || key === 'rebirth-displayOverrides'){
-      if(key === 'rebirth-nameMerges') nameMerges = value || {};
-      else displayOverrides = value || {};
-      buildIndex(); renderList(); renderStats();
-    }
-  });
+  // Listen for store changes from overlays (e.g. marking from overlay.html or rebirth-requirements-overlay.html).
+  // Guarded like every other window.overlayAPI use in this app (see e.g.
+  // rebirth-level-detect.js) — absent when tracker.html is opened in a plain
+  // browser, which CLAUDE.md documents as a normal smoke-testing workflow;
+  // without the guard this threw an uncaught TypeError at the end of init().
+  if(window.overlayAPI){
+    window.overlayAPI.onStoreChanged(({ key, value })=>{
+      if(key === 'rebirth-ownedRank-v2'){ ownedRank = value || {}; renderList(); renderStats(); }
+      else if(key === 'rebirth-activeCycle'){ activeCycle = value || 1; renderList(); renderStats(); }
+      else if(key === 'rebirth-nameMerges' || key === 'rebirth-displayOverrides'){
+        if(key === 'rebirth-nameMerges') nameMerges = value || {};
+        else displayOverrides = value || {};
+        buildIndex(); renderList(); renderStats();
+      }
+    });
+  }
 })();
 </script>
 <script src="node_modules/tesseract.js/dist/tesseract.min.js"></script>

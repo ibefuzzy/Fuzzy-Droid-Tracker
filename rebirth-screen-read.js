@@ -47,6 +47,7 @@
 
   let stream = null, video = null, region = null;
   let starting = false; // true while a getDisplayMedia()/picker request is in flight
+  let confirming = false; // true while readRegion() is in flight, guards double-clicking Confirm
   let worker = null, workerFailed = false;
   let savedRegion = null; // { xFrac, yFrac, wFrac, hFrac, videoW, videoH } | null
 
@@ -171,17 +172,27 @@
     getEl('rsCalibRedo').onclick = ()=>{ sel = null; redraw(); refreshInfo(); };
     getEl('rsCalibCancel').onclick = closeAll;
     getEl('rsCalibConfirm').onclick = async ()=>{
-      region = sel;
-      savedRegion = {
-        xFrac: sel.x / canvas.width,
-        yFrac: sel.y / canvas.height,
-        wFrac: sel.w / canvas.width,
-        hFrac: sel.h / canvas.height,
-        videoW: canvas.width,
-        videoH: canvas.height
-      };
-      await storeSet(REGION_KEY, savedRegion);
-      await readRegion();
+      // Guards a double-click racing two concurrent readRegion() calls: both
+      // would see ensureWorker()'s `worker` as still null and each create
+      // their own Tesseract worker (orphaning one, since it's never
+      // terminated either way), and both would touch the shared `video` var
+      // — one call's stopSharing() setting it null while the other is still
+      // mid-drawImage() on it.
+      if(confirming) return;
+      confirming = true;
+      try{
+        region = sel;
+        savedRegion = {
+          xFrac: sel.x / canvas.width,
+          yFrac: sel.y / canvas.height,
+          wFrac: sel.w / canvas.width,
+          hFrac: sel.h / canvas.height,
+          videoW: canvas.width,
+          videoH: canvas.height
+        };
+        await storeSet(REGION_KEY, savedRegion);
+        await readRegion();
+      } finally{ confirming = false; }
     };
 
     video.requestVideoFrameCallback ? video.requestVideoFrameCallback(()=>{ redraw(); refreshInfo(); }) : (()=>{ redraw(); refreshInfo(); })();
@@ -233,7 +244,7 @@
     getEl('rsConfirmCycleLabel').textContent = 'Cycle ' + cycle;
 
     const input = getEl('rsManualRank');
-    const maxLevel = CYCLES[cycle] ? CYCLES[cycle].length : 40;
+    const maxLevel = CYCLES[cycle] ? cycleRealLevelCount(cycle) : 40;
     input.value = (guess && guess >= 1 && guess <= maxLevel) ? guess : '';
 
     function updateThroughLabels(){
@@ -249,7 +260,7 @@
     getEl('rsRecalib').onclick = ()=>{ closeAll(); start(true); };
     getEl('rsApply').onclick = async ()=>{
       const n = parseInt(input.value, 10);
-      const maxLevel = CYCLES[cycle] ? CYCLES[cycle].length : 40;
+      const maxLevel = CYCLES[cycle] ? cycleRealLevelCount(cycle) : 40;
       if(!n || n < 1 || n > maxLevel){ alert('Enter a level between 1 and ' + maxLevel + '.'); return; }
       const through = n - 1;
       // Check cycle completion once for the whole batch, not once per row:

@@ -15,13 +15,14 @@
     --r-beskar: #b9c2cc;
     --r-galactic: #c96bf2;
     --r-stellar: #e08a3c;
+    --r-kyber: #d0a0ff; /* placeholder, see timers.html --kyber */
     --rarity-default: #9aa39d;
     --rarity-rare: #4fa3e8;
     --rarity-epic: #b06cf2;
     --rarity-legendary: #f4a93b;
     --rarity-mythic: #ff4d6d;
-    --accent: #b06cf2; /* v1.9.0: this overlay's own lightsaber color — purple */
-    --sw-rgb: 176,108,242;
+    --accent: #d4af6a; /* pre-JS fallback, matches the mando border skin (this overlay's actual default, main.js's rebirthReqBorder) — was a stale v1.9.0 SABER_COLORS purple left over from before the v1.10.0 border-skin system replaced it */
+    --sw-rgb: 212,175,106; /* pre-JS fallback, matches mando (see --accent above) */
   }
   html,body{
     margin:0; padding:0; background:transparent; overflow:hidden;
@@ -229,7 +230,7 @@
      same pattern as declutter.html.
   --------------------------------------------------------------------------- */
 
-  const DOT_COLOR = { B:'var(--r-base)', G:'var(--r-gold)', D:'var(--r-diamond)', R:'var(--r-rainbow2)', K:'var(--r-beskar)', X:'var(--r-galactic)', S:'var(--r-stellar)' };
+  const DOT_COLOR = { B:'var(--r-base)', G:'var(--r-gold)', D:'var(--r-diamond)', R:'var(--r-rainbow2)', K:'var(--r-beskar)', X:'var(--r-galactic)', S:'var(--r-stellar)', Y:'var(--r-kyber)' };
 
   let currentCycle = 1;
   let ownedRankLocal = {};

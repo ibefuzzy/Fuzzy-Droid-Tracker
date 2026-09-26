@@ -188,3 +188,35 @@ test('icons-data.js declares exactly one top-level const, named ICONS', () => {
     `certainly orphaned data nothing loads (see comment above this test)`);
   assert.equal(topLevelConsts[0][1], 'ICONS', 'the one top-level const must be named ICONS — every window reads that name');
 });
+
+/* Guards against a real incident found during the 2026-09-27 full-project
+   bug sweep: when Kyber ("Y") was added to RARITY_ORDER for the level-40
+   expansion, every CSS rule and JS color map keyed by rarity code across
+   tracker.html/overlay.html/declutter.html/rebirth-requirements-overlay.html/
+   sneak-preview.html needed a new entry added by hand, and several were
+   missed entirely (no --r-kyber variable, no .rarity-kyber gradient,
+   DOT_COLOR maps silently falling back to Base gray, tracker.html's Rebirth
+   Reqs panel looping `rank<=6` and dropping every Kyber-ceiling droid from
+   the panel outright). None of this threw an error or failed an existing
+   test - it just rendered wrong or went missing silently. This test
+   re-derives the CSS class names requirements.js's own RARITY_ORDER implies
+   and confirms every rarity code has them in tracker.html, so the next tier
+   added above Kyber can't repeat this by simply forgetting a spot. */
+test('tracker.html has CSS coverage for every rarity code in RARITY_ORDER', () => {
+  const { loadShared } = require('./helpers/load-shared');
+  const s = loadShared();
+  const RARITY_ORDER = s.run('RARITY_ORDER');
+  const trackerSrc = fs.readFileSync(path.join(ROOT, 'tracker.html'), 'utf8');
+  for (const code of RARITY_ORDER) {
+    for (const selector of [`.pip.filled.${code}`, `.droid-cell.${code}`, `.rebirth-tier-label.${code}`, `.rb-name.${code}`]) {
+      assert.ok(trackerSrc.includes(selector + '{'), `tracker.html is missing the "${selector}" CSS rule for rarity code "${code}"`);
+    }
+  }
+  // The Rebirth Reqs panel's tier loop and the always-visible legend must
+  // cover every rank, not a hardcoded count that stops matching RARITY_ORDER's
+  // actual length the next time a tier is added.
+  assert.ok(!/for\(let rank=0; rank<=\d+; rank\+\+\)/.test(stripComments(trackerSrc)),
+    'renderRebirthPanel\'s tier loop looks hardcoded to a fixed rank count again - it should iterate RARITY_ORDER.length');
+  assert.ok(!/const order = \[("[A-Z]",?)+\]/.test(stripComments(trackerSrc)),
+    'renderLegend\'s tier order looks hardcoded to a fixed rarity-code list again - it should just be RARITY_ORDER');
+});
