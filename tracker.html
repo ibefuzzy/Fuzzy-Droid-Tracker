@@ -1643,16 +1643,19 @@ async function markRowObtained(row, opts){
 }
 
 /* ---------------- CYCLE COMPLETION: offer to reset + advance ----------------
-   "Covered" here means the same thing renderByLevel()'s "x / 105 covered"
-   counter shows: every one of a cycle's 35 levels x 3 slots has a droid
-   logged (anywhere, any cycle — ownedRank is global by name) at that slot's
-   required rarity or better. Once a mark-increasing action (a genuine
-   upgrade/new claim in setOwned, or markRowObtained's "mark all 3") pushes
-   that from something less than 105 up to exactly 105, offer to clear this
-   cycle's droids and then either roll over to the next one ("Next Cycle")
-   or open the Sneak Preview ("Sneak Preview") — never on an unmark, and
-   never again just from re-rendering an already-105 cycle (the
-   coveredBefore !== 105 guard below). Cycles wrap 5 -> 1.
+   "Covered" here means the same thing renderByLevel()'s "x / N covered"
+   counter shows: every one of a cycle's real (non-placeholder) levels x 3
+   slots has a droid logged (anywhere, any cycle — ownedRank is global by
+   name) at that slot's required rarity or better. N is cycleRealSlotCount(
+   cycle) — 105 today (35 real levels x 3), until levels 36-40 get real data
+   and it becomes 120; nothing here hardcodes 105 so that transition needs no
+   code change. Once a mark-increasing action (a genuine upgrade/new claim in
+   setOwned, or markRowObtained's "mark all 3") pushes coverage from less
+   than N up to exactly N, offer to clear this cycle's droids and then either
+   roll over to the next one ("Next Cycle") or open the Sneak Preview
+   ("Sneak Preview") — never on an unmark, and never again just from
+   re-rendering an already-complete cycle (the coveredBefore !== fullCount
+   guard below). Cycles wrap 5 -> 1.
 
    Deliberately does NOT touch rebirth-currentLevel: that's the OCR/manual
    rebirth counter owned entirely by rebirth-level-detect.js, and the game's
@@ -1693,8 +1696,9 @@ async function resetCycleForSneakPreview(cycle){
 
 let cyclePromptOpen = false;
 async function maybeOfferCycleReset(cycle, coveredBefore){
-  if(coveredBefore === 105) return; // was already fully marked before this action — don't re-nag on every subsequent click
-  if(cycleCoveredCount(cycle, ownedRank) !== 105) return; // not complete yet
+  const fullCount = cycleRealSlotCount(cycle);
+  if(coveredBefore === fullCount) return; // was already fully marked before this action — don't re-nag on every subsequent click
+  if(cycleCoveredCount(cycle, ownedRank) !== fullCount) return; // not complete yet
   if(cyclePromptOpen) return;
   // Browser (no app): plain OK/Cancel — OK resets + advances, Cancel leaves everything as it is.
   if(!(window.overlayAPI && window.overlayAPI.askCycleComplete)){
@@ -1926,12 +1930,12 @@ function droidCellHtml(nk, occEntry, lastNeeded){
 function renderByLevel(){
   getEl('cycleSelect').value = String(activeCycle);
   const covered = cycleCoveredCount(activeCycle, ownedRank);
-  getEl('cycleProgress').textContent = covered + ' / 105 covered';
+  getEl('cycleProgress').textContent = covered + ' / ' + cycleRealSlotCount(activeCycle) + ' covered';
   const q = filterText.trim().toLowerCase();
   const lastNeeded = cycleLastNeededLevel(activeCycle); // once per render, not once per cell
   let rowsHtml = '';
   let anyVisible = false;
-  for(let l=1;l<=35;l++){
+  for(let l=1;l<=cycleRealLevelCount(activeCycle);l++){
     const row = CYCLES[activeCycle][l-1];
     const nks = row.map(d=> normKey(canonicalName(d[1])) );
     const matchesAny = !q || nks.some(nk=> DROID_INDEX[nk].display.toLowerCase().indexOf(q)!==-1 );
@@ -2438,7 +2442,7 @@ document.getElementById('bgDimRange').addEventListener('change', async (e)=>{
     const octx = off.getContext('2d', {willReadFrequently:true});
     const thumbs = [];
     for(let c=1;c<=5;c++){
-      for(let l=1;l<=35;l++){
+      for(let l=1;l<=cycleRealLevelCount(c);l++){
         const row = CYCLES[c][l-1];
         for(let i=0;i<row.length;i++){
           const key = c+'-'+l+'-'+i;

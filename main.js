@@ -1662,6 +1662,28 @@ function migrateUserDataFromOldAppName(){
 }
 
 /* ---------------- lifecycle ---------------- */
+// The 7 overlay/side windows are all created hidden (show:false) — nothing
+// needs them before the user can plausibly reach for a hotkey or toolbar
+// toggle. But 5 of them (overlay/declutter/rebirth-req/sneak, same as
+// tracker.html itself) each independently load and parse their own copy of
+// the ~3.3MB icons-data.js. Creating all 8 windows synchronously at launch
+// made every one of those parses compete for CPU with the main window's own
+// startup at the exact same instant, which is what made the app slow to
+// open — the window appears but stays unresponsive while several renderer
+// processes all tokenize a multi-megabyte JS file at once. Deferring these
+// until the main window has actually finished loading gives tracker.html
+// the CPU to itself first, then lets the rest load in the background once
+// the app already looks and feels open.
+function createSecondaryWindows(){
+  createOverlayWindow();
+  createTimersWindow();
+  createDeclutterWindow();
+  createRebirthReqWindow();
+  createSneakWindow();
+  createCritGuideWindow();
+  createHotkeyListWindow();
+}
+
 app.whenReady().then(()=>{
   migrateUserDataFromOldAppName();
   storeData = loadJson(STORE_PATH, {});
@@ -1671,34 +1693,33 @@ app.whenReady().then(()=>{
   wireIpc();
   setupDisplayMediaHandler();
   createMainWindow();
-  createOverlayWindow();
-  createTimersWindow();
-  createDeclutterWindow();
-  createRebirthReqWindow();
-  createSneakWindow();
-  createCritGuideWindow();
-  createHotkeyListWindow();
-  const hotkeyRegResults = registerAllHotkeys();
   // Wait for the tracker window's own scripts (overlay-controls.js's
-  // onNotify subscription) to actually be wired up before pushing this —
-  // sending it any earlier would go out before anything is listening and
-  // just be lost, since webContents.send() doesn't queue across page loads.
+  // onNotify subscription) to actually be wired up before pushing hotkey
+  // failures to it — sending it any earlier would go out before anything is
+  // listening and just be lost, since webContents.send() doesn't queue
+  // across page loads. Creating the secondary windows and registering
+  // hotkeys from this same callback (instead of immediately, up front) is
+  // what defers their startup cost past the main window's own load — see
+  // comment on createSecondaryWindows above.
   if(mainWindow){
     mainWindow.webContents.once('did-finish-load', ()=>{
+      createSecondaryWindows();
+      const hotkeyRegResults = registerAllHotkeys();
       reportHotkeyRegistrationFailures(hotkeyRegResults);
     });
+  } else {
+    createSecondaryWindows();
+    reportHotkeyRegistrationFailures(registerAllHotkeys());
   }
 
   app.on('activate', ()=>{
     if(BrowserWindow.getAllWindows().length === 0){
       createMainWindow();
-      createOverlayWindow();
-      createTimersWindow();
-      createDeclutterWindow();
-      createRebirthReqWindow();
-      createSneakWindow();
-      createCritGuideWindow();
-      createHotkeyListWindow();
+      if(mainWindow){
+        mainWindow.webContents.once('did-finish-load', createSecondaryWindows);
+      } else {
+        createSecondaryWindows();
+      }
     }
   });
 });

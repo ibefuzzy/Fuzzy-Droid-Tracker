@@ -148,6 +148,7 @@ const ARITY_CHECKED = [
   'cycleCoveredCount', 'cycleDroidKeys', 'removeCycleMarks', 'decideOwnedUpdate',
   'isValidImportPayload', 'getDeclutterList', 'getSneakPreview', 'getUpcomingLevels',
   'getLevelRequirements', 'cycleCeilings', 'cycleLastNeededLevel', 'borderIconSvg',
+  'cycleRealLevelCount', 'cycleRealSlotCount',
 ];
 const PROJECT_JS_AND_HTML = fs.readdirSync(ROOT).filter((f) => {
   if (!(f.endsWith('.js') || f.endsWith('.html'))) return false;
@@ -165,4 +166,25 @@ test('every call site of a shared requirements.js function passes the right numb
       }
     }
   }
+});
+
+/* Guards against a real incident on the sibling web-tracker repo
+   (ibefuzzy/ibefuzzy.github.io, 2026-09-26): a regeneration script wrote
+   fresh icon data for the level-40 expansion into a NEW, never-loaded
+   `const CARD_ICONS = {...}` object appended after the real `const ICONS =
+   {...}`, instead of updating it. Nothing threw (two top-level consts in one
+   file is valid JS) and most rows kept working (the old object was still
+   there), so it went undetected until someone actually executed the file
+   and checked what ICONS really contained. This repo's own icons-data.js
+   currently has exactly one, correctly-named object — this test keeps it
+   that way, so if a future regeneration ever makes the same mistake here,
+   it fails loudly instead of shipping silently. */
+test('icons-data.js declares exactly one top-level const, named ICONS', () => {
+  const src = stripComments(fs.readFileSync(path.join(ROOT, 'icons-data.js'), 'utf8'));
+  const topLevelConsts = [...src.matchAll(/^const\s+([A-Za-z_$][\w$]*)\s*=/gm)];
+  assert.equal(topLevelConsts.length, 1,
+    `icons-data.js has ${topLevelConsts.length} top-level const declarations ` +
+    `(${topLevelConsts.map((m) => m[1]).join(', ')}) — a second one is almost ` +
+    `certainly orphaned data nothing loads (see comment above this test)`);
+  assert.equal(topLevelConsts[0][1], 'ICONS', 'the one top-level const must be named ICONS — every window reads that name');
 });

@@ -21,6 +21,7 @@ function occurrences(s, cycle) {
   const out = [];
   s.CYCLES[cycle].forEach((row, i) => {
     row.forEach(([code, name], slot) => {
+      if (code === '?') return; // placeholder level (36-40, pending real data) — not a real occurrence
       out.push({ level: i + 1, slot, code, rank: s.rankOf(code), nk: s.normKey(s.canonicalName(name)) });
     });
   });
@@ -29,24 +30,32 @@ function occurrences(s, cycle) {
 
 /* ---------------- data shape ---------------- */
 
-test('every cycle has 35 levels of exactly 3 valid [rarity, name] slots', () => {
+test('every cycle has 40 levels: 35 real + 3 valid slots each, then placeholders until real data lands', () => {
   const s = fresh();
   for (let c = 1; c <= 5; c++) {
-    assert.equal(s.CYCLES[c].length, 35, `cycle ${c} level count`);
+    assert.equal(s.CYCLES[c].length, 40, `cycle ${c} level count`);
+    const realCount = s.cycleRealLevelCount(c);
+    assert.equal(realCount, 35, `cycle ${c} real (non-placeholder) level count`);
     s.CYCLES[c].forEach((row, i) => {
       assert.equal(row.length, 3, `cycle ${c} level ${i + 1} slot count`);
+      const isPlaceholderLevel = i >= realCount;
       for (const [code, name] of row) {
-        assert.ok(s.rankOf(code) >= 0, `unknown rarity "${code}" at cycle ${c} level ${i + 1}`);
-        assert.ok(typeof name === 'string' && name.trim().length > 0, `empty name at cycle ${c} level ${i + 1}`);
+        if (isPlaceholderLevel) {
+          assert.equal(code, '?', `cycle ${c} level ${i + 1} should still be a placeholder slot`);
+        } else {
+          assert.ok(s.rankOf(code) >= 0, `unknown rarity "${code}" at cycle ${c} level ${i + 1}`);
+          assert.ok(typeof name === 'string' && name.trim().length > 0, `empty name at cycle ${c} level ${i + 1}`);
+        }
       }
     });
   }
 });
 
-test('no level asks for the same droid twice', () => {
+test('no real level asks for the same droid twice', () => {
   const s = fresh();
   for (let c = 1; c <= 5; c++) {
     s.CYCLES[c].forEach((row, i) => {
+      if (row[0][0] === '?') return; // placeholder level — all 3 slots share the same "????" sentinel by design
       const nks = row.map(([, name]) => s.normKey(name));
       assert.equal(new Set(nks).size, 3, `cycle ${c} level ${i + 1} repeats a droid: ${nks.join(', ')}`);
     });
@@ -125,7 +134,21 @@ test('SELL rule: each droid has exactly one last-needed occurrence per cycle, an
 test('getLevelRequirements rejects out-of-range levels', () => {
   const s = fresh();
   assert.equal(s.getLevelRequirements(1, 0, {}), null);
-  assert.equal(s.getLevelRequirements(1, 36, {}), null);
+  assert.equal(s.getLevelRequirements(1, 41, {}), null); // past even the placeholder levels
+});
+
+test('getLevelRequirements treats still-placeholder levels (36-40) as unavailable, not "????" garbage', () => {
+  // Regression: CYCLES[cycle].length is 40 (the level-40 expansion), but
+  // levels 36-40 are still "?" placeholders pending real droid data. Before
+  // cycleRealLevelCount existed, getLevelRequirements bounded itself on the
+  // raw array length and would happily hand back a row of literal "????"
+  // droids the moment a player's rebirth level reached 36 - which, as of
+  // the 2026-09-26 game patch, is imminent. It must return null instead,
+  // exactly like a truly out-of-range level, until real data replaces them.
+  const s = fresh();
+  for (const level of [36, 37, 38, 39, 40]) {
+    assert.equal(s.getLevelRequirements(1, level, {}), null, `level ${level} should be unavailable, not placeholder data`);
+  }
 });
 
 test('getLevelRequirements marks a slot owned when the owned rank is at or above the required rank', () => {
@@ -161,6 +184,18 @@ test('getUpcomingLevels wraps cycle 5 back to cycle 1', () => {
   const entries = s.getUpcomingLevels(5, 35, {}, 4);
   assert.deepEqual(plain(entries.map((b) => b.cycle)), [1, 1, 1, 1]);
   assert.deepEqual(plain(entries.map((b) => b.level)), [1, 2, 3, 4]);
+});
+
+test('getUpcomingLevels wraps to the next cycle at the last REAL level, not the raw array length', () => {
+  // Same regression as getLevelRequirements above, but for the "Upcoming RB
+  // Req's" HUD: currentLevel 32-35 is exactly where count=4 would otherwise
+  // walk into the still-placeholder levels 36-40. It must wrap into cycle 2
+  // early instead of surfacing placeholder rows.
+  const s = fresh();
+  const entries = s.getUpcomingLevels(1, 32, {}, 4);
+  assert.deepEqual(plain(entries.map((b) => b.level)), [33, 34, 35, 1]);
+  assert.deepEqual(plain(entries.map((b) => b.cycle)), [1, 1, 1, 2]);
+  for (const e of entries) assert.ok(e.droids, `level ${e.cycle}-${e.level} should have real droids, not null`);
 });
 
 /* ---------------- Safe to Retire (declutter) ---------------- */

@@ -99,6 +99,28 @@ function cycleCeilings(cycle){
   return ceilings;
 }
 
+/** Number of levels in a cycle that have real data — i.e. before the first
+    placeholder level (code "?"), if any. Levels 36-40 are placeholders
+    pending real droid data as of the 2026-09-26 level-40 expansion.
+    getLevelRequirements/getUpcomingLevels use this instead of
+    CYCLES[cycle].length so a still-placeholder level is treated as "not
+    reached yet" (same as out-of-range) instead of handing back a "????"
+    row to the player. Once real data replaces the placeholders this
+    naturally returns the full length with no code change needed. */
+function cycleRealLevelCount(cycle){
+  const rows = CYCLES[cycle];
+  if(!rows) return 0;
+  for(let l=0;l<rows.length;l++){
+    if(rows[l][0][0] === '?') return l;
+  }
+  return rows.length;
+}
+
+/** Number of real (non-placeholder) rebirth slots in a cycle — cycleRealLevelCount(cycle) x 3. 105 today, until levels 36-40 have real data. Used for "covered / N" and cycle-complete checks so they don't hardcode a number that stops being true the moment that data arrives. */
+function cycleRealSlotCount(cycle){
+  return cycleRealLevelCount(cycle) * 3;
+}
+
 /* ---------------- OVERLAY: LEVEL-BASED REQUIREMENTS ----------------
    Corrected model (2026-09-18): "rebirth N" is level N (1-35) of the active
    cycle, not a rarity tier. Each level has exactly 3 [rarityCode, name]
@@ -114,7 +136,7 @@ function cycleCeilings(cycle){
    cycle/other cycles) — purely informational, doesn't change what's shown. */
 /** Get the 3 droids required for one specific rebirth level. Returns [{nk, display, code, rank, owned, ownedRankValue, cycle, level, slot}] or null if level is invalid. */
 function getLevelRequirements(cycle, level, ownedRank){
-  const cycleLen = CYCLES[cycle] ? CYCLES[cycle].length : 0;
+  const cycleLen = cycleRealLevelCount(cycle);
   if(level < 1 || level > cycleLen) return null;
   const row = CYCLES[cycle][level-1];
   return row.map((d,i)=>{
@@ -157,7 +179,7 @@ function getUpcomingLevels(cycle, currentLevel, ownedRank, count){
   let workingLevel = Math.max(0, currentLevel) + 1;
 
   while(out.length < count){
-    const cycleLen = CYCLES[workingCycle] ? CYCLES[workingCycle].length : 0;
+    const cycleLen = cycleRealLevelCount(workingCycle);
     if(workingLevel > cycleLen){
       workingCycle = nextCycleOf(workingCycle);
       workingLevel = 1;
@@ -366,13 +388,20 @@ function borderIconSvg(key, size){
    now just call these and handle the storeSet()/render()/toast side effects
    around them. Behavior is unchanged; see test/requirements.test.js. */
 
-/* How many of a cycle's 105 slots (35 levels x 3) are covered by ownedRank
-   (global, keyed by name) at that slot's required rarity or better. */
-/** Count how many of a cycle's 105 rebirth slots are covered by owned droids at the required rarity or better. Returns 0–105 integer. */
+/* How many of a cycle's real rebirth slots (cycleRealLevelCount(cycle) x 3 —
+   105 today, while levels 36-40 are still "?" placeholders) are covered by
+   ownedRank (global, keyed by name) at that slot's required rarity or
+   better. */
+/** Count how many of a cycle's real rebirth slots are covered by owned droids at the required rarity or better. Returns 0–(cycleRealLevelCount(cycle)*3) integer. */
 function cycleCoveredCount(cycle, ownedRank){
   let covered = 0;
   CYCLES[cycle].forEach(row=>{
     row.forEach(d=>{
+      // Skip placeholder droids (code = "?") — same as cycleDroidKeys/
+      // cycleCeilings/buildIndex, so this stays correct once real data
+      // replaces the placeholders instead of relying on normKey("????")
+      // happening to be an empty string nothing ever owns.
+      if(d[0] === '?') return;
       const nk = normKey(canonicalName(d[1]));
       const owned = ownedRank[nk];
       if(owned !== undefined && rankOf(d[0]) <= owned) covered++;

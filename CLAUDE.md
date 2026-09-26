@@ -119,7 +119,7 @@ short on purpose so a fresh session can read it in one pass.
   user closes the running app before launching a new build.
 
 ## Tests
-`npm test` runs Node's built-in test runner over `test/**/*.test.js` (56 tests).
+`npm test` runs Node's built-in test runner over `test/**/*.test.js` (60 tests).
 `test/helpers/load-shared.js` loads droid-data.js + requirements.js into an isolated vm
 context the same way a browser window does. Top-level let/const must be read with
 `run('NAME')`; functions are exposed directly (e.g. `s.cycleCoveredCount(...)`) — see
@@ -143,6 +143,57 @@ getSettings/onSettingsChanged/onHotkeyTriggered/setCritGuideLocked, no storeGet
 plumbing, since it reads no droid/cycle data at all). The tracker itself still
 works normally outside Electron via a localStorage fallback (real progress in
 userData is never touched).
+
+## Current status (2026-09-26): bug-check pass — startup speed + level-40 placeholder gaps
+A full bug-check/declutter pass (prompted by "the app is a little slow to open") found
+and fixed several real issues, all now covered by tests (60 passing, up from 57):
+
+- **Startup speed**: `main.js` created all 8 windows (mainWindow + 7 hidden overlays)
+  synchronously in `app.whenReady()`. 5 of those 8 each independently load and parse
+  their own ~3.3MB `icons-data.js` (overlay/declutter/rebirth-req/sneak, same as
+  tracker.html) — all 5 parses were competing for CPU with the main window's own
+  startup at the same instant. Fixed by deferring the 7 secondary windows (via
+  `createSecondaryWindows()`) until the main window's `did-finish-load` fires, so
+  tracker.html gets the CPU to itself first. If it's still slow after this, profile
+  before assuming it's fixed — this was the most likely cause, not a confirmed fix.
+- **Level-40 placeholder gap (the actual v1.10.5 "36-40 filtered out of all indexing"
+  claim below was only half true)**: `buildIndex`/`cycleCeilings`/`cycleLastNeededLevel`
+  did skip placeholder (`code === "?"`) levels, but `getLevelRequirements` and
+  `getUpcomingLevels` did not — they bounded themselves on `CYCLES[cycle].length`
+  (40), so once a player's rebirth level reached 32+ (count=4 walks into level 36),
+  the "Upcoming RB Req's" HUD would show literal `"????"` placeholder rows instead of
+  hiding unavailable levels. Given today is the 2026-09-26 patch date this would have
+  hit real players very soon. Fixed with a new `cycleRealLevelCount(cycle)` helper
+  (requirements.js) that both functions now use instead of raw `.length` — it
+  auto-extends to 40 the moment real data replaces the placeholders, no further code
+  change needed then.
+- **Same gap in `cycleCoveredCount`**: didn't skip placeholder droids either. Today it
+  accidentally still worked (`normKey("????")` → `""`, which nothing ever owns), but
+  `tracker.html` also hardcoded the "cycle complete" threshold at `105` (35×3) in two
+  places (the `x / 105 covered` display and the `!== 105` completion check) — once
+  real 36-40 data lands, covered would be able to reach 105 out of the new true total
+  of 120, firing the cycle-complete prompt 15 slots early. Fixed via a new
+  `cycleRealSlotCount(cycle)` helper (`cycleRealLevelCount(cycle) * 3`); both
+  tracker.html sites now use it instead of the literal `105`.
+- **Two more hardcoded-35 loops in tracker.html** (`renderByLevel`'s row loop,
+  `buildReferenceThumbs`' OCR reference-icon builder) would have silently kept
+  ignoring levels 36-40 even after real data was entered, until someone noticed and
+  manually bumped them. Both now use `cycleRealLevelCount()` too. (Left `migrate()`'s
+  own hardcoded `l<=35` alone — that's iterating the old v1 storage format, which
+  never had levels 36-40 keys to migrate; not a bug.)
+- **Test infra**: `test/helpers/load-shared.js`'s `api` object was missing 5 functions
+  that already existed in requirements.js (`cycleCoveredCount`, `cycleDroidKeys`,
+  `removeCycleMarks`, `decideOwnedUpdate`, `isValidImportPayload`) — exactly the
+  "tests can't reach it" failure mode this file's own Rules section warns about, and
+  it had already happened. All 5 are wired up now. Also added a permanent guard
+  (`test/pages.test.js`) checking `icons-data.js` declares exactly one top-level
+  `const`, named `ICONS` — ports the lesson from the sibling web-tracker repo's
+  `CARD_ICONS` incident (2026-09-26, see that repo's
+  `memory/encoding_corruption_playbook.md`): a regeneration script wrote new icon
+  data into a second, never-loaded object instead of the real one, and it shipped
+  silently because two top-level consts in one file isn't a syntax error. This
+  repo's `icons-data.js` was checked and is currently clean (one `ICONS`, 525/525
+  keys) — the new test just keeps it that way.
 
 ## Current status (2026-09-25): v1.10.5 built, pending release
 v1.10.5 (local build, not yet pushed/released) — level expansion 35→40 + Kyber variant
