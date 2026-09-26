@@ -30,22 +30,21 @@ function occurrences(s, cycle) {
 
 /* ---------------- data shape ---------------- */
 
-test('every cycle has 40 levels: 35 real + 3 valid slots each, then placeholders until real data lands', () => {
+test('every cycle has 40 real levels of exactly 3 valid [rarity, name] slots', () => {
+  // The level-40 expansion shipped as "?" placeholders for 36-40 pending the
+  // 2026-09-26 game patch; real Kyber-tier data replaced them on
+  // 2026-09-27, so every level is real again (see cycleRealLevelCount's own
+  // regression test below for the placeholder-skipping mechanism itself,
+  // now exercised with synthetic data since the live data no longer has any).
   const s = fresh();
   for (let c = 1; c <= 5; c++) {
     assert.equal(s.CYCLES[c].length, 40, `cycle ${c} level count`);
-    const realCount = s.cycleRealLevelCount(c);
-    assert.equal(realCount, 35, `cycle ${c} real (non-placeholder) level count`);
+    assert.equal(s.cycleRealLevelCount(c), 40, `cycle ${c} should have no placeholder levels left`);
     s.CYCLES[c].forEach((row, i) => {
       assert.equal(row.length, 3, `cycle ${c} level ${i + 1} slot count`);
-      const isPlaceholderLevel = i >= realCount;
       for (const [code, name] of row) {
-        if (isPlaceholderLevel) {
-          assert.equal(code, '?', `cycle ${c} level ${i + 1} should still be a placeholder slot`);
-        } else {
-          assert.ok(s.rankOf(code) >= 0, `unknown rarity "${code}" at cycle ${c} level ${i + 1}`);
-          assert.ok(typeof name === 'string' && name.trim().length > 0, `empty name at cycle ${c} level ${i + 1}`);
-        }
+        assert.ok(s.rankOf(code) >= 0, `unknown rarity "${code}" at cycle ${c} level ${i + 1}`);
+        assert.ok(typeof name === 'string' && name.trim().length > 0, `empty name at cycle ${c} level ${i + 1}`);
       }
     });
   }
@@ -80,22 +79,27 @@ test('all 62 droids have an explicit rarity class (11 Default / 14 Rare / 18 Epi
 
 test('cycleCeilings records the FIRST level a droid hits its max rarity', () => {
   const s = fresh();
+  // Kyber (2026-09-27 real data) is now the top rarity, so Proto Roller's
+  // ceiling in cycle 1 moved from its old Galactic-at-28 occurrence to its
+  // new Kyber-at-39 one.
   const pr = s.cycleCeilings(1).protoroller;
-  assert.equal(pr.code, 'X'); // Galactic
-  assert.equal(pr.level, 28);
-  assert.equal(pr.slot, 0);
+  assert.equal(pr.code, 'Y'); // Kyber
+  assert.equal(pr.level, 39);
+  assert.equal(pr.slot, 1);
 });
 
 test('cycleLastNeededLevel records the LAST level a droid is needed at any rarity', () => {
   const s = fresh();
-  // Cycle 1 Proto Roller: Galactic at 28, then Beskar again at 31.
-  // Selling it after 28 would leave level 31 unfillable.
-  assert.equal(s.cycleLastNeededLevel(1).protoroller, 31);
+  // Cycle 1 Proto Roller now hits Kyber (its ceiling) at level 39, later
+  // than its old Beskar-at-31 occurrence, so 39 is also its last-needed
+  // level — no reappearance after the ceiling for this droid anymore.
+  assert.equal(s.cycleLastNeededLevel(1).protoroller, 39);
 });
 
-test('13 of the 224 droid/cycle pairs are needed again after first hitting their ceiling', () => {
-  // 43 + 44 + 45 + 43 + 49 droids across cycles 1-5. (README said 223 until
-  // 2026-09-24; the data has always had 224.)
+test('8 of the 238 droid/cycle pairs are needed again after first hitting their ceiling', () => {
+  // 44 + 47 + 48 + 48 + 51 droids across cycles 1-5, after the 2026-09-27
+  // real level 36-40 data (was 224 pairs / 13 reappearing with the old
+  // 35-level data; README said 223 until 2026-09-24 before that).
   const s = fresh();
   let pairs = 0, reappear = 0;
   for (let c = 1; c <= 5; c++) {
@@ -106,8 +110,8 @@ test('13 of the 224 droid/cycle pairs are needed again after first hitting their
       if (last[nk] > ceil[nk].level) reappear++;
     }
   }
-  assert.equal(pairs, 224);
-  assert.equal(reappear, 13);
+  assert.equal(pairs, 238);
+  assert.equal(reappear, 8);
 });
 
 test('SELL rule: each droid has exactly one last-needed occurrence per cycle, and nothing after it', () => {
@@ -126,7 +130,7 @@ test('SELL rule: each droid has exactly one last-needed occurrence per cycle, an
     }
     sellTags += occ.filter((o) => last[o.nk] === o.level).length;
   }
-  assert.equal(sellTags, 224, 'one SELL tag per droid per cycle');
+  assert.equal(sellTags, 238, 'one SELL tag per droid per cycle');
 });
 
 /* ---------------- level requirements ---------------- */
@@ -137,18 +141,24 @@ test('getLevelRequirements rejects out-of-range levels', () => {
   assert.equal(s.getLevelRequirements(1, 41, {}), null); // past even the placeholder levels
 });
 
-test('getLevelRequirements treats still-placeholder levels (36-40) as unavailable, not "????" garbage', () => {
-  // Regression: CYCLES[cycle].length is 40 (the level-40 expansion), but
-  // levels 36-40 are still "?" placeholders pending real droid data. Before
-  // cycleRealLevelCount existed, getLevelRequirements bounded itself on the
-  // raw array length and would happily hand back a row of literal "????"
-  // droids the moment a player's rebirth level reached 36 - which, as of
-  // the 2026-09-26 game patch, is imminent. It must return null instead,
-  // exactly like a truly out-of-range level, until real data replaces them.
+test('getLevelRequirements treats placeholder levels (code "?") as unavailable, not garbage data', () => {
+  // Regression for the mechanism itself (cycleRealLevelCount), kept
+  // independent of whether the live data currently has any placeholder
+  // levels. It did (levels 36-40) from the 40-level expansion until the
+  // 2026-09-27 real-data update replaced them; before cycleRealLevelCount
+  // existed, getLevelRequirements bounded itself on the raw array length
+  // and would hand back a row of literal "????" droids once a player's
+  // rebirth level reached a still-placeholder one. Synthetic data here so
+  // this stays exercised even now that the real cycles have none.
   const s = fresh();
-  for (const level of [36, 37, 38, 39, 40]) {
-    assert.equal(s.getLevelRequirements(1, level, {}), null, `level ${level} should be unavailable, not placeholder data`);
-  }
+  s.run(`CYCLES[1] = CYCLES[1].slice(0, 35).concat([
+    [["?","????"],["?","????"],["?","????"]],
+    [["?","????"],["?","????"],["?","????"]],
+  ])`);
+  assert.equal(s.cycleRealLevelCount(1), 35);
+  assert.ok(s.getLevelRequirements(1, 35, {}), 'the last real level should still work');
+  assert.equal(s.getLevelRequirements(1, 36, {}), null, 'a placeholder level should be unavailable, not placeholder data');
+  assert.equal(s.getLevelRequirements(1, 37, {}), null, 'a placeholder level should be unavailable, not placeholder data');
 });
 
 test('getLevelRequirements marks a slot owned when the owned rank is at or above the required rank', () => {
@@ -172,26 +182,30 @@ test('getUpcomingLevels returns NOW plus the next levels, wrapping into the next
   assert.deepEqual(plain(levels(-3)), [1, 2, 3, 4]); // bad input never shows level 0 or below
   assert.deepEqual(plain(levels(10)), [11, 12, 13, 14]);
   // Cycle complete (or nearly): wraps to cycle 2's levels 1+ instead of
-  // stopping short, so the HUD always shows 4 upcoming levels.
-  assert.deepEqual(plain(levels(33)), [34, 35, 1, 2]);
-  assert.deepEqual(plain(cycles(33)), [1, 1, 2, 2]);
-  assert.deepEqual(plain(levels(35)), [1, 2, 3, 4]);
-  assert.deepEqual(plain(cycles(35)), [2, 2, 2, 2]);
+  // stopping short, so the HUD always shows 4 upcoming levels. With the
+  // 2026-09-27 real level 36-40 data, that boundary is now 40, not 35.
+  assert.deepEqual(plain(levels(38)), [39, 40, 1, 2]);
+  assert.deepEqual(plain(cycles(38)), [1, 1, 2, 2]);
+  assert.deepEqual(plain(levels(40)), [1, 2, 3, 4]);
+  assert.deepEqual(plain(cycles(40)), [2, 2, 2, 2]);
 });
 
 test('getUpcomingLevels wraps cycle 5 back to cycle 1', () => {
   const s = fresh();
-  const entries = s.getUpcomingLevels(5, 35, {}, 4);
+  const entries = s.getUpcomingLevels(5, 40, {}, 4);
   assert.deepEqual(plain(entries.map((b) => b.cycle)), [1, 1, 1, 1]);
   assert.deepEqual(plain(entries.map((b) => b.level)), [1, 2, 3, 4]);
 });
 
 test('getUpcomingLevels wraps to the next cycle at the last REAL level, not the raw array length', () => {
-  // Same regression as getLevelRequirements above, but for the "Upcoming RB
-  // Req's" HUD: currentLevel 32-35 is exactly where count=4 would otherwise
-  // walk into the still-placeholder levels 36-40. It must wrap into cycle 2
-  // early instead of surfacing placeholder rows.
+  // Regression for the mechanism itself (cycleRealLevelCount), kept
+  // independent of whether the live data currently has any placeholder
+  // levels - see the matching getLevelRequirements test above for why.
   const s = fresh();
+  s.run(`CYCLES[1] = CYCLES[1].slice(0, 35).concat([
+    [["?","????"],["?","????"],["?","????"]],
+    [["?","????"],["?","????"],["?","????"]],
+  ])`);
   const entries = s.getUpcomingLevels(1, 32, {}, 4);
   assert.deepEqual(plain(entries.map((b) => b.level)), [33, 34, 35, 1]);
   assert.deepEqual(plain(entries.map((b) => b.cycle)), [1, 1, 1, 2]);
@@ -206,22 +220,27 @@ test('Safe to Retire never lists a droid that was never logged', () => {
 });
 
 test('Safe to Retire waits for the last-needed level, not the ceiling level', () => {
+  // Cycle 2 Opti-Strk: Galactic (rank 5) at level 30, needed again at
+  // Galactic level 33 (one of the 8 reappearing cases post the 2026-09-27
+  // real level 36-40 data — Proto Roller's old cycle-1 example no longer
+  // reappears now that its ceiling moved to Kyber, its last occurrence).
   const s = fresh();
-  const has = (lvl) => s.getDeclutterList(1, lvl, { protoroller: 5 }).some((d) => d.nk === 'protoroller');
-  assert.equal(has(28), false);
+  const has = (lvl) => s.getDeclutterList(2, lvl, { optistrk: 5 }).some((d) => d.nk === 'optistrk');
   assert.equal(has(30), false);
-  assert.equal(has(31), true);
-  const pr = s.getDeclutterList(1, 31, { protoroller: 5 }).find((d) => d.nk === 'protoroller');
-  assert.equal(pr.ownedCode, 'X');
-  assert.equal(pr.rarityClass, 'Legendary');
-  assert.equal(pr.iconKey, '1-28-0'); // icon comes from the ceiling occurrence
+  assert.equal(has(32), false);
+  assert.equal(has(33), true);
+  const os = s.getDeclutterList(2, 33, { optistrk: 5 }).find((d) => d.nk === 'optistrk');
+  assert.equal(os.ownedCode, 'X');
+  assert.equal(os.rarityClass, 'Legendary');
+  assert.equal(os.iconKey, '2-30-0'); // icon comes from the ceiling occurrence
 });
 
 test('Safe to Retire is sorted highest tier first, then by name', () => {
   const s = fresh();
+  const maxRank = s.RARITY_ORDER.length - 1; // Kyber (7) as of the 2026-09-27 real data, not hardcoded
   const ownAll = {};
-  for (const nk of Object.keys(s.cycleLastNeededLevel(1))) ownAll[nk] = 6;
-  const list = s.getDeclutterList(1, 35, ownAll);
+  for (const nk of Object.keys(s.cycleLastNeededLevel(1))) ownAll[nk] = maxRank;
+  const list = s.getDeclutterList(1, s.cycleRealLevelCount(1), ownAll);
   assert.equal(list.length, Object.keys(ownAll).length);
   for (let i = 1; i < list.length; i++) {
     const a = s.RARITY_CLASS_ORDER.indexOf(list[i - 1].rarityClass);

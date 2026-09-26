@@ -11,9 +11,10 @@ reopenable anytime from the **❔ Guide** button in the toolbar.
 
 ## The model this is built on
 
-Each cycle has 35 "rebirth levels," and each level needs exactly 3 specific
-droids at specific rarities (that's the 3-slot rows the tracker's own data is
-built from). "Rebirth 3" means level 3 of whichever cycle you've got selected
+Each cycle has 40 "rebirth levels" (35 original + 5 Kyber-tier levels added
+2026-09-27), and each level needs exactly 3 specific droids at specific
+rarities (that's the 3-slot rows the tracker's own data is built from).
+"Rebirth 3" means level 3 of whichever cycle you've got selected
 in the tracker — not a rarity tier, not the cycle number itself. The HUD's
 top block ("NOW") shows the 3 droids needed for the next level you haven't
 finished yet; the three blocks under it show the next three levels after
@@ -189,7 +190,7 @@ rules as every other click-to-mark control in this app.
 
 ## 🎉 Cycle complete: reset & move to the next
 
-Once every one of a cycle's 105 slots (35 levels x 3 droids) is covered,
+Once every one of a cycle's 120 slots (40 levels x 3 droids) is covered,
 the app asks: **"Would you like to reset progress for this cycle and open
 the next?"**
 
@@ -401,7 +402,7 @@ ask for**, each at the highest colorway that cycle ever needs from it —
 so you know what to start hunting for before you flip over. Cycle 5's
 "next" wraps back around to Cycle 1.
 
-Once a cycle hits 105/105 you get a prompt with two choices — both reset
+Once a cycle hits 120/120 you get a prompt with two choices — both reset
 that cycle's progress:
 - **Next Cycle** — moves the tracker on to the next cycle, same as before.
 - **Sneak Preview** (v1.7.1) — keeps the tracker on the finished cycle (so

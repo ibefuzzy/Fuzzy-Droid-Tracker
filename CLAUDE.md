@@ -144,7 +144,37 @@ plumbing, since it reads no droid/cycle data at all). The tracker itself still
 works normally outside Electron via a localStorage fallback (real progress in
 userData is never touched).
 
-## Current status (2026-09-26): bug-check pass — startup speed + level-40 placeholder gaps
+## Current status (2026-09-27): real level 36-40 / Kyber data ported in — patch is live
+The 2026-09-26 game patch shipped. The sibling web-tracker repo
+(`ibefuzzy/ibefuzzy.github.io`) already had real level 36-40 droid names +
+icons entered (via whatever channel updates that repo), so rather than wait
+on this repo's own Droid Editor tab, that real data was ported straight
+across into `droid-data.js` (all 5 cycles' placeholder `"?"` rows replaced
+with real `["Y", name]` Kyber entries) and `icons-data.js` (75 new
+cycle-level-slot keys, verified byte-for-byte as valid WEBP before writing).
+Every ported droid name already existed in the 62-droid roster (Kyber reuses
+the same pool at a new top rarity) — no DROID_RARITY_CLASS gaps. All the
+`cycleRealLevelCount`/`cycleRealSlotCount` machinery from the prior status
+entry below picked this up automatically: every cycle now reports 40 real
+levels with zero code changes needed there, exactly as designed.
+
+This shifted several computed values that were pinned in tests (Kyber, being
+the new top rarity, is often now what sets a droid's *ceiling*, which can
+push its *last-needed level* later than before — e.g. cycle 1 Proto Roller's
+ceiling moved from Galactic-level-28 to Kyber-level-39, and it no longer
+reappears afterward in that cycle). Total droid/cycle pairs: 224 -> 238;
+reappearing-after-ceiling pairs: 13 -> 8. Tests updated to match, plus two
+of the placeholder-specific regression tests were converted to use synthetic
+placeholder data instead of relying on the live cycles having any (since
+they no longer do) — see test/requirements.test.js. Still 60/60 passing.
+
+**Still placeholder, needs real in-game info (only the user can supply
+this):** `timers.html`'s `--kyber` CSS color (`#d0a0ff`, marked "Placeholder
+— update with actual Kyber in-game color") and the Kyber blueprint timer's
+actual drop schedule (`nextKyber()`, currently a guessed "every hour at
+:20"). The Kyber timer banner is also still forced `display:none` in the
+HTML regardless of settings, pending both of those. README.md's "35
+levels"/"105 slots" model description was updated to 40/120 to match.
 A full bug-check/declutter pass (prompted by "the app is a little slow to open") found
 and fixed several real issues, all now covered by tests (60 passing, up from 57):
 
