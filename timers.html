@@ -6,8 +6,10 @@
 <style>
   :root{
     /* Color palette for blueprint timers (v1.10.5). Stellar and Mythic were
-       re-matched 2026-09-19 against real in-game screenshots. Kyber color
-       is a placeholder ([TBD] — will be updated when game update is live). */
+       re-matched 2026-09-19 against real in-game screenshots. Kyber's
+       SCHEDULE was confirmed 2026-09-26 (see nextKyber() below) but its
+       COLOR is still a placeholder — update once matched against a real
+       in-game screenshot. */
     --stellar: #edb142;
     --rarity-mythic: #ff4d6d;
     --kyber: #d0a0ff;  /* Placeholder — update with actual Kyber in-game color */
@@ -137,7 +139,7 @@
           <span class="b-time" id="mythicTime">--:--</span>
         </div>
       </div>
-      <div class="banner kyber" id="kyberBanner" style="display:none;">
+      <div class="banner kyber" id="kyberBanner">
         <div class="b-icon" title="Kyber Blueprint">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 L20 10 L16 22 L8 22 L4 10 Z"/></svg>
         </div>
@@ -232,11 +234,36 @@
     return next;
   }
 
+  // Confirmed live 2026-09-26: a 24-hour launch event runs the Kyber
+  // blueprint every 5 minutes instead of the normal once-an-hour schedule.
+  // Window is Saturday 2026-09-26 4:00pm through Sunday 2026-09-27 4:00pm,
+  // "local" time — same convention as MISSION_NAME_EPOCH_MS below (the
+  // developer's own clock, not an explicit timezone conversion; this app's
+  // clock is assumed to already be the player's real-world local time,
+  // which is what the in-game schedule is set against). A future event
+  // would get its own window added the same way; this one isn't meant to
+  // recur automatically.
+  const KYBER_EVENT_START_MS = new Date(2026, 8, 26, 16, 0, 0, 0).getTime();
+  const KYBER_EVENT_END_MS = new Date(2026, 8, 27, 16, 0, 0, 0).getTime();
+
   function nextKyber(now){
-    // [Schedule TBD — will be updated when game patch is live]
-    // Placeholder: every hour at :20 (replace with actual schedule once known)
+    const nowMs = now.getTime();
+    if(nowMs >= KYBER_EVENT_START_MS && nowMs < KYBER_EVENT_END_MS){
+      // Event schedule: every 5 minutes on the clock (:00, :05, :10, ...,
+      // :55) - the confirmed live occurrence (4:50pm) falls exactly on
+      // this grid, so no separate epoch offset is needed, same as
+      // nextStellar's minute-of-hour approach above.
+      const next = new Date(now);
+      next.setSeconds(0, 0);
+      const m = next.getMinutes();
+      next.setMinutes(m - (m % 5) + 5);
+      return next;
+    }
+    // Normal schedule (before/after the event window): once per hour, on
+    // the hour. Color still pending real in-game confirmation - see --kyber
+    // in :root above.
     const next = new Date(now);
-    next.setMinutes(20, 0, 0);
+    next.setMinutes(0, 0, 0);
     if(next <= now) next.setHours(next.getHours() + 1);
     return next;
   }

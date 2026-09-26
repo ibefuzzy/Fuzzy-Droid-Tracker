@@ -168,13 +168,23 @@ of the placeholder-specific regression tests were converted to use synthetic
 placeholder data instead of relying on the live cycles having any (since
 they no longer do) — see test/requirements.test.js. Still 60/60 passing.
 
-**Still placeholder, needs real in-game info (only the user can supply
-this):** `timers.html`'s `--kyber` CSS color (`#d0a0ff`, marked "Placeholder
-— update with actual Kyber in-game color") and the Kyber blueprint timer's
-actual drop schedule (`nextKyber()`, currently a guessed "every hour at
-:20"). The Kyber timer banner is also still forced `display:none` in the
-HTML regardless of settings, pending both of those. README.md's "35
-levels"/"105 slots" model description was updated to 40/120 to match.
+README.md's "35 levels"/"105 slots" model description was updated to 40/120
+to match.
+
+**Kyber timer schedule confirmed 2026-09-26** (user reported it live):
+a 24-hour launch event runs the Kyber blueprint every 5 minutes instead of
+hourly, window Saturday 2026-09-26 4:00pm through Sunday 2026-09-27 4:00pm
+(the app's own local clock, same convention as MISSION_NAME_EPOCH_MS — no
+explicit timezone conversion). `nextKyber()` in timers.html now switches
+automatically between the two schedules based on that fixed window — no
+settings toggle needed, and nothing to remember to flip back after the
+event ends. The Kyber banner's forced `display:none` was removed too, so it
+now shows/hides the same way every other banner does. **Still pending:**
+the `--kyber` CSS color is still a placeholder (`#d0a0ff`) — only the
+schedule was confirmed, not the color. If a *future* Kyber-rate event
+happens, it needs its own `KYBER_EVENT_START_MS`/`_END_MS` window added the
+same way; this one was deliberately written as a one-off, not a recurring
+rule.
 A full bug-check/declutter pass (prompted by "the app is a little slow to open") found
 and fixed several real issues, all now covered by tests (60 passing, up from 57):
 
