@@ -10,7 +10,7 @@
        is a placeholder ([TBD] — will be updated when game update is live). */
     --stellar: #edb142;
     --rarity-mythic: #ff4d6d;
-    --kyber: #d0a0ff;  /* Placeholder — update with actual Kyber in-game color */
+    --kyber: #50c878;  /* Confirmed 2026-09-26 from in-game Kyber cards (emerald) */
     --mission: #5ef2a6;
   }
   html,body{
@@ -137,7 +137,7 @@
           <span class="b-time" id="mythicTime">--:--</span>
         </div>
       </div>
-      <div class="banner kyber" id="kyberBanner" style="display:none;">
+      <div class="banner kyber" id="kyberBanner">
         <div class="b-icon" title="Kyber Blueprint">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 L20 10 L16 22 L8 22 L4 10 Z"/></svg>
         </div>
@@ -232,11 +232,29 @@
     return next;
   }
 
+  // Confirmed live 2026-09-26: a 24-hour launch event runs the Kyber
+  // blueprint every 5 minutes instead of the normal once-an-hour schedule.
+  // Window is Saturday 2026-09-26 4:00pm through Sunday 2026-09-27 4:00pm,
+  // "local" time — same convention as MISSION_NAME_EPOCH_MS below. A future
+  // event would get its own window added the same way; this one isn't
+  // meant to recur automatically.
+  const KYBER_EVENT_START_MS = new Date(2026, 8, 26, 16, 0, 0, 0).getTime();
+  const KYBER_EVENT_END_MS = new Date(2026, 8, 27, 16, 0, 0, 0).getTime();
+
   function nextKyber(now){
-    // [Schedule TBD — will be updated when game patch is live]
-    // Placeholder: every hour at :20 (replace with actual schedule once known)
+    const nowMs = now.getTime();
+    if(nowMs >= KYBER_EVENT_START_MS && nowMs < KYBER_EVENT_END_MS){
+      // Event schedule: every 5 minutes on the clock (:00, :05, ..., :55).
+      const next = new Date(now);
+      next.setSeconds(0, 0);
+      const m = next.getMinutes();
+      next.setMinutes(m - (m % 5) + 5);
+      return next;
+    }
+    // Normal schedule (before/after the event window): once per hour, on
+    // the hour.
     const next = new Date(now);
-    next.setMinutes(20, 0, 0);
+    next.setMinutes(0, 0, 0);
     if(next <= now) next.setHours(next.getHours() + 1);
     return next;
   }
@@ -292,9 +310,9 @@
     'D-0': 'mission-icons/d0.png',
     'Mining': 'mission-icons/mining.png',
   };
-  const MISSION_COUNTDOWN_MS = 45 * 60 * 1000;
+  const MISSION_COUNTDOWN_MS = 30 * 60 * 1000; // adjusted for 35-min period; fine-tune if needed
   const MISSION_RUN_DURATION_MS = 5 * 60 * 1000; // each mission stays live/active for 5 minutes before the next countdown starts
-  const MISSION_PERIOD_MS = MISSION_COUNTDOWN_MS + MISSION_RUN_DURATION_MS; // 50 minutes, start-to-start
+  const MISSION_PERIOD_MS = 35 * 60 * 1000; // 35 minutes, start-to-start (updated 2026-09-25)
 
   // A confirmed Stormtrooper (cycle index 0) instant, fixing only the NAME
   // cycle's phase — any correct reference instant works equally well since
@@ -354,13 +372,16 @@
   function playTimerSound(timerType, settings) {
     if (!settings.timerSoundEnabled) return;
 
-    const choice = settings[timerType + 'SoundChoice'];
+    // Map Stellar/Mythic/Kyber timers to the shared 'blueprint' sound settings
+    // (Settings → Timers only has Mission and Blueprint sound groups)
+    const soundKey = timerType === 'mission' ? 'missionSoundChoice' : 'blueprintSoundChoice';
+    const choice = settings[soundKey];
     if (!choice || choice === 'off') return;
 
     // Determine volume: use override if enabled, otherwise use master
     let volume = settings.timerSoundVolume || 0.35;
-    const overrideKey = timerType + 'SoundVolumeOverride';
-    const volumeKey = timerType + 'SoundVolume';
+    const overrideKey = timerType === 'mission' ? 'missionSoundVolumeOverride' : 'blueprintSoundVolumeOverride';
+    const volumeKey = timerType === 'mission' ? 'missionSoundVolume' : 'blueprintSoundVolume';
     if (settings[overrideKey]) {
       volume = settings[volumeKey] || 0.35;
     }

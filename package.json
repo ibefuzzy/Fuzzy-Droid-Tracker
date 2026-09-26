@@ -1,57 +1,70 @@
 {
-  "name": "fuzzys-droid-tracker",
-  "version": "1.10.5",
-  "description": "Fuzzy's Droid Tracker — a Droid Tycoon rebirth tracker with an always-on-top requirements HUD",
-  "main": "main.js",
-  "author": "Fuzzy",
-  "private": true,
-  "scripts": {
-    "start": "electron .",
-    "test": "node --test \"test/**/*.test.js\"",
-    "dist": "electron-builder"
-  },
-  "dependencies": {
-    "tesseract.js": "^5.1.0"
-  },
-  "devDependencies": {
-    "electron": "^32.0.0",
-    "electron-builder": "^25.0.0"
-  },
-  "build": {
-    "appId": "com.fuzzy.droidtracker",
-    "productName": "Fuzzy's Droid Tracker",
-    "directories": {
-      "output": "release"
-    },
-    "files": [
-      "**/*",
-      "!_orig.html",
-      "!dist/**",
-      "!release/**",
-      "!safe-to-retire-icons/**",
-      "!safe-to-retire-icons*.zip",
-      "!src/**",
-      "!test/**",
-      "!.claude/**",
-      "!CLAUDE.md",
-      "!.gitignore",
-      "!build-log.txt",
-      "!build-release.bat",
-      "!gh-check.*",
-      "!node_modules/**",
-      "node_modules/tesseract.js/LICENSE.md",
-      "node_modules/tesseract.js/dist/tesseract.min.js",
-      "node_modules/tesseract.js/dist/tesseract.min.js.LICENSE.txt"
-    ],
-    "electronLanguages": ["en-US"],
-    "win": {
-      "target": "portable"
-    },
-    "mac": {
-      "target": "dmg"
-    },
-    "linux": {
-      "target": "AppImage"
-    }
-  }
+    "name":  "fuzzys-droid-tracker",
+    "version":  "1.10.9",
+    "description":  "Fuzzy\u0027s Droid Tracker — a Droid Tycoon rebirth tracker with an always-on-top requirements HUD",
+    "main":  "main.js",
+    "author":  "Fuzzy",
+    "private":  true,
+    "scripts":  {
+                    "start":  "electron .",
+                    "test":  "node --test \"test/**/*.test.js\"",
+                    "dist":  "electron-builder"
+                },
+    "dependencies":  {
+                         "puppeteer":  "^25.12.0",
+                         "sharp":  "^0.35.4",
+                         "tesseract.js":  "^5.1.0"
+                     },
+    "devDependencies":  {
+                            "electron":  "^32.0.0",
+                            "electron-builder":  "^25.0.0"
+                        },
+    "build":  {
+                  "appId":  "com.fuzzy.droidtracker",
+                  "productName":  "Fuzzy\u0027s Droid Tracker",
+                  "directories":  {
+                                      "output":  "release"
+                                  },
+                  "files":  [
+                                "**/*",
+                                "!_orig.html",
+                                "!dist/**",
+                                "!release/**",
+                                "!safe-to-retire-icons/**",
+                                "!safe-to-retire-icons*.zip",
+                                "!src/**",
+                                "!test/**",
+                                "!.claude/**",
+                                "!CLAUDE.md",
+                                "!.gitignore",
+                                "!build-log.txt",
+                                "!build-release.bat",
+                                "!gh-check.*",
+                                "!droid-cards/**",
+                                "!droidex-card-screenshots/**",
+                                "!droid-data-external/**",
+                                "!card-full-data.js",
+                                "!extract-droid-cards.js",
+                                "!build-card-icons.js",
+                                "!capture-droid-variants.js",
+                                "!scrape-droidex.js",
+                                "!DROIDEX_IMAGE_IMPORT_GUIDE.md",
+                                "!node_modules/**",
+                                "node_modules/tesseract.js/LICENSE.md",
+                                "node_modules/tesseract.js/dist/tesseract.min.js",
+                                "node_modules/tesseract.js/dist/tesseract.min.js.LICENSE.txt"
+                            ],
+                  "electronLanguages":  [
+                                            "en-US"
+                                        ],
+                  "win":  {
+                              "target":  "portable"
+                          },
+                  "mac":  {
+                              "target":  "dmg"
+                          },
+                  "linux":  {
+                                "target":  "AppImage"
+                            }
+              }
 }

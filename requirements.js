@@ -114,7 +114,7 @@ function cycleCeilings(cycle){
    cycle/other cycles) — purely informational, doesn't change what's shown. */
 /** Get the 3 droids required for one specific rebirth level. Returns [{nk, display, code, rank, owned, ownedRankValue, cycle, level, slot}] or null if level is invalid. */
 function getLevelRequirements(cycle, level, ownedRank){
-  const cycleLen = CYCLES[cycle] ? CYCLES[cycle].length : 0;
+  const cycleLen = cycleRealLevelCount(cycle);
   if(level < 1 || level > cycleLen) return null;
   const row = CYCLES[cycle][level-1];
   return row.map((d,i)=>{
@@ -157,7 +157,7 @@ function getUpcomingLevels(cycle, currentLevel, ownedRank, count){
   let workingLevel = Math.max(0, currentLevel) + 1;
 
   while(out.length < count){
-    const cycleLen = CYCLES[workingCycle] ? CYCLES[workingCycle].length : 0;
+    const cycleLen = cycleRealLevelCount(workingCycle);
     if(workingLevel > cycleLen){
       workingCycle = nextCycleOf(workingCycle);
       workingLevel = 1;
@@ -373,6 +373,11 @@ function cycleCoveredCount(cycle, ownedRank){
   let covered = 0;
   CYCLES[cycle].forEach(row=>{
     row.forEach(d=>{
+      // Skip placeholder droids (code = "?") — same as cycleDroidKeys/
+      // cycleCeilings/buildIndex, so this stays correct once real data
+      // replaces the placeholders instead of relying on normKey("????")
+      // happening to be an empty string nothing ever owns.
+      if(d[0] === '?') return;
       const nk = normKey(canonicalName(d[1]));
       const owned = ownedRank[nk];
       if(owned !== undefined && rankOf(d[0]) <= owned) covered++;
@@ -426,4 +431,18 @@ function isValidImportPayload(parsed){
   const isObj = v => v !== null && typeof v === 'object' && !Array.isArray(v);
   if(!isObj(parsed) || !isObj(parsed.ownedRank)) return false;
   return !Object.values(parsed.ownedRank).some(r => !Number.isInteger(r) || r < 0 || r >= RARITY_ORDER.length);
+}
+
+/** Returns the count of real (non-placeholder) levels in a cycle. Stops at the first `"?"` placeholder. */
+function cycleRealLevelCount(cycle){
+  if(!CYCLES[cycle]) return 0;
+  for(let l=0; l<CYCLES[cycle].length; l++){
+    if(CYCLES[cycle][l][0][0] === '?') return l;
+  }
+  return CYCLES[cycle].length;
+}
+
+/** Returns the count of real (non-placeholder) droid slots in a cycle: cycleRealLevelCount(cycle) * 3. */
+function cycleRealSlotCount(cycle){
+  return cycleRealLevelCount(cycle) * 3;
 }
