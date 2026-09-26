@@ -144,6 +144,72 @@ plumbing, since it reads no droid/cycle data at all). The tracker itself still
 works normally outside Electron via a localStorage fallback (real progress in
 userData is never touched).
 
+## Current status (2026-09-27): full-project bug sweep
+
+After the level-40/Kyber data went in (see block below), ran a full-scope
+bug review across every file — 5 parallel audits (main.js; preload.js +
+overlay-controls.js + settings-tabs.js; the two OCR files; tracker.html; the
+7 overlay HTML pages), each independently verified before acting. Also live
+gameplay caught a real data error: cycle 5 level 36 had the wrong 3 droids
+entirely (`Roll-R`/`Hov-R`/`Mouse`, a Default-class droid where every other
+cycle has 3 Rare-class droids at that level) — confirmed in-game as
+`BDX Explorer`/`2BB`/`A-LT` (same as cycle 1's level 36), fixed in both
+droid-data.js and icons-data.js (icons are keyed by cycle-level-slot
+position, not droid name, so the icon needed swapping too, not just the name).
+
+**Fixed:**
+- Kyber had zero color/CSS anywhere — no `--r-kyber`, no `.rarity-kyber`,
+  none of `.pip.filled.Y`/`.droid-cell.Y`/`.rebirth-tier-label.Y`/`.rb-name.Y`
+  in tracker.html; `DOT_COLOR` maps in overlay.html/rebirth-requirements-
+  overlay.html/sneak-preview.html had no `Y` (fell back to Base gray);
+  declutter.html's hand-written ternary fell through to Stellar orange for
+  Kyber too. All fixed with a placeholder `--r-kyber` (same value as
+  timers.html's `--kyber` — **update both together** once the real color is
+  confirmed).
+- tracker.html's Rebirth Reqs panel looped `rank<=6`, silently dropping every
+  Kyber-ceiling droid (~15/cycle) from the panel. `renderLegend()`'s tier
+  order was hardcoded too. Both now derive from `RARITY_ORDER` directly —
+  added a permanent test (`test/pages.test.js`) checking every rarity code
+  has full tracker.html CSS coverage and that neither is hardcoded again, so
+  the next tier added above Kyber can't repeat this silently.
+- hotkey-list.html was missing all 11 v1.10.3 "mark"/"navigate" hotkey rows
+  (present in DEFAULT_SETTINGS, counted by main.js's window-sizing, but
+  never rendered — a permanent blank gap in the window). Added them.
+- main.js's single-instance lock didn't actually gate `app.whenReady()` —
+  `app.quit()` only requests a quit, doesn't synchronously abort the module,
+  so a second instance could still race the first to load/write the store.
+  Now explicitly gated on the captured lock result.
+- Tesseract worker race in both OCR files' calibration Confirm buttons — no
+  busy-guard meant a double-click could orphan a worker and, in
+  rebirth-screen-read.js, race two calls over the same shared `video`
+  variable. Added the same busy-flag pattern already used for the "start"
+  buttons in both files. Also fixed both files' stale
+  `CYCLES[cycle].length` → `cycleRealLevelCount()` (harmless today, was a
+  landmine for the next placeholder batch).
+- rebirth-requirements-overlay.html's pre-JS CSS fallback (`--accent`,
+  `--sw-rgb`) was a stale v1.9.0 purple; fixed to match its actual default
+  border skin (`mando`, tan).
+
+61/61 tests passing (was 60/60; added the CSS-coverage guard above).
+
+**Not fixed — flagged for a scoping decision, not a quick patch:** the
+entire v1.10.3 hotkey-based "mark selected droid"/"navigate" feature is dead
+end-to-end. Hotkeys broadcast correctly from main.js, and main.js even has
+real backing IPC handlers (`overlay:markDroid`/`overlay:markLevel`,
+correctly implemented) — but `preload.js` never exposes them on
+`window.overlayAPI`, and no overlay's `onHotkeyTriggered` handler checks for
+any of the 11 mark/navigate action names. Confirmed independently by two
+separate audits. Implementing it properly needs a real "currently selected
+droid/cell" concept in at least two overlay UIs (overlay.html and
+rebirth-requirements-overlay.html), not just bridging the missing IPC calls
+— treat as a real feature-scope conversation with the user before touching
+it, not something to guess-implement.
+
+Also flagged, not touched: crit-guide-overlay.html's hardcoded purchase-order
+"Eff" column isn't strictly monotonic at two points (rows 2-3, 35-36) —
+possibly a data slip in the reference table, needs the user's judgment on
+the actual correct order rather than a guess at hardcoded strategy content.
+
 ## Current status (2026-09-27): real level 36-40 / Kyber data ported in — patch is live
 The 2026-09-26 game patch shipped. The sibling web-tracker repo
 (`ibefuzzy/ibefuzzy.github.io`) already had real level 36-40 droid names +
