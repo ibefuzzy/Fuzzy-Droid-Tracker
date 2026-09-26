@@ -5,17 +5,12 @@
 <title>Fuzzy's Droid Tracker — Timers</title>
 <style>
   :root{
-    /* Stellar and Galactic re-matched 2026-09-19 against real in-game
-       screenshots of both the droid glow and the blueprint card border for
-       each rarity (Mythic left as-is — no reference shots for it this
-       round). Stellar was a plain orange before; both the droid and its
-       blueprint card agreed closely on a warm gold instead. Galactic's
-       blueprint border reads as a blue-violet purple while the droid's own
-       glow runs warmer/more magenta — this splits the difference so it
-       reads unmistakably purple without drifting into Mythic's red-pink. */
+    /* Color palette for blueprint timers (v1.10.5). Stellar and Mythic were
+       re-matched 2026-09-19 against real in-game screenshots. Kyber color
+       is a placeholder ([TBD] — will be updated when game update is live). */
     --stellar: #edb142;
     --rarity-mythic: #ff4d6d;
-    --galactic: #d95cf2;
+    --kyber: #d0a0ff;  /* Placeholder — update with actual Kyber in-game color */
     --mission: #5ef2a6;
   }
   html,body{
@@ -113,7 +108,7 @@
   }
   .banner.stellar{ --accent-color: var(--stellar); }
   .banner.mythic{ --accent-color: var(--rarity-mythic); }
-  .banner.galactic{ --accent-color: var(--galactic); }
+  .banner.kyber{ --accent-color: var(--kyber); }
   .banner.mission{ --accent-color: var(--mission); }
 </style>
 </head>
@@ -142,13 +137,13 @@
           <span class="b-time" id="mythicTime">--:--</span>
         </div>
       </div>
-      <div class="banner galactic" id="galacticBanner">
-        <div class="b-icon" title="Galactic Blueprint">
-          <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.3" fill="currentColor"/><ellipse cx="12" cy="12" rx="10.5" ry="3.3" stroke="currentColor" stroke-width="1.7" transform="rotate(-20 12 12)"/></svg>
+      <div class="banner kyber" id="kyberBanner" style="display:none;">
+        <div class="b-icon" title="Kyber Blueprint">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 L20 10 L16 22 L8 22 L4 10 Z"/></svg>
         </div>
         <div class="b-body">
-          <span class="b-label">Galactic Blueprint</span>
-          <span class="b-time" id="galacticTime">--:--</span>
+          <span class="b-label">Kyber Blueprint</span>
+          <span class="b-time" id="kyberTime">--:--</span>
         </div>
       </div>
       <div class="banner mission" id="missionBanner">
@@ -170,6 +165,48 @@
     return;
   }
 
+  /* Sound notifications (v1.10.2) — plays a short notification when timer expires.
+     Generates sine waves on-demand via Web Audio API. */
+  const AudioNotifications = {
+    audioContext: null,
+    getContext() {
+      if (!this.audioContext) {
+        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      return this.audioContext;
+    },
+    playTone(frequency, duration, volume) {
+      try {
+        const ctx = this.getContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = frequency;
+        gain.gain.value = volume;
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + duration);
+      } catch(e) {
+        // Audio context unavailable, silently fail
+      }
+    },
+    playSound(choice, volume) {
+      if (!choice || choice === 'off' || !volume) return;
+      const sounds = {
+        beep: { freq: 800, duration: 0.3 },
+        boop: { freq: 400, duration: 0.3 },
+        chime: { freq: 900, duration: 0.4 }
+      };
+      const sound = sounds[choice] || sounds.beep;
+      // Play 3x with 0.5s delay
+      for (let i = 0; i < 3; i++) {
+        setTimeout(() => {
+          this.playTone(sound.freq, sound.duration, Math.min(0.8, volume || 0.35));
+        }, i * 500);
+      }
+    }
+  };
+
   /* ---------------- timer math ----------------
      All four timers are pure wall-clock arithmetic against the system clock —
      nothing here reads the screen or touches Fortnite in any way. Each
@@ -177,11 +214,14 @@
      re-runs this every second and just formats the remaining time. */
 
   function nextStellar(now){
-    // Every hour, on the hour exactly (1:00, 2:00, 3:00, ...).
-    const next = new Date(now);
-    next.setMinutes(0, 0, 0);
-    if(next <= now) next.setHours(next.getHours() + 1);
-    return next;
+    // Every 30 minutes: 5 min and 35 min after the hour (00:05, 00:35, 01:05, 01:35, ...).
+    const candidates = [];
+    for(let h = 0; h <= 1; h++){
+      const a = new Date(now); a.setHours(a.getHours() + h, 5, 0, 0); candidates.push(a);
+      const b = new Date(now); b.setHours(b.getHours() + h, 35, 0, 0); candidates.push(b);
+    }
+    candidates.sort((a, b) => a - b);
+    return candidates.find(d => d > now);
   }
 
   function nextMythic(now){
@@ -192,15 +232,13 @@
     return next;
   }
 
-  function nextGalactic(now){
-    // Every 30 minutes, starting 15 minutes after the hour (:15 and :45).
-    const candidates = [];
-    for(let h = 0; h <= 1; h++){
-      const a = new Date(now); a.setHours(a.getHours() + h, 15, 0, 0); candidates.push(a);
-      const b = new Date(now); b.setHours(b.getHours() + h, 45, 0, 0); candidates.push(b);
-    }
-    candidates.sort((a, b) => a - b);
-    return candidates.find(d => d > now);
+  function nextKyber(now){
+    // [Schedule TBD — will be updated when game patch is live]
+    // Placeholder: every hour at :20 (replace with actual schedule once known)
+    const next = new Date(now);
+    next.setMinutes(20, 0, 0);
+    if(next <= now) next.setHours(next.getHours() + 1);
+    return next;
   }
 
   // Missions were originally described as 45 minutes apart (10:50, 11:35,
@@ -313,20 +351,65 @@
     bannerEl.classList.toggle('imminent', remainingMs >= 0 && remainingMs < IMMINENT_THRESHOLD_MS);
   }
 
+  function playTimerSound(timerType, settings) {
+    if (!settings.timerSoundEnabled) return;
+
+    const choice = settings[timerType + 'SoundChoice'];
+    if (!choice || choice === 'off') return;
+
+    // Determine volume: use override if enabled, otherwise use master
+    let volume = settings.timerSoundVolume || 0.35;
+    const overrideKey = timerType + 'SoundVolumeOverride';
+    const volumeKey = timerType + 'SoundVolume';
+    if (settings[overrideKey]) {
+      volume = settings[volumeKey] || 0.35;
+    }
+
+    AudioNotifications.playSound(choice, volume);
+  }
+
+  // Each next___() function above always returns the NEXT future occurrence,
+  // so "remaining" (nextX(now) - now) can never actually reach <= 0 — the
+  // instant a timer would hit zero, the next render() tick has already
+  // recomputed nextX() to the following period, jumping remaining back up to
+  // (nearly) the full period length. So "expiry" has to be detected as a
+  // WRAP — the previous tick's remaining was small (about to fire) and this
+  // tick's remaining is suddenly much larger than that — rather than ever
+  // seeing remaining cross zero directly. lastRemainingMs starts at null so
+  // the very first render() (nothing to compare against yet) never fires a
+  // spurious sound on load.
+  const lastRemainingMs = { stellar: null, mythic: null, kyber: null, mission: null };
+  const WRAP_DETECT_WINDOW_MS = 1500; // a little over the 1s render() interval
+
+  function checkExpiry(timerType, remainingMs, settings){
+    const prev = lastRemainingMs[timerType];
+    if(prev != null && prev >= 0 && prev < WRAP_DETECT_WINDOW_MS && remainingMs > prev){
+      playTimerSound(timerType, settings);
+    }
+    lastRemainingMs[timerType] = remainingMs;
+  }
+
+  let currentSettings = {};
+
   function render(){
     const now = new Date();
 
     const stellarRemaining = nextStellar(now) - now;
     const mythicRemaining = nextMythic(now) - now;
-    const galacticRemaining = nextGalactic(now) - now;
+    const kyberRemaining = nextKyber(now) - now;
 
     document.getElementById('stellarTime').textContent = fmtRemaining(stellarRemaining);
     document.getElementById('mythicTime').textContent = fmtRemaining(mythicRemaining);
-    document.getElementById('galacticTime').textContent = fmtRemaining(galacticRemaining);
+    document.getElementById('kyberTime').textContent = fmtRemaining(kyberRemaining);
 
     setImminent(document.getElementById('stellarBanner'), stellarRemaining);
     setImminent(document.getElementById('mythicBanner'), mythicRemaining);
-    setImminent(document.getElementById('galacticBanner'), galacticRemaining);
+    setImminent(document.getElementById('kyberBanner'), kyberRemaining);
+
+    // Play sound when timers expire (detected as a wrap, see checkExpiry above)
+    checkExpiry('stellar', stellarRemaining, currentSettings);
+    checkExpiry('mythic', mythicRemaining, currentSettings);
+    checkExpiry('kyber', kyberRemaining, currentSettings);
 
     const missionAt = nextMission(now);
     const missionName = missionNameForOccurrence(missionAt);
@@ -334,6 +417,9 @@
     document.getElementById('missionLabel').textContent = 'Next: ' + missionName;
     document.getElementById('missionTime').textContent = fmtRemaining(missionRemaining);
     setImminent(document.getElementById('missionBanner'), missionRemaining);
+
+    // Play sound when mission timer expires
+    checkExpiry('mission', missionRemaining, currentSettings);
 
     if(missionName !== lastMissionIconName){
       const iconEl = document.getElementById('missionIcon');
@@ -344,6 +430,7 @@
   }
 
   function applySettings(settings){
+    currentSettings = settings; // Keep settings available for render()
     document.body.classList.toggle('unlocked', !settings.timersLocked);
     missionSyncEpochMs = (settings.missionSyncEpochMs != null) ? settings.missionSyncEpochMs : null;
   }

@@ -811,7 +811,7 @@
   </header>
 
   <div class="legend" id="legend"></div>
-  <div class="level-note" id="levelNote" style="display:none;">Three droids per line, one line per level, all 35 levels for the cycle you've picked below. Click a name to log it — dimmed names are already covered by a higher rarity you own.</div>
+  <div class="level-note" id="levelNote" style="display:none;">Three droids per line, one line per level, all levels for the cycle you've picked below. Click a name to log it — dimmed names are already covered by a higher rarity you own.</div>
   <div class="cycle-picker-row" id="cyclePickerRow" style="display:none;">
     <select class="cycle-select" id="cycleSelect">
       <option value="1">Cycle 1</option>
@@ -855,7 +855,7 @@
       <div class="console-row-buttons">
         <button class="btn" id="guideOpenBtn" hidden title="Replay the first-launch tour of the app's tools">❔ Guide</button>
         <button class="btn" id="editToggle" title="Click a name to fix a misread, or rename it to match another droid to merge them">✎ Rename</button>
-        <button class="btn" id="reqPanelToggle" title="Show a side panel of the droids needed for rebirth 35, at the rarity each cycle requires">🧬 Rebirth Reqs</button>
+        <button class="btn" id="reqPanelToggle" title="Show a side panel of the droids needed for the final rebirth, at the rarity each cycle requires">🧬 Rebirth Reqs</button>
         <button class="btn" id="bgBtn" title="Set a custom background image">🖼 Background</button>
         <div class="bg-controls" id="bgControls" hidden>
           <span class="bg-dim-label">Dim</span>
@@ -926,6 +926,10 @@
         <button class="holo-tab" type="button" role="tab" id="setTab-timers" data-tab="timers" aria-controls="setPane-timers" aria-selected="false" tabindex="-1" style="--saber:#ffd24a">
           <span class="holo-tab-icon" aria-hidden="true">⏱</span>
           <span class="holo-tab-text"><b>Timers</b><small>Chrono sync</small></span>
+        </button>
+        <button class="holo-tab" type="button" role="tab" id="setTab-droideditor" data-tab="droideditor" aria-controls="setPane-droideditor" aria-selected="false" tabindex="-1" style="--saber:#d0a0ff">
+          <span class="holo-tab-icon" aria-hidden="true">🧬</span>
+          <span class="holo-tab-text"><b>Droid Editor</b><small>Update droids</small></span>
         </button>
       </nav>
 
@@ -1009,6 +1013,60 @@
             <div class="kb-row">
               <div class="kb-label"><b>Scroll Crit Guide down</b><small>Pages the Optimal Crit Guide overlay down one screen.</small></div>
               <button class="btn kb-key" id="critGuideScrollDownHotkeyBtn">(none set)</button>
+            </div>
+          </div>
+
+          <!-- v1.10.3: hotkey-based marking in Upcoming RB Req's overlay -->
+          <div class="kb-group">
+            <div class="kb-group-title">🎯 Mark droids (Upcoming RB Req's overlay)</div>
+            <div class="kb-row">
+              <div class="kb-label"><b>Mark selected droid</b><small>Marks the highlighted droid as obtained in the Upcoming RB Req's overlay.</small></div>
+              <button class="btn kb-key" id="markDroidBtn">\</button>
+            </div>
+            <div class="kb-row">
+              <div class="kb-label"><b>Mark entire level</b><small>Marks all three droids in the current level and auto-scrolls to the next incomplete level.</small></div>
+              <button class="btn kb-key" id="markLevelBtn">(none set)</button>
+            </div>
+            <div class="kb-row">
+              <div class="kb-label"><b>Navigate left</b><small>Move selection left across the three droids in a level.</small></div>
+              <button class="btn kb-key" id="markLeftBtn">(none set)</button>
+            </div>
+            <div class="kb-row">
+              <div class="kb-label"><b>Navigate right</b><small>Move selection right across the three droids in a level.</small></div>
+              <button class="btn kb-key" id="markRightBtn">(none set)</button>
+            </div>
+            <div class="kb-row">
+              <div class="kb-label"><b>Navigate up</b><small>Move selection up to the previous rebirth level.</small></div>
+              <button class="btn kb-key" id="markUpBtn">(none set)</button>
+            </div>
+            <div class="kb-row">
+              <div class="kb-label"><b>Navigate down</b><small>Move selection down to the next rebirth level.</small></div>
+              <button class="btn kb-key" id="markDownBtn">(none set)</button>
+            </div>
+          </div>
+
+          <!-- v1.10.3: hotkey-based marking in Rebirth Requirements overlay -->
+          <div class="kb-group">
+            <div class="kb-group-title">🧬 Mark droids (Rebirth Requirements overlay)</div>
+            <div class="kb-row">
+              <div class="kb-label"><b>Mark selected droid</b><small>Marks the highlighted droid as obtained in the Rebirth Requirements overlay.</small></div>
+              <button class="btn kb-key" id="rebirthMarkDroidBtn">(none set)</button>
+            </div>
+            <div class="kb-row">
+              <div class="kb-label"><b>Navigate left</b><small>Move selection left across the grid.</small></div>
+              <button class="btn kb-key" id="rebirthMarkLeftBtn">(none set)</button>
+            </div>
+            <div class="kb-row">
+              <div class="kb-label"><b>Navigate right</b><small>Move selection right across the grid.</small></div>
+              <button class="btn kb-key" id="rebirthMarkRightBtn">(none set)</button>
+            </div>
+            <div class="kb-row">
+              <div class="kb-label"><b>Navigate up</b><small>Move selection up in the grid.</small></div>
+              <button class="btn kb-key" id="rebirthMarkUpBtn">(none set)</button>
+            </div>
+            <div class="kb-row">
+              <div class="kb-label"><b>Navigate down</b><small>Move selection down in the grid.</small></div>
+              <button class="btn kb-key" id="rebirthMarkDownBtn">(none set)</button>
             </div>
           </div>
 
@@ -1170,13 +1228,120 @@
               <button class="btn" id="missionSyncBtn">🔄 Sync</button>
             </div>
           </div>
-          <div class="kb-group-title">Schedule readout</div>
+          <div class="kb-group-title">Sound notifications (v1.10.2)</div>
+          <label style="display: block; padding: 8px 0;">
+            <input type="checkbox" id="timerSoundEnabledCheckbox">
+            Enable sound notifications when timers expire
+          </label>
+          <div id="soundSettings" style="margin: 12px 0;">
+            <div class="pos-slider" style="margin-bottom: 12px;">
+              <span>Master Volume</span>
+              <input type="range" id="timerSoundVolumeSlider" min="0.1" max="0.8" step="0.05" value="0.35">
+              <span id="volumeDisplay" style="display: inline;">35%</span>
+            </div>
+            <label style="display: block; cursor: pointer; font-weight: 600; padding: 8px 0;">
+              <input type="checkbox" id="advancedSoundToggle">
+              ▼ Per-timer custom volumes
+            </label>
+            <div id="advancedSoundSettings" style="display: none; margin-left: 16px; margin-top: 8px; border-left: 2px solid rgba(143,214,255,0.25); padding-left: 10px;">
+              <div style="margin: 10px 0;">
+                <label style="display: block; font-size: 11px; color: var(--text-dim); margin-bottom: 4px;">
+                  <input type="checkbox" id="missionSoundOverrideCheckbox">
+                  🎯 Mission Timer Custom Volume
+                </label>
+                <div class="pos-slider" style="margin-left: 20px;">
+                  <input type="range" id="missionSoundVolumeSlider" min="0.1" max="0.8" step="0.05" value="0.35">
+                  <span id="missionVolumeDisplay" style="display: inline;">35%</span>
+                </div>
+                <label style="display: block; font-size: 12px; margin: 8px 0 0;">Sound:
+                  <select id="missionSoundChoice" style="margin-left: 4px;">
+                    <option value="off">Off</option>
+                    <option value="beep">Beep (800Hz)</option>
+                    <option value="boop">Boop (400Hz)</option>
+                    <option value="chime">Chime (900Hz)</option>
+                  </select>
+                </label>
+              </div>
+              <div style="margin: 10px 0;">
+                <label style="display: block; font-size: 11px; color: var(--text-dim); margin-bottom: 4px;">
+                  <input type="checkbox" id="blueprintSoundOverrideCheckbox">
+                  ✨ Blueprint Timers Custom Volume
+                </label>
+                <div class="pos-slider" style="margin-left: 20px;">
+                  <input type="range" id="blueprintSoundVolumeSlider" min="0.1" max="0.8" step="0.05" value="0.35">
+                  <span id="blueprintVolumeDisplay" style="display: inline;">35%</span>
+                </div>
+                <label style="display: block; font-size: 12px; margin: 8px 0 0;">Sound:
+                  <select id="blueprintSoundChoice" style="margin-left: 4px;">
+                    <option value="off">Off</option>
+                    <option value="beep">Beep (800Hz)</option>
+                    <option value="boop">Boop (400Hz)</option>
+                    <option value="chime">Chime (900Hz)</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="kb-group-title">Schedule readout (v1.10.5)</div>
           <ul class="sched-list">
-            <li><span class="sched-dot" style="--c:#e08a3c"></span><b>✨ Stellar Blueprint</b><span>every hour, on the hour</span></li>
+            <li><span class="sched-dot" style="--c:#e08a3c"></span><b>✨ Stellar Blueprint</b><span>every 30 min: 5min and 35min after hour</span></li>
             <li><span class="sched-dot" style="--c:#ff4d6d"></span><b>🌌 Mythic Blueprint</b><span>every hour at :55</span></li>
-            <li><span class="sched-dot" style="--c:#c96bf2"></span><b>🪐 Galactic Blueprint</b><span>every 30 minutes, at :15 and :45</span></li>
+            <li><span class="sched-dot" style="--c:#d0a0ff"></span><b>💎 Kyber Blueprint</b><span>[Schedule TBD — coming with game update]</span></li>
             <li><span class="sched-dot" style="--c:#5ef2a6"></span><b>🎯 Mission</b><span>every 50 minutes: Stormtrooper → Fishing → D-0 → Mining</span></li>
           </ul>
+        </section>
+
+        <!-- ============ DROID EDITOR ============ -->
+        <section class="holo-pane" id="setPane-droideditor" role="tabpanel" aria-labelledby="setTab-droideditor" hidden>
+          <div class="holo-pane-head">
+            <div>
+              <h4>Droid Editor (v1.10.5)</h4>
+              <p class="overlay-panel-hint">When game update brings new droids for levels 36–40, use this to input them. Screenshots or manual entry, then export the updated droid-data code.</p>
+            </div>
+          </div>
+
+          <div style="margin-bottom: 15px;">
+            <label style="display: block; font-size: 12px; margin-bottom: 5px;"><b>Cycle:</b></label>
+            <select id="editorCycle" style="width: 100%; padding: 6px; margin-bottom: 10px;">
+              <option value="1">Cycle 1</option>
+              <option value="2">Cycle 2</option>
+              <option value="3">Cycle 3</option>
+              <option value="4">Cycle 4</option>
+              <option value="5">Cycle 5</option>
+            </select>
+
+            <label style="display: block; font-size: 12px; margin-bottom: 5px;"><b>Level:</b></label>
+            <select id="editorLevel" style="width: 100%; padding: 6px; margin-bottom: 10px;">
+              <option value="36">Level 36 (New)</option>
+              <option value="37">Level 37 (New)</option>
+              <option value="38">Level 38 (New)</option>
+              <option value="39">Level 39 (New)</option>
+              <option value="40">Level 40 (New)</option>
+            </select>
+          </div>
+
+          <div id="slotInputs" style="margin-bottom: 15px;">
+            <!-- Slot inputs will be generated here by JavaScript -->
+          </div>
+
+          <button class="btn" id="editorClearAllBtn" style="width: 100%; padding: 8px; margin-bottom: 15px;">🗑 Clear All Pending Edits</button>
+
+          <hr style="margin: 20px 0; border: none; border-top: 1px solid rgba(143,214,255,0.2);">
+
+          <div style="margin-bottom: 15px;">
+            <label style="display: block; font-size: 12px; margin-bottom: 5px;"><b>Bulk Import (CSV)</b></label>
+            <textarea id="bulkImportText" placeholder="Cycle,Level,Slot,Rarity,Name&#10;1,36,0,Y,????&#10;1,36,1,S,????" style="width: 100%; height: 80px; font-family: monospace; font-size: 11px; padding: 6px; box-sizing: border-box; background: rgba(10,14,12,0.5); border: 1px solid rgba(143,214,255,0.3); color: #fff; border-radius: 4px;" spellcheck="false"></textarea>
+            <button class="btn" id="bulkImportBtn" style="width: 100%; padding: 8px; margin-top: 8px;">📥 Load from CSV</button>
+          </div>
+
+          <hr style="margin: 20px 0; border: none; border-top: 1px solid rgba(143,214,255,0.2);">
+
+          <div>
+            <label style="display: block; font-size: 12px; margin-bottom: 5px;"><b>Export to Code</b></label>
+            <button class="btn" id="editorExportBtn" style="width: 100%; padding: 8px; margin-bottom: 8px;">📋 Generate droid-data.js Snippet</button>
+            <textarea id="exportOutput" style="width: 100%; height: 120px; font-family: monospace; font-size: 10px; padding: 6px; box-sizing: border-box; background: rgba(10,14,12,0.5); border: 1px solid rgba(143,214,255,0.3); color: #5ef2a6; border-radius: 4px; display: none; resize: vertical;" readonly></textarea>
+          </div>
         </section>
       </div>
     </div>
@@ -2506,6 +2671,17 @@ document.getElementById('bgDimRange').addEventListener('change', async (e)=>{
   renderLegend();
   renderStats();
   renderList();
+
+  // Listen for store changes from overlays (e.g. marking from overlay.html or rebirth-requirements-overlay.html)
+  window.overlayAPI.onStoreChanged(({ key, value })=>{
+    if(key === 'rebirth-ownedRank-v2'){ ownedRank = value || {}; renderList(); renderStats(); }
+    else if(key === 'rebirth-activeCycle'){ activeCycle = value || 1; renderList(); renderStats(); }
+    else if(key === 'rebirth-nameMerges' || key === 'rebirth-displayOverrides'){
+      if(key === 'rebirth-nameMerges') nameMerges = value || {};
+      else displayOverrides = value || {};
+      buildIndex(); renderList(); renderStats();
+    }
+  });
 })();
 </script>
 <script src="node_modules/tesseract.js/dist/tesseract.min.js"></script>

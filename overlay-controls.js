@@ -70,7 +70,20 @@
     ['sneakScrollDownHotkeyBtn', 'sneakScrollDownHotkey', 'Scroll Sneak Preview Down'],
     ['critGuideHotkeyBtn', 'critGuideHotkey', 'Toggle Optimal Crit Guide'],
     ['critGuideScrollUpHotkeyBtn', 'critGuideScrollUpHotkey', 'Scroll Crit Guide Up'],
-    ['critGuideScrollDownHotkeyBtn', 'critGuideScrollDownHotkey', 'Scroll Crit Guide Down']
+    ['critGuideScrollDownHotkeyBtn', 'critGuideScrollDownHotkey', 'Scroll Crit Guide Down'],
+    // v1.10.3: hotkey-based marking in Upcoming RB Req's overlay
+    ['markDroidBtn', 'markDroid', 'Mark Selected Droid'],
+    ['markLevelBtn', 'markLevel', 'Mark Entire Level'],
+    ['markLeftBtn', 'markLeft', 'Navigate Left'],
+    ['markRightBtn', 'markRight', 'Navigate Right'],
+    ['markUpBtn', 'markUp', 'Navigate Up'],
+    ['markDownBtn', 'markDown', 'Navigate Down'],
+    // v1.10.3: hotkey-based marking in Rebirth Requirements overlay
+    ['rebirthMarkDroidBtn', 'rebirthMarkDroid', 'Mark Selected Droid (Rebirth Requirements)'],
+    ['rebirthMarkLeftBtn', 'rebirthMarkLeft', 'Navigate Left (Rebirth Requirements)'],
+    ['rebirthMarkRightBtn', 'rebirthMarkRight', 'Navigate Right (Rebirth Requirements)'],
+    ['rebirthMarkUpBtn', 'rebirthMarkUp', 'Navigate Up (Rebirth Requirements)'],
+    ['rebirthMarkDownBtn', 'rebirthMarkDown', 'Navigate Down (Rebirth Requirements)']
   ].map(([id, settingsKey, label]) => ({ btn: document.getElementById(id), settingsKey, label }));
 
   /* Tier filter buttons (⚙ Overlay Settings → Filters tab) —
@@ -202,6 +215,35 @@
       critGuideRepositionBtn.textContent = settings.critGuideLocked ? '🎯 Drag into place' : '🔓 Unlocked — drag the overlay, then use its Lock button';
       critGuideRepositionBtn.classList.toggle('on', !settings.critGuideLocked);
     }
+    // Sound notifications (v1.10.2)
+    const timerSoundEnabledCheckbox = document.getElementById('timerSoundEnabledCheckbox');
+    if(timerSoundEnabledCheckbox) timerSoundEnabledCheckbox.checked = settings.timerSoundEnabled !== false;
+    const timerSoundVolumeSlider = document.getElementById('timerSoundVolumeSlider');
+    if(timerSoundVolumeSlider) {
+      timerSoundVolumeSlider.value = settings.timerSoundVolume != null ? settings.timerSoundVolume : 0.35;
+      const volumeDisplay = document.getElementById('volumeDisplay');
+      if(volumeDisplay) volumeDisplay.textContent = Math.round((settings.timerSoundVolume || 0.35) * 100) + '%';
+    }
+    const missionSoundOverride = document.getElementById('missionSoundOverrideCheckbox');
+    if(missionSoundOverride) missionSoundOverride.checked = settings.missionSoundVolumeOverride !== false;
+    const missionSoundVolumeSlider = document.getElementById('missionSoundVolumeSlider');
+    if(missionSoundVolumeSlider) {
+      missionSoundVolumeSlider.value = settings.missionSoundVolume != null ? settings.missionSoundVolume : 0.35;
+      const missionVolumeDisplay = document.getElementById('missionVolumeDisplay');
+      if(missionVolumeDisplay) missionVolumeDisplay.textContent = Math.round((settings.missionSoundVolume || 0.35) * 100) + '%';
+    }
+    const missionSoundChoice = document.getElementById('missionSoundChoice');
+    if(missionSoundChoice) missionSoundChoice.value = settings.missionSoundChoice || 'off';
+    const blueprintSoundOverride = document.getElementById('blueprintSoundOverrideCheckbox');
+    if(blueprintSoundOverride) blueprintSoundOverride.checked = settings.blueprintSoundVolumeOverride !== false;
+    const blueprintSoundVolumeSlider = document.getElementById('blueprintSoundVolumeSlider');
+    if(blueprintSoundVolumeSlider) {
+      blueprintSoundVolumeSlider.value = settings.blueprintSoundVolume != null ? settings.blueprintSoundVolume : 0.35;
+      const blueprintVolumeDisplay = document.getElementById('blueprintVolumeDisplay');
+      if(blueprintVolumeDisplay) blueprintVolumeDisplay.textContent = Math.round((settings.blueprintSoundVolume || 0.35) * 100) + '%';
+    }
+    const blueprintSoundChoice = document.getElementById('blueprintSoundChoice');
+    if(blueprintSoundChoice) blueprintSoundChoice.value = settings.blueprintSoundChoice || 'off';
   }
 
   function acceleratorFromEvent(e){
@@ -591,6 +633,50 @@
     });
   }
 
+  /* Sound notifications (v1.10.2) */
+  document.getElementById('timerSoundEnabledCheckbox')?.addEventListener('change', (e)=>{
+    window.overlayAPI.setSettings({ timerSoundEnabled: e.target.checked });
+  });
+
+  document.getElementById('timerSoundVolumeSlider')?.addEventListener('input', (e)=>{
+    const val = parseFloat(e.target.value);
+    document.getElementById('volumeDisplay').textContent = Math.round(val * 100) + '%';
+    window.overlayAPI.setSettings({ timerSoundVolume: val });
+  });
+
+  document.getElementById('advancedSoundToggle')?.addEventListener('change', (e)=>{
+    document.getElementById('advancedSoundSettings').style.display =
+      e.target.checked ? 'block' : 'none';
+  });
+
+  document.getElementById('missionSoundOverrideCheckbox')?.addEventListener('change', (e)=>{
+    window.overlayAPI.setSettings({ missionSoundVolumeOverride: e.target.checked });
+  });
+
+  document.getElementById('missionSoundVolumeSlider')?.addEventListener('input', (e)=>{
+    const val = parseFloat(e.target.value);
+    document.getElementById('missionVolumeDisplay').textContent = Math.round(val * 100) + '%';
+    window.overlayAPI.setSettings({ missionSoundVolume: val });
+  });
+
+  document.getElementById('missionSoundChoice')?.addEventListener('change', (e)=>{
+    window.overlayAPI.setSettings({ missionSoundChoice: e.target.value });
+  });
+
+  document.getElementById('blueprintSoundOverrideCheckbox')?.addEventListener('change', (e)=>{
+    window.overlayAPI.setSettings({ blueprintSoundVolumeOverride: e.target.checked });
+  });
+
+  document.getElementById('blueprintSoundVolumeSlider')?.addEventListener('input', (e)=>{
+    const val = parseFloat(e.target.value);
+    document.getElementById('blueprintVolumeDisplay').textContent = Math.round(val * 100) + '%';
+    window.overlayAPI.setSettings({ blueprintSoundVolume: val });
+  });
+
+  document.getElementById('blueprintSoundChoice')?.addEventListener('change', (e)=>{
+    window.overlayAPI.setSettings({ blueprintSoundChoice: e.target.value });
+  });
+
   window.overlayAPI.onSettingsChanged(applySettingsToUI);
   window.overlayAPI.onOverlayVisibility(setToggleLabel);
   if(window.overlayAPI.onTimersVisibility) window.overlayAPI.onTimersVisibility(setTimersToggleLabel);
@@ -612,5 +698,134 @@
       appVersionTag.textContent = 'v' + v;
       appVersionTag.hidden = false;
     }).catch(()=>{ /* not fatal — the app works fine without the badge */ });
+  }
+
+  /* ============ DROID EDITOR (v1.10.5) ============
+     Input new droids for levels 36+ when game updates. Store pending edits
+     in userData, generate exportable code snippet. */
+
+  const editorCycle = document.getElementById('editorCycle');
+  const editorLevel = document.getElementById('editorLevel');
+  const slotInputs = document.getElementById('slotInputs');
+  const editorClearAllBtn = document.getElementById('editorClearAllBtn');
+  const bulkImportBtn = document.getElementById('bulkImportBtn');
+  const bulkImportText = document.getElementById('bulkImportText');
+  const editorExportBtn = document.getElementById('editorExportBtn');
+  const exportOutput = document.getElementById('exportOutput');
+
+  // Store pending droid edits as { cycle: { level: [slot0, slot1, slot2], ... }, ... }
+  let pendingEdits = {};
+
+  function renderSlotInputs(){
+    const cycle = parseInt(editorCycle.value, 10);
+    const level = parseInt(editorLevel.value, 10);
+    slotInputs.innerHTML = '';
+
+    const rarities = ['B','G','D','R','K','X','S','Y'];
+    for(let slot = 0; slot < 3; slot++){
+      const pending = pendingEdits[cycle]?.[level]?.[slot];
+      const rarity = pending ? pending[0] : '?';
+      const name = pending ? pending[1] : '';
+
+      const row = document.createElement('div');
+      row.style.cssText = 'display: grid; grid-template-columns: 80px 1fr 80px; gap: 8px; margin-bottom: 10px; align-items: center;';
+
+      const raritySelect = document.createElement('select');
+      raritySelect.style.cssText = 'padding: 6px; background: rgba(10,14,12,0.5); border: 1px solid rgba(143,214,255,0.3); color: #fff; border-radius: 4px;';
+      rarities.forEach(r => {
+        const opt = document.createElement('option');
+        opt.value = r;
+        opt.textContent = (RNAME?.[r] || r);
+        if(r === rarity) opt.selected = true;
+        raritySelect.appendChild(opt);
+      });
+
+      const nameInput = document.createElement('input');
+      nameInput.type = 'text';
+      nameInput.placeholder = `Slot ${slot + 1} droid name`;
+      nameInput.value = name;
+      nameInput.style.cssText = 'padding: 6px; background: rgba(10,14,12,0.5); border: 1px solid rgba(143,214,255,0.3); color: #fff; border-radius: 4px; font-family: monospace;';
+
+      const saveBtn = document.createElement('button');
+      saveBtn.className = 'btn';
+      saveBtn.textContent = 'Save';
+      saveBtn.style.cssText = 'padding: 6px 12px;';
+      saveBtn.addEventListener('click', ()=>{
+        if(!pendingEdits[cycle]) pendingEdits[cycle] = {};
+        if(!pendingEdits[cycle][level]) pendingEdits[cycle][level] = [['?','????'],['?','????'],['?','????']];
+        pendingEdits[cycle][level][slot] = [raritySelect.value, nameInput.value || '????'];
+        showToast(`Saved: Cycle ${cycle}, Level ${level}, Slot ${slot + 1}`);
+      });
+
+      row.appendChild(raritySelect);
+      row.appendChild(nameInput);
+      row.appendChild(saveBtn);
+      slotInputs.appendChild(row);
+    }
+  }
+
+  if(editorCycle && editorLevel){
+    editorCycle.addEventListener('change', renderSlotInputs);
+    editorLevel.addEventListener('change', renderSlotInputs);
+    renderSlotInputs();
+  }
+
+  if(editorClearAllBtn){
+    editorClearAllBtn.addEventListener('click', ()=>{
+      if(confirm('Clear ALL pending droid edits? This cannot be undone.')){
+        pendingEdits = {};
+        renderSlotInputs();
+        showToast('All pending edits cleared');
+      }
+    });
+  }
+
+  if(bulkImportBtn){
+    bulkImportBtn.addEventListener('click', ()=>{
+      const lines = bulkImportText.value.trim().split('\n');
+      let count = 0;
+      lines.forEach(line => {
+        const parts = line.split(',').map(s => s.trim());
+        if(parts.length < 5) return;
+        const [c, l, s, r, n] = parts;
+        const cycle = parseInt(c, 10);
+        const level = parseInt(l, 10);
+        const slot = parseInt(s, 10);
+        if(!Number.isFinite(cycle) || !Number.isFinite(level) || !Number.isFinite(slot)) return;
+        if(!pendingEdits[cycle]) pendingEdits[cycle] = {};
+        if(!pendingEdits[cycle][level]) pendingEdits[cycle][level] = [['?','????'],['?','????'],['?','????']];
+        pendingEdits[cycle][level][slot] = [r, n];
+        count++;
+      });
+      renderSlotInputs();
+      showToast(`Imported ${count} droid(s) from CSV`);
+    });
+  }
+
+  if(editorExportBtn){
+    editorExportBtn.addEventListener('click', ()=>{
+      let code = '';
+      const cycles = Object.keys(pendingEdits).sort((a, b) => parseInt(a) - parseInt(b));
+      cycles.forEach(c => {
+        const cycleNum = parseInt(c, 10);
+        const levels = Object.keys(pendingEdits[c]).sort((a, b) => parseInt(a) - parseInt(b));
+        levels.forEach(l => {
+          const levelNum = parseInt(l, 10);
+          const droids = pendingEdits[c][l];
+          const droidStr = droids.map(d => `["${d[0]}","${d[1]}"]`).join(',');
+          code += `CYCLES[${cycleNum}][${levelNum - 1}] = [${droidStr}];\n`;
+        });
+      });
+
+      if(!code){
+        showToast('No pending edits to export');
+        return;
+      }
+
+      exportOutput.style.display = 'block';
+      exportOutput.value = code;
+      exportOutput.select();
+      showToast('Code ready to copy — paste into droid-data.js after each cycle definition');
+    });
   }
 })();

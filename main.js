@@ -26,7 +26,28 @@
 const { app, BrowserWindow, ipcMain, globalShortcut, screen, session, desktopCapturer, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const vm = require('vm');
 const { loadJson, saveJsonNow } = require('./persistence');
+
+// Load shared functions from droid-data.js and requirements.js using vm,
+// same pattern as test/helpers/load-shared.js, so the overlay:markDroid and
+// overlay:markLevel handlers can use normKey(), canonicalName(), rankOf(), and decideOwnedUpdate()
+function loadSharedFunctions(){
+  const ctx = vm.createContext({ console });
+  for(const f of ['droid-data.js', 'requirements.js']){
+    const src = fs.readFileSync(path.join(__dirname, f), 'utf8');
+    vm.runInContext(src, ctx, { filename: f });
+  }
+  const run = (code) => vm.runInContext(code, ctx, { filename: '<ipc>' });
+  return {
+    CYCLES: run('CYCLES'),
+    normKey: run('normKey'),
+    canonicalName: run('canonicalName'),
+    rankOf: run('rankOf'),
+    decideOwnedUpdate: run('decideOwnedUpdate'),
+  };
+}
+const shared = loadSharedFunctions();
 
 // Two instances would each independently load their own copy of the JSON
 // store/settings into memory and each debounce-write to the SAME files on
@@ -71,6 +92,14 @@ const DEFAULT_SETTINGS = {
   timersLocked: true,
   timersPosition: null,
   missionSyncEpochMs: null, // exact timestamp (ms) of a confirmed live mission moment, set via "Sync mission timer"; null = use the built-in best-guess schedule
+  timerSoundEnabled: false, // v1.10.2: sound notifications for timer expiry (default off for fresh installs)
+  timerSoundVolume: 0.35,   // master volume, 0.1–0.8 range
+  missionSoundVolumeOverride: false, // use per-timer override instead of master
+  missionSoundVolume: 0.35,
+  blueprintSoundVolumeOverride: false,
+  blueprintSoundVolume: 0.35,
+  missionSoundChoice: 'beep', // 'beep' | 'boop' | 'chime' | 'off'
+  blueprintSoundChoice: 'beep',
   declutterHotkey: 'Control+Shift+4', // toggles the "safe to retire" Legendary/Mythic droid list, same deal (moved from Ctrl+Shift+3 on 2026-09-23 — see hotkey above)
   declutterVisible: true,
   declutterLocked: true,
@@ -144,7 +173,18 @@ const DEFAULT_SETTINGS = {
   critGuideBorder: 'tatooine',
   critGuideShowInfo: true, // v1.10.1: the "How a Critical Hit is Calculated" box is toggleable in-overlay (see the ℹ button) — the subtitle + calc-box eat a lot of vertical space, so hiding it leaves more room for the purchase list before scrolling kicks in
   hasSeenIntroGuide: false, // first-launch walkthrough (guide.js) — set true once dismissed or finished; an existing settings file just merges this in as false via loadJson(), so upgraders see it once too
-  hotkeyLayoutVersion: 0   // bumped by the migrations below; never hand-edit
+  hotkeyLayoutVersion: 0,   // bumped by the migrations below; never hand-edit
+  markDroid: '\\',          // mark selected droid in Upcoming RB Req's overlay (v1.10.3)
+  markLevel: '',            // mark entire current level (v1.10.3)
+  markLeft: '',             // navigate left across droids (v1.10.3)
+  markRight: '',            // navigate right across droids (v1.10.3)
+  markUp: '',               // navigate up between levels (v1.10.3)
+  markDown: '',             // navigate down between levels (v1.10.3)
+  rebirthMarkDroid: '',     // mark selected droid in Rebirth Requirements overlay (v1.10.3)
+  rebirthMarkLeft: '',      // navigate left in grid (v1.10.3)
+  rebirthMarkRight: '',     // navigate right in grid (v1.10.3)
+  rebirthMarkUp: '',        // navigate up in grid (v1.10.3)
+  rebirthMarkDown: ''       // navigate down in grid (v1.10.3)
 };
 
 /* ---------------- convention: hotkeys for FUTURE overlays (2026-09-23) ----
@@ -1029,7 +1069,20 @@ const HOTKEY_HANDLERS = {
   declutterTierRare: () => toggleDeclutterTier('declutterShowRare'),
   declutterTierEpic: () => toggleDeclutterTier('declutterShowEpic'),
   declutterTierLegendary: () => toggleDeclutterTier('declutterShowLegendary'),
-  declutterTierMythic: () => toggleDeclutterTier('declutterShowMythic')
+  declutterTierMythic: () => toggleDeclutterTier('declutterShowMythic'),
+  // v1.10.3: hotkey-based marking in Upcoming RB Req's overlay (broadcast to overlay.html)
+  markDroid: () => broadcast('hotkey:triggered', 'markDroid'),
+  markLevel: () => broadcast('hotkey:triggered', 'markLevel'),
+  markLeft: () => broadcast('hotkey:triggered', 'markLeft'),
+  markRight: () => broadcast('hotkey:triggered', 'markRight'),
+  markUp: () => broadcast('hotkey:triggered', 'markUp'),
+  markDown: () => broadcast('hotkey:triggered', 'markDown'),
+  // v1.10.3: hotkey-based marking in Rebirth Requirements overlay (broadcast to rebirth-requirements-overlay.html)
+  rebirthMarkDroid: () => broadcast('hotkey:triggered', 'rebirthMarkDroid'),
+  rebirthMarkLeft: () => broadcast('hotkey:triggered', 'rebirthMarkLeft'),
+  rebirthMarkRight: () => broadcast('hotkey:triggered', 'rebirthMarkRight'),
+  rebirthMarkUp: () => broadcast('hotkey:triggered', 'rebirthMarkUp'),
+  rebirthMarkDown: () => broadcast('hotkey:triggered', 'rebirthMarkDown')
 };
 const DECLUTTER_TIER_KEYS = ['declutterShowDefault','declutterShowRare','declutterShowEpic','declutterShowLegendary','declutterShowMythic'];
 // A tier counts as ON unless explicitly false — the same rule declutter.html
@@ -1093,7 +1146,18 @@ const HOTKEY_LABELS = {
   sneakScrollDown: 'Scroll Sneak Preview Down',
   critGuide: 'Toggle Optimal Crit Guide',
   critGuideScrollUp: 'Scroll Crit Guide Up',
-  critGuideScrollDown: 'Scroll Crit Guide Down'
+  critGuideScrollDown: 'Scroll Crit Guide Down',
+  markDroid: 'Mark Selected Droid',
+  markLevel: 'Mark Entire Level',
+  markLeft: 'Navigate Left',
+  markRight: 'Navigate Right',
+  markUp: 'Navigate Up',
+  markDown: 'Navigate Down',
+  rebirthMarkDroid: 'Mark Selected Droid (Rebirth Requirements)',
+  rebirthMarkLeft: 'Navigate Left (Rebirth Requirements)',
+  rebirthMarkRight: 'Navigate Right (Rebirth Requirements)',
+  rebirthMarkUp: 'Navigate Up (Rebirth Requirements)',
+  rebirthMarkDown: 'Navigate Down (Rebirth Requirements)'
 };
 const HOTKEY_SETTINGS_KEY = {
   hideAll: 'hideAllHotkey',
@@ -1116,7 +1180,18 @@ const HOTKEY_SETTINGS_KEY = {
   sneakScrollDown: 'sneakScrollDownHotkey',
   critGuide: 'critGuideHotkey',
   critGuideScrollUp: 'critGuideScrollUpHotkey',
-  critGuideScrollDown: 'critGuideScrollDownHotkey'
+  critGuideScrollDown: 'critGuideScrollDownHotkey',
+  markDroid: 'markDroid',
+  markLevel: 'markLevel',
+  markLeft: 'markLeft',
+  markRight: 'markRight',
+  markUp: 'markUp',
+  markDown: 'markDown',
+  rebirthMarkDroid: 'rebirthMarkDroid',
+  rebirthMarkLeft: 'rebirthMarkLeft',
+  rebirthMarkRight: 'rebirthMarkRight',
+  rebirthMarkUp: 'rebirthMarkUp',
+  rebirthMarkDown: 'rebirthMarkDown'
 };
 
 /* Registers all twenty-one global hotkeys from current settings and returns each
@@ -1201,6 +1276,51 @@ function wireIpc(){
     storeData[key] = value;
     persistStoreDebounced();
     broadcast('store:changed', { key, value });
+    return true;
+  });
+
+  // overlay:markDroid — mark a single droid as obtained from overlay click
+  ipcMain.handle('overlay:markDroid', (evt, data)=>{
+    const { cycle, level, slot } = data;
+    if(cycle < 1 || cycle > 5 || level < 1 || level > (shared.CYCLES[cycle] ? shared.CYCLES[cycle].length : 0) || slot < 0 || slot > 2) return false;
+    const row = shared.CYCLES[cycle][level-1];
+    if(!row || !row[slot]) return false;
+    const [code, rawName] = row[slot];
+    const nk = shared.normKey(shared.canonicalName(rawName));
+    const rank = shared.rankOf(code);
+    const ownedRank = storeData['rebirth-ownedRank-v2'] || {};
+    const decision = shared.decideOwnedUpdate(ownedRank[nk], rank);
+    if(decision.action === 'clear'){
+      delete ownedRank[nk];
+    } else if(decision.action === 'set'){
+      ownedRank[nk] = rank;
+    } else {
+      return false; // blocked — don't update
+    }
+    storeData['rebirth-ownedRank-v2'] = ownedRank;
+    persistStoreDebounced();
+    broadcast('store:changed', { key: 'rebirth-ownedRank-v2', value: ownedRank });
+    return true;
+  });
+
+  // overlay:markLevel — mark all 3 droids in a rebirth level as obtained from overlay click
+  ipcMain.handle('overlay:markLevel', (evt, data)=>{
+    const { cycle, level } = data;
+    if(cycle < 1 || cycle > 5 || level < 1 || level > (shared.CYCLES[cycle] ? shared.CYCLES[cycle].length : 0)) return false;
+    const row = shared.CYCLES[cycle][level-1];
+    if(!row) return false;
+    const ownedRank = storeData['rebirth-ownedRank-v2'] || {};
+    row.forEach(d=>{
+      const [code, rawName] = d;
+      const nk = shared.normKey(shared.canonicalName(rawName));
+      const rank = shared.rankOf(code);
+      if(ownedRank[nk] === undefined || ownedRank[nk] < rank){
+        ownedRank[nk] = rank;
+      }
+    });
+    storeData['rebirth-ownedRank-v2'] = ownedRank;
+    persistStoreDebounced();
+    broadcast('store:changed', { key: 'rebirth-ownedRank-v2', value: ownedRank });
     return true;
   });
 

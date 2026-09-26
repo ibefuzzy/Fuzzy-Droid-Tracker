@@ -233,7 +233,8 @@
     getEl('rsConfirmCycleLabel').textContent = 'Cycle ' + cycle;
 
     const input = getEl('rsManualRank');
-    input.value = (guess && guess >= 1 && guess <= 35) ? guess : '';
+    const maxLevel = CYCLES[cycle] ? CYCLES[cycle].length : 40;
+    input.value = (guess && guess >= 1 && guess <= maxLevel) ? guess : '';
 
     function updateThroughLabels(){
       const n = parseInt(input.value, 10);
@@ -248,7 +249,8 @@
     getEl('rsRecalib').onclick = ()=>{ closeAll(); start(true); };
     getEl('rsApply').onclick = async ()=>{
       const n = parseInt(input.value, 10);
-      if(!n || n < 1 || n > 35){ alert('Enter a rank between 1 and 35.'); return; }
+      const maxLevel = CYCLES[cycle] ? CYCLES[cycle].length : 40;
+      if(!n || n < 1 || n > maxLevel){ alert('Enter a level between 1 and ' + maxLevel + '.'); return; }
       const through = n - 1;
       // Check cycle completion once for the whole batch, not once per row:
       // markRowObtained() can pop the cycle-complete prompt, whose choices

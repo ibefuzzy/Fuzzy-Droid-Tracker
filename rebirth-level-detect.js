@@ -262,8 +262,9 @@
         }
         const match = text.match(/\d+/);
         const guess = match ? parseInt(match[0], 10) : null;
+        const maxLevel = CYCLES[1] ? CYCLES[1].length : 40;
 
-        if(guess === null || guess < 0 || guess > 35){
+        if(guess === null || guess < 0 || guess > maxLevel){
           getEl('rlGuess').textContent = 'couldn\'t read a number (saw "' + text.trim() + '")';
           pendingValue = null; pendingCount = 0;
           return;
@@ -314,7 +315,10 @@
   // the header comment above for why this can't just be gated the same way
   // Live Detect's single-flag/early-return pattern gates that feature.
   getEl('rlDec').addEventListener('click', ()=> setLevel(Math.max(0, currentLevel-1), 'manual'));
-  getEl('rlInc').addEventListener('click', ()=> setLevel(Math.min(35, currentLevel+1), 'manual'));
+  getEl('rlInc').addEventListener('click', ()=>{
+    const maxLevel = CYCLES[1] ? CYCLES[1].length : 40;
+    setLevel(Math.min(maxLevel, currentLevel+1), 'manual');
+  });
 
   (async ()=>{
     currentLevel = (await storeGet('rebirth-currentLevel')) || 0;

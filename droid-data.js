@@ -1,10 +1,10 @@
 /* Shared droid/rarity data, extracted verbatim from the tracker's original script.
    Loaded by both tracker.html and overlay.html so they never drift apart. */
-const RCOLOR = {B:"var(--r-base)",G:"var(--r-gold)",D:"var(--r-diamond)",R:"rainbow",K:"var(--r-beskar)",X:"var(--r-galactic)",S:"var(--r-stellar)"};
-const RNAME = {B:"Base",G:"Gold",D:"Diamond",R:"Rainbow",K:"Beskar",X:"Galactic",S:"Stellar"};
-const RCLASS = {B:"rarity-base",G:"rarity-gold",D:"rarity-diamond",R:"rarity-rainbow",K:"rarity-beskar",X:"rarity-galactic",S:"rarity-stellar"};
+const RCOLOR = {B:"var(--r-base)",G:"var(--r-gold)",D:"var(--r-diamond)",R:"rainbow",K:"var(--r-beskar)",X:"var(--r-galactic)",S:"var(--r-stellar)",Y:"var(--kyber)"};
+const RNAME = {B:"Base",G:"Gold",D:"Diamond",R:"Rainbow",K:"Beskar",X:"Galactic",S:"Stellar",Y:"Kyber"};
+const RCLASS = {B:"rarity-base",G:"rarity-gold",D:"rarity-diamond",R:"rarity-rainbow",K:"rarity-beskar",X:"rarity-galactic",S:"rarity-stellar",Y:"rarity-kyber"};
 
-// each cycle: array of 35 levels, each level = array of 3 [rarityCode, name]
+// each cycle: array of 40 levels, each level = array of 3 [rarityCode, name]
 const CYCLES = {
 1:[
 [["B","Pit"],["B","DRK-1 PROBE"],["B","CB"]],
@@ -42,6 +42,11 @@ const CYCLES = {
 [["S","B1 Heavy"],["X","Cyclo-Grav"],["X","Drft-R"]],
 [["S","Groundmech"],["S","BB"],["X","Cyclens"]],
 [["S","Snow Mouse"],["S","IG"],["S","BB9"]],
+[["?","????"],["?","????"],["?","????"]],
+[["?","????"],["?","????"],["?","????"]],
+[["?","????"],["?","????"],["?","????"]],
+[["?","????"],["?","????"],["?","????"]],
+[["?","????"],["?","????"],["?","????"]],
 ],
 2:[
 [["B","Gonk"],["B","Mouse"],["B","ID10"]],
@@ -79,6 +84,11 @@ const CYCLES = {
 [["X","Opti-Strk"],["X","KX"],["S","R2"]],
 [["S","LO"],["X","RIC"],["S","R6"]],
 [["S","R7"],["S","Drft-R"],["S","Cyclens"]],
+[["?","????"],["?","????"],["?","????"]],
+[["?","????"],["?","????"],["?","????"]],
+[["?","????"],["?","????"],["?","????"]],
+[["?","????"],["?","????"],["?","????"]],
+[["?","????"],["?","????"],["?","????"]],
 ],
 3:[
 [["B","Pit"],["B","Mouse"],["B","Gonk"]],
@@ -116,6 +126,11 @@ const CYCLES = {
 [["X","Mono-Wlkr"],["X","Loadlifter"],["S","Trak-R"]],
 [["X","LEP"],["S","B2 Super"],["S","Orb Walker"]],
 [["S","Proto Roller"],["S","RIC"],["S","KX"]],
+[["?","????"],["?","????"],["?","????"]],
+[["?","????"],["?","????"],["?","????"]],
+[["?","????"],["?","????"],["?","????"]],
+[["?","????"],["?","????"],["?","????"]],
+[["?","????"],["?","????"],["?","????"]],
 ],
 4:[
 [["B","Pit"],["B","ID10"],["B","DRK-1 PROBE"]],
@@ -153,6 +168,11 @@ const CYCLES = {
 [["X","RIC-1200"],["S","B2 Heavy"],["X","BB9"]],
 [["S","Amp Walker"],["S","Strike-Orb"],["X","Mo-Trak"]],
 [["S","LEP"],["S","Loadlifter"],["S","B2-RP"]],
+[["?","????"],["?","????"],["?","????"]],
+[["?","????"],["?","????"],["?","????"]],
+[["?","????"],["?","????"],["?","????"]],
+[["?","????"],["?","????"],["?","????"]],
+[["?","????"],["?","????"],["?","????"]],
 ],
 5:[
 [["B","Mouse"],["B","Gonk"],["B","ID10"]],
@@ -190,11 +210,16 @@ const CYCLES = {
 [["S","Util-Tec"],["X","R7"],["X","Tri-Tek"]],
 [["S","Haul-R"],["S","LNG-Shot"],["X","IG"]],
 [["S","Mecha Droid"],["S","RIC-1200"],["S","Mo-Trak"]],
+[["?","????"],["?","????"],["?","????"]],
+[["?","????"],["?","????"],["?","????"]],
+[["?","????"],["?","????"],["?","????"]],
+[["?","????"],["?","????"],["?","????"]],
+[["?","????"],["?","????"],["?","????"]],
 ]
 };
 
 // low -> high
-const RARITY_ORDER = ["B","G","D","R","K","X","S"]; // low -> high
+const RARITY_ORDER = ["B","G","D","R","K","X","S","Y"]; // low -> high (Y=Kyber is highest)
 function rankOf(code){ return RARITY_ORDER.indexOf(code); }
 
 /* ---------------- droid RARITY CLASS (Common/Rare/Epic/Legendary/Mythic/Iconic) ----------------

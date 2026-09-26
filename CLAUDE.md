@@ -73,6 +73,14 @@ short on purpose so a fresh session can read it in one pass.
   = LAST level it's needed at any rarity. "Safe to sell/retire" must use the latter.
 - Ownership (`ownedRank`, normKey -> rank 0..6) is global across cycles; requirements are
   per cycle. Completing a cycle clears ownership only for droids in that cycle's table.
+- **Store listener pattern (v1.10.4):** Any window that READS ownedRank, activeCycle,
+  nameMerges, or displayOverrides must LISTEN for store changes via
+  `window.overlayAPI.onStoreChanged()`, not just load once at init. This ensures that
+  when overlays modify the store (marking droids, advancing cycles), all windows that
+  display that data see the change instantly. tracker.html is not exempt — it reads
+  ownedRank and must listen. When adding a new store key that overlays can modify,
+  add the listener to EVERY window that reads it. test/pages.test.js guards this via
+  `STORE_LISTENER_REQUIRED_PAGES`.
 - The border picker (⚙ Overlay Settings → Borders, v1.10.0) is a curated
   7-skin set (BORDER_SKINS in requirements.js: rebel/empire/jedi/mando/hunter/
   tatooine/grogu), each hand-drawn CSS/SVG (glow outline + corner brackets +
@@ -123,46 +131,51 @@ plumbing, since it reads no droid/cycle data at all). The tracker itself still
 works normally outside Electron via a localStorage fallback (real progress in
 userData is never touched).
 
-## Current status (2026-09-25): v1.10.1 built + pushed, release page open, NOT YET PUBLISHED
-v1.10.1 is a small two-fix patch on top of v1.10.0:
-- **🎯 Upcoming RB Req's HUD wraps to the next cycle.** `getUpcomingLevels()`
-  in requirements.js used to stop dead at level 35 (empty HUD once a cycle
-  was complete). It now wraps into the next cycle's levels 1+ instead of
-  clamping, and each returned entry carries its own `cycle` field (not just
-  `level`) so a caller spanning the wrap doesn't have to re-derive which
-  cycle a level belongs to — overlay.html's render() uses that field to add
-  a "· Cycle N" tag on wrapped blocks. Same idea as Sneak Preview, built into
-  the always-on HUD instead of a separate overlay.
-- **⚡ Crit Guide: toggleable info box + bigger rows.** The subtitle +
-  calc-box were wrapped in `#infoSection`, hideable via a new **ℹ Info**
-  button next to the buy counter, backed by a new `critGuideShowInfo`
-  setting (default true, so existing users see no change until they click
-  it). Purchase row fonts/padding were also bumped up (name 9.5px→11px,
-  numbers ~8.5px→10px) — with the info box hidden, noticeably more rows fit
-  without scrolling.
+## Current status (2026-09-25): v1.10.5 built, pending release
+v1.10.5 (local build, not yet pushed/released) — level expansion 35→40 + Kyber variant
+prep + timer schedule changes ahead of the 2026-09-26 game patch:
+- Expanded CYCLES to 40 levels/cycle (36-40 are blank `"?"` placeholders, filtered
+  out of all indexing/requirement logic until real droid data is entered).
+- Added Kyber rarity tier (`Y`, above Stellar) with a placeholder color, pending
+  the in-game color once the patch is live.
+- Removed the Galactic timer entirely (game is retiring it); Stellar timer changed
+  from hourly `:00` to twice-hourly `:05`/`:35`; added a Kyber timer (placeholder
+  schedule, hidden banner) ready for the real schedule.
+- Added a Droid Editor tab (tracker.html) for manual/CSV droid entry once
+  screenshots of levels 36-40 are available, with a code-export button that
+  generates the droid-data.js assignment to paste in.
+- See `memory/project_v1104_level_expansion.md` for full technical detail (file
+  written before the version-numbering issue below was caught — filenames/content
+  say "1104" but the shipped version is 1.10.5).
 
-57 tests passing (was 56; the `getUpcomingLevels` test was rewritten for the
-wrap behavior instead of the old "clamped to cycle" behavior, plus a new
-cycle-5-wraps-to-1 test). Verified live in the browser — the static-server +
-mocked-overlayAPI pattern (see "Smoke-testing" above) confirmed the HUD's
-wrap tag at currentLevel=35 and the Crit Guide toggle both directions.
-Source is on GitHub main (two commits: one for the 6 root-level files, one
-for test/requirements.test.js — GitHub's upload UI needs a separate
-`.../upload/main/<subdir>` page per target folder, root uploads don't
-preserve subdirectory structure). The v1.10.1 exe is built and checksummed
-(release/ holds only this one exe now — 1.10.0 deleted per the "keep only
-current build" rule, after confirming no running instance still had it
-locked), and its release page is open in the browser pane with everything
-prefilled — the ONLY remaining step is the user dragging the exe onto the
-page and clicking Publish. Check whether that already happened before
-assuming it's still pending.
+**Versioning lesson (2026-09-25):** this whole block of work was built and left
+labeled "1.10.4" locally, but v1.10.4 had *already been pushed and released on
+GitHub* (as the overlay-marking-sync fix, see below) before this work started in
+the same session. Building on top of an already-shipped version number without
+bumping it produces a same-numbered local exe that doesn't match what's public —
+confirmed by diffing local timers.html against `raw.githubusercontent.com/.../main/timers.html`
+(GitHub's copy still had `--galactic` and no `--kyber`, proving the mismatch).
+**Rule: the moment work starts that will ship as its own release, bump
+`package.json`'s version FIRST**, before writing feature code — don't wait until
+build time to notice the number's already taken.
 
-A project-level `.claude/settings.json` now exists (added 2026-09-25) with a
-read-only permission allowlist (Get-ChildItem, Get-Process, npm test, a few
-browser-tab/nav MCP calls, etc.) — see that file for the full list. It does
-NOT cover anything that writes/deletes/builds or executes arbitrary code
-(npm run dist, Remove-Item, node -e, browser click/type/file_upload) —
-those still prompt every time, deliberately.
+v1.10.4 (shipped, on GitHub) fixed overlay marking sync (tracker.html now listens
+for store changes from overlays).
 
-No other work is queued. If the user wants a next direction and isn't sure, ask —
-don't assume.
+v1.10.3 added hotkey-based marking to overlays (arrow keys + customizable mark key).
+
+v1.10.2 added sound notifications with two critical bug fixes from the initial implementation:
+
+- **🔔 Sound notifications on timer expiry.** Web Audio API sine-wave generator (beep 800Hz, boop 400Hz, chime 900Hz). Master volume slider 0.1–0.8 (displayed as 10–80%). Per-timer overrides (mission + blueprint) when enabled. Plays 3x with 0.5s delay. Default OFF (opt-in in Settings → Timers tab).
+
+- **🔧 Fixed: IPC settings handler mismatch.** Sound controls were calling `ipcRenderer.invoke('settings:set', ...)` directly, but `ipcRenderer` is NOT exposed to renderer via contextBridge—only `window.overlayAPI` is. Changed all 8 sound handlers to use `window.overlayAPI.setSettings()`. This was why sound settings were silently failing to save and resetting when timer sync fired.
+
+- **🔧 Fixed: Timer expiry detection logic.** All next___() functions return the *next* future occurrence, so checking `remaining <= 0` is mathematically impossible to hit (next render() tick recomputes to the next full period). Replaced with wrap-detection: compare previous tick's remaining vs current tick's; if previous was small (< 1.5s) and current jumped back up, that's the expiry moment (timers.html lines 354–381, render() calls 400–413).
+
+57 tests passing. v1.10.2 through v1.10.4 exes are built, tested, and released on
+GitHub with SHA256 checksummed in release notes. v1.10.5 source is built and
+tested locally, pending push + release (see status block above).
+
+A project-level `.claude/settings.json` exists (added 2026-09-25) with a read-only permission allowlist. Does NOT cover writes/deletes/builds/code execution (those still prompt every time, deliberately).
+
+**Workflow note for next session:** See `feedback_model_switching_strategy.md` in memory/ for when to escalate Haiku debugging to Sonnet (multi-window IPC breakdowns, impossible conditions, constraint reasoning).

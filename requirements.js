@@ -14,11 +14,13 @@
 --------------------------------------------------------------------------- */
 
 /* ---------------- NAME NORMALIZATION / MERGES ---------------- */
+/** Reduce droid name to lowercase alphanumerics only (e.g., "Clone Force 99" -> "cloneforce99"). Used as internal key. */
 function normKey(name){
   return name.toLowerCase().replace(/[^a-z0-9]/g,'');
 }
 let nameMerges = {};        // rawName (as it appears in CYCLES) -> canonical display name
 let displayOverrides = {};  // normKey -> preferred display name
+/** Resolve droid name through any active merges/renames. If rawName was merged, return the merged display name; otherwise return rawName unchanged. */
 function canonicalName(rawName){
   return nameMerges[rawName] || rawName;
 }
@@ -27,13 +29,17 @@ function canonicalName(rawName){
 let DROID_INDEX = {};  // normKey -> {display, entries:[...], ceilingRank}
 let RAW_GROUPS = {};
 
+/** Build the global DROID_INDEX from CYCLES. Called once at startup and whenever a name merge changes. Updates DROID_INDEX and invalidates the rarity-class cache. */
 function buildIndex(){
   const groups = {};
   for(let c=1;c<=5;c++){
-    for(let l=1;l<=35;l++){
+    const cycleLen = CYCLES[c] ? CYCLES[c].length : 0;
+    for(let l=1;l<=cycleLen;l++){
       const row = CYCLES[c][l-1];
       row.forEach((d,i)=>{
         const code = d[0], rawName = d[1];
+        // Skip placeholder droids (code = "?") — levels 36-40 pending update
+        if(code === '?') return;
         const canon = canonicalName(rawName);
         const nk = normKey(canon);
         if(!groups[nk]) groups[nk] = { names:{}, entries:[] };
@@ -73,11 +79,15 @@ function buildIndex(){
 
 /* ---------------- PER-CYCLE REBIRTH CEILINGS ----------------
    For one cycle, the highest rarity each droid appears at, level 1-35. */
+/** Per-cycle rarity ceiling: the FIRST level each droid hits its max rarity. Returns {nk -> {rank, cycle, level, slot, code}}. Use for icon lookups; do NOT use for "safe to retire" (see cycleLastNeededLevel). */
 function cycleCeilings(cycle){
   const ceilings = {}; // nk -> {rank, cycle, level, slot, code}
-  for(let l=1;l<=35;l++){
+  const cycleLen = CYCLES[cycle] ? CYCLES[cycle].length : 0;
+  for(let l=1;l<=cycleLen;l++){
     const row = CYCLES[cycle][l-1];
     row.forEach((d,i)=>{
+      // Skip placeholder droids (code = "?")
+      if(d[0] === '?') return;
       const code = d[0];
       const nk = normKey(canonicalName(d[1]));
       const rank = rankOf(code);
@@ -102,8 +112,10 @@ function cycleCeilings(cycle){
 /* One level's 3 required droids, with display names resolved and each
    flagged `owned` if ownedRank already covers it (from elsewhere in the
    cycle/other cycles) — purely informational, doesn't change what's shown. */
+/** Get the 3 droids required for one specific rebirth level. Returns [{nk, display, code, rank, owned, ownedRankValue, cycle, level, slot}] or null if level is invalid. */
 function getLevelRequirements(cycle, level, ownedRank){
-  if(level < 1 || level > 35) return null;
+  const cycleLen = CYCLES[cycle] ? CYCLES[cycle].length : 0;
+  if(level < 1 || level > cycleLen) return null;
   const row = CYCLES[cycle][level-1];
   return row.map((d,i)=>{
     const code = d[0];
@@ -138,13 +150,15 @@ function getLevelRequirements(cycle, level, ownedRank){
    what's coming in the next one, same idea as Sneak Preview. Each entry
    carries its own `cycle` (not just `level`) so a caller spanning the wrap
    can tell which levels belong to the next cycle without re-deriving it. */
+/** Get next `count` rebirth levels starting after currentLevel. Wraps cycle 5→1. Returns [{cycle, level, droids: [...]}]. Each entry carries its own cycle for wrap detection. */
 function getUpcomingLevels(cycle, currentLevel, ownedRank, count){
   const out = [];
   let workingCycle = cycle;
   let workingLevel = Math.max(0, currentLevel) + 1;
 
   while(out.length < count){
-    if(workingLevel > 35){
+    const cycleLen = CYCLES[workingCycle] ? CYCLES[workingCycle].length : 0;
+    if(workingLevel > cycleLen){
       workingCycle = nextCycleOf(workingCycle);
       workingLevel = 1;
     }
@@ -170,11 +184,15 @@ function getUpcomingLevels(cycle, currentLevel, ownedRank, count){
    at level 31, so using cycleCeilings' level here would call it safe to
    retire 3 rebirths too early. This function instead tracks the latest
    level seen for each droid, independent of rarity. */
+/** Get the LAST (highest) level each droid is needed in a cycle. Returns {nk -> level}. Use this (not cycleCeilings) for "safe to retire" logic. */
 function cycleLastNeededLevel(cycle){
   const lastLevel = {}; // nk -> highest level number requiring this droid, any rarity
-  for(let l=1;l<=35;l++){
+  const cycleLen = CYCLES[cycle] ? CYCLES[cycle].length : 0;
+  for(let l=1;l<=cycleLen;l++){
     const row = CYCLES[cycle][l-1];
     row.forEach(d=>{
+      // Skip placeholder droids (code = "?")
+      if(d[0] === '?') return;
       const nk = normKey(canonicalName(d[1]));
       lastLevel[nk] = l; // levels visited in increasing order, so the last write is the true max
     });
@@ -187,6 +205,7 @@ function cycleLastNeededLevel(cycle){
    way. Every CYCLES droid has an entry as of v1.6.0; anything that somehow
    doesn't (see the fallback below) is treated as 'Default'. */
 let RARITY_CLASS_BY_NK = null;
+/** Get the rarity class (Mythic/Legendary/etc.) for a droid by normKey. Caches result and is invalidated by buildIndex(). Returns string like 'Mythic' or 'Default' if unknown. */
 function getDroidRarityClass(nk){
   if(!RARITY_CLASS_BY_NK){
     RARITY_CLASS_BY_NK = {};
@@ -216,6 +235,7 @@ function getDroidRarityClass(nk){
    droid shows the same art — rarity is conveyed by color/badge, not
    different art per variant — exactly how the Rebirth Reqs panel already
    looks up icons). */
+/** Get all droids safe to retire/sell in this cycle (owned + already past last-needed level). Returns [{nk, display, ownedCode, rarityClass, iconKey}] sorted Mythic first, then name. */
 function getDeclutterList(cycle, currentLevel, ownedRank){
   const lastNeeded = cycleLastNeededLevel(cycle);
   const ceilings = cycleCeilings(cycle);
@@ -251,7 +271,9 @@ function getDeclutterList(cycle, currentLevel, ownedRank){
    prompt) can see what to start hunting before flipping over. Returns
    [{nk, display, rank, code, ownedCode, iconKey}] sorted highest required
    variety first, then name. `cycle` is the CURRENT cycle; 5 wraps to 1. */
+/** Wrap cycle number: cycle 5 to 1, all others increment by 1. */
 function nextCycleOf(cycle){ return cycle >= 5 ? 1 : cycle + 1; }
+/** Get all Mythic droids in the next cycle at their ceiling rarity. Returns {nextCycle, items: [{nk, display, rank, code, ownedCode, iconKey}]} sorted highest-needed first. */
 function getSneakPreview(cycle, ownedRank){
   const next = nextCycleOf(cycle);
   const ceilings = cycleCeilings(next);
@@ -304,6 +326,7 @@ const BORDER_SKIN_ORDER = ['rebel', 'empire', 'jedi', 'mando', 'hunter', 'tatooi
    element instead of passing a hex through here; keeps this a 1-argument
    function no call site can get wrong. Returns '' for an unknown key so a
    bad/stale settings value never throws, just renders no icon. */
+/** Render SVG emblem for a border skin badge. Pass key from BORDER_SKIN_ORDER. Sizes to `size` (default 20). Returns SVG string or '' if key unknown. */
 function borderIconSvg(key, size){
   const s = size || 20;
   const open = '<svg width="' + s + '" height="' + s + '" viewBox="0 0 64 64" fill="currentColor">';
@@ -345,6 +368,7 @@ function borderIconSvg(key, size){
 
 /* How many of a cycle's 105 slots (35 levels x 3) are covered by ownedRank
    (global, keyed by name) at that slot's required rarity or better. */
+/** Count how many of a cycle's 105 rebirth slots are covered by owned droids at the required rarity or better. Returns 0–105 integer. */
 function cycleCoveredCount(cycle, ownedRank){
   let covered = 0;
   CYCLES[cycle].forEach(row=>{
@@ -358,10 +382,15 @@ function cycleCoveredCount(cycle, ownedRank){
 }
 
 /* The set of normKeys that appear anywhere in a cycle's requirement table. */
+/** Get the Set of all normKeys that appear in a cycle's requirement table (used for clearing ownership on cycle completion). */
 function cycleDroidKeys(cycle){
   const keys = new Set();
   CYCLES[cycle].forEach(row=>{
-    row.forEach(d=>{ keys.add(normKey(canonicalName(d[1]))); });
+    row.forEach(d=>{
+      // Skip placeholder droids (code = "?")
+      if(d[0] === '?') return;
+      keys.add(normKey(canonicalName(d[1])));
+    });
   });
   return keys;
 }
@@ -369,6 +398,7 @@ function cycleDroidKeys(cycle){
 /* A NEW ownedRank object with every key belonging to this cycle's table
    deleted — does not mutate the object passed in, so the caller decides
    when (and whether) to commit the result to the real ownedRank/storage. */
+/** Return a NEW ownedRank with all droids from this cycle deleted (for cycle completion). Does NOT mutate the input. */
 function removeCycleMarks(cycle, ownedRank){
   const next = Object.assign({}, ownedRank);
   cycleDroidKeys(cycle).forEach(nk=>{ delete next[nk]; });
@@ -382,6 +412,7 @@ function removeCycleMarks(cycle, ownedRank){
      - anything lower than what's already on record            -> 'blocked'
        (never silently downgrades a real claim from a stray click — the
        caller is expected to point the player at right-click instead) */
+/** Decide the ownership action for a click: 'set' (upgrade/new), 'clear' (toggle off), or 'blocked' (downgrade prevented). Returns {action}. */
 function decideOwnedUpdate(currentRank, requestedRank){
   if(currentRank === requestedRank) return { action:'clear' };
   if(currentRank === undefined || requestedRank > currentRank) return { action:'set' };
@@ -390,6 +421,7 @@ function decideOwnedUpdate(currentRank, requestedRank){
 
 /* What Export produces and Import accepts: an object with an ownedRank map
    of normKey -> integer rarity rank in [0, RARITY_ORDER.length). */
+/** Validate an import payload structure: {ownedRank: {normKey -> rank integer}}. Returns boolean. */
 function isValidImportPayload(parsed){
   const isObj = v => v !== null && typeof v === 'object' && !Array.isArray(v);
   if(!isObj(parsed) || !isObj(parsed.ownedRank)) return false;
