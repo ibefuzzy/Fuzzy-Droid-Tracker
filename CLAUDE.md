@@ -144,6 +144,35 @@ plumbing, since it reads no droid/cycle data at all). The tracker itself still
 works normally outside Electron via a localStorage fallback (real progress in
 userData is never touched).
 
+## Current status (2026-09-26): real Kyber color confirmed (emerald, `#50c878`)
+
+The user sent an in-game screenshot of Kyber-rank droid cards: a vivid,
+shimmering emerald green (crystal-facet gradient, matching the same
+dark-to-bright-to-near-white-highlight-to-dark shimmer pattern already used
+for Gold/Diamond/Stellar). Every `--r-kyber`/`--kyber` CSS variable across
+the project is now `#50c878` (was placeholder `#d0a0ff`, briefly `#43e35f`
+before the user clarified they wanted an emerald tone specifically, not a
+flatter vivid green):
+- `tracker.html` — `--r-kyber` var, `.rarity-kyber` gradient (now
+  `linear-gradient(155deg,#0b3d24 0%,#1fae65 35%,#eafff2 50%,#50c878 65%,#0a3320 100%)`),
+  and the Timers tab's "Schedule readout" dot + text (also updated the text
+  itself, which still said "[Schedule TBD — coming with game update]" even
+  though the schedule was confirmed the day before — see the block below).
+- `timers.html` — `--kyber` var (drives the Kyber banner's `--accent-color`).
+- `overlay.html`, `rebirth-requirements-overlay.html`, `sneak-preview.html`,
+  `declutter.html` — each carries its own `--r-kyber` copy (no shared CSS
+  file across overlays), all updated to match.
+- One `#d0a0ff` reference remains, at `tracker.html`'s Droid Editor settings
+  tab (`--saber:#d0a0ff` on `#setTab-droideditor`) — that's an unrelated tab
+  accent color that happened to reuse the same old hex; it is NOT a Kyber
+  reference and was deliberately left alone.
+
+61/61 tests still passing (color values aren't covered by
+`cycleRealLevelCount`-style logic tests, only the CSS-coverage-per-rarity-code
+test from the prior sweep, which just checks the selectors exist — it passed
+before and after). No more placeholder/TBD Kyber color language should
+remain anywhere in the project as of this commit.
+
 ## Current status (2026-09-27): droid-data.js/icons-data.js replaced with the user's real local files
 
 **The whole "port real level 36-40 data from the sibling web-tracker repo"

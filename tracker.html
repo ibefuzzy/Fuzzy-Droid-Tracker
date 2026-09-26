@@ -28,7 +28,7 @@
     --r-beskar: #b9c2cc;
     --r-galactic: #c96bf2;
     --r-stellar: #e08a3c;
-    --r-kyber: #d0a0ff; /* placeholder, same as timers.html's --kyber — update both together once the real in-game color is confirmed */
+    --r-kyber: #50c878; /* confirmed 2026-09-26 from in-game Kyber cards (emerald), same as timers.html's --kyber — keep both in sync */
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;}
@@ -322,7 +322,7 @@
   .rarity-beskar{background:linear-gradient(155deg,#6b7178 0%,#c9ced3 35%,#f5f7f8 50%,#aab0b6 65%,#4c5157 100%);}
   .rarity-galactic{background:linear-gradient(155deg,#3d1a63 0%,#9b4de0 38%,#e2c3ff 50%,#8536d6 62%,#2c0f4d 100%);}
   .rarity-stellar{background:linear-gradient(155deg,#7a3d0a 0%,#e2841f 30%,#ffe2a6 48%,#ffb545 58%,#c9670f 75%,#5c2a05 100%);}
-  .rarity-kyber{background:linear-gradient(155deg,#4a2d73 0%,#a06be0 35%,#f0e2ff 50%,#c39bff 65%,#3a1f5c 100%);} /* placeholder gradient, see --r-kyber above */
+  .rarity-kyber{background:linear-gradient(155deg,#0b3d24 0%,#1fae65 35%,#eafff2 50%,#50c878 65%,#0a3320 100%);} /* confirmed emerald, see --r-kyber above */
   .icon-badge.rarity-beskar::before, .icon-badge.rarity-stellar::before, .icon-badge.rarity-kyber::before{
     content:'';position:absolute;inset:0;z-index:0;
     background:linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.55) 46%, transparent 58%);
@@ -1293,7 +1293,7 @@
           <ul class="sched-list">
             <li><span class="sched-dot" style="--c:#e08a3c"></span><b>✨ Stellar Blueprint</b><span>every 30 min: 5min and 35min after hour</span></li>
             <li><span class="sched-dot" style="--c:#ff4d6d"></span><b>🌌 Mythic Blueprint</b><span>every hour at :55</span></li>
-            <li><span class="sched-dot" style="--c:#d0a0ff"></span><b>💎 Kyber Blueprint</b><span>[Schedule TBD — coming with game update]</span></li>
+            <li><span class="sched-dot" style="--c:#50c878"></span><b>💎 Kyber Blueprint</b><span>every 5 min during the 9/26–9/27 launch event, then hourly on the hour</span></li>
             <li><span class="sched-dot" style="--c:#5ef2a6"></span><b>🎯 Mission</b><span>every 50 minutes: Stormtrooper → Fishing → D-0 → Mining</span></li>
           </ul>
         </section>

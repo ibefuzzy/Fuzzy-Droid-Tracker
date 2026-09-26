@@ -7,12 +7,12 @@
   :root{
     /* Color palette for blueprint timers (v1.10.5). Stellar and Mythic were
        re-matched 2026-09-19 against real in-game screenshots. Kyber's
-       SCHEDULE was confirmed 2026-09-26 (see nextKyber() below) but its
-       COLOR is still a placeholder — update once matched against a real
-       in-game screenshot. */
+       SCHEDULE was confirmed 2026-09-26 (see nextKyber() below); its COLOR
+       (emerald) was confirmed the same day from real in-game Kyber card
+       screenshots. */
     --stellar: #edb142;
     --rarity-mythic: #ff4d6d;
-    --kyber: #d0a0ff;  /* Placeholder — update with actual Kyber in-game color */
+    --kyber: #50c878;  /* Confirmed 2026-09-26 from in-game Kyber cards (emerald) */
     --mission: #5ef2a6;
   }
   html,body{
@@ -260,8 +260,7 @@
       return next;
     }
     // Normal schedule (before/after the event window): once per hour, on
-    // the hour. Color still pending real in-game confirmation - see --kyber
-    // in :root above.
+    // the hour.
     const next = new Date(now);
     next.setMinutes(0, 0, 0);
     if(next <= now) next.setHours(next.getHours() + 1);
