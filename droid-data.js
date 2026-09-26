@@ -210,7 +210,7 @@ const CYCLES = {
 [["S","Util-Tec"],["X","R7"],["X","Tri-Tek"]],
 [["S","Haul-R"],["S","LNG-Shot"],["X","IG"]],
 [["S","Mecha Droid"],["S","RIC-1200"],["S","Mo-Trak"]],
-[["Y","Roll-R"],["Y","Hov-R"],["Y","Mouse"]],
+[["Y","BDX Explorer"],["Y","2BB"],["Y","A-LT"]],
 [["Y","BB"],["Y","R2"],["Y","R6"]],
 [["Y","LO"],["Y","Trak-R"],["Y","Mecha Droid"]],
 [["Y","Cyclo-Grav"],["Y","Opti-Strk"],["Y","RIC"]],
