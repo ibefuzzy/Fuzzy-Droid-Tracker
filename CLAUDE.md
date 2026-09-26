@@ -144,6 +144,85 @@ plumbing, since it reads no droid/cycle data at all). The tracker itself still
 works normally outside Electron via a localStorage fallback (real progress in
 userData is never touched).
 
+## Current status (2026-09-27): droid-data.js/icons-data.js replaced with the user's real local files
+
+**The whole "port real level 36-40 data from the sibling web-tracker repo"
+effort described in the block below this one was based on a wrong
+assumption and has been superseded.** Sequence of what actually happened,
+for the next session's sake:
+
+1. Cloud session (no access to the user's machine) found this repo's
+   `droid-data.js` still had "?" placeholders for levels 36-40 and ported
+   real Kyber data in from `ibefuzzy/ibefuzzy.github.io`, which already had
+   it entered.
+2. User reported hotkey-based mark/navigate hotkeys "have worked for a
+   while" — contradicting the cloud session's find that they're wired to
+   nothing. This surfaced that **the user's actual local build is v1.10.8**,
+   three versions ahead of what was on GitHub (v1.10.5) — the whole
+   `main.js` keybinds-lock feature, and God knows what else, existed locally
+   and had never been pushed.
+3. A separate Claude Desktop session reconciled `main.js`/`timers.html`/
+   `tracker.html`/`requirements.js` against the user's real 1.10.8 and sent
+   them back — but did NOT touch `droid-data.js`/`icons-data.js`, so those
+   two stayed exactly as the user's real local copies already were.
+4. Diffing those real local files against what the cloud session had ported
+   found **306 cell-level differences** in `droid-data.js` — almost all just
+   left-to-right SLOT-ORDER differences within a level (same 3 droids,
+   different position), not different droids. This means the GitHub copy of
+   `droid-data.js` had diverged from the user's real, actively-maintained
+   local copy at some point well before this session, in ways having
+   nothing to do with the level-40 work. Slot order matters for icon-key
+   lookups and any OCR screen-position matching, so this was a real bug,
+   not cosmetic.
+5. One near-miss: the user initially said cycle 5 level 36 was
+   "correct in the app" as BDX Explorer/2BB/A-LT — which matched neither
+   their own real local file (which has Roll-R/Hov-R/Mouse there) nor the
+   ported web-tracker data at that exact row. Turned out they'd checked
+   Cycle 1 (which genuinely is BDX Explorer/2BB/A-LT at level 36), not
+   Cycle 5. **Lesson: when a user reports live in-game data that contradicts
+   a file you're looking at, get the exact cycle/level re-confirmed before
+   editing anything — a one-cycle mix-up looks exactly like a real data bug
+   from the outside.**
+6. The user's real local `icons-data.js` turned out to still be the
+   original 525-key file (no Kyber icons at all) — confirmed both by
+   parsing it (`Object.keys(ICONS).length === 525`) and by the user
+   checking its on-disk file size in Windows Explorer
+   (3,335,896 bytes, matching exactly). The user initially pushed back that
+   their live app "has icons though I'm using it now" — resolved by an
+   important Electron-specific fact: **a classic `<script src>` file is read
+   once at renderer launch and kept in memory for the life of that window;
+   it does not hot-reload from disk.** The user had launched the app before
+   this session touched anything, so what's currently on screen reflects
+   whatever `icons-data.js` looked like at THAT launch, not necessarily
+   what's on disk right now. Relaunching (not yet confirmed as of this
+   writing) is the real test.
+
+**Fix applied:** `droid-data.js` was replaced wholesale with the user's real
+local file (correct slot ordering, ground truth) rather than patched
+cell-by-cell. `icons-data.js` was rebuilt from the user's real local
+525-key file plus the 75 missing Kyber (36-40) icons, each one reusing that
+same droid's existing portrait from its own 1-35 appearance elsewhere in
+`droid-data.js` (Kyber reuses the same 62-droid pool at a new top rarity, so
+every needed name already has an icon somewhere) — NOT pulled from the web
+tracker, which uses different slot ordering for the same underlying data
+and would have reintroduced the exact mismatch this fix corrects. Verified:
+600/600 keys, every value decodes as valid WEBP, 61/61 tests still pass
+unchanged (slot order doesn't affect any ceiling/last-needed/pairs
+computation, only which physical position a name+icon sit in).
+
+**Still needs the user's confirmation:** relaunch the app with these two
+files in place and confirm levels 36-40 show real droid portraits, not
+blank boxes. If they don't, the icon-reuse mapping needs a second look.
+
+**Also still outstanding from the reconciliation:** `overlay.html`,
+`rebirth-requirements-overlay.html`, and `preload.js` were never sent by
+either the desktop session or the user — these are presumably where the
+actually-working Left/Right mark-navigation code lives (Up/Down don't work
+in "Upcoming RB Req's" per the user; Rebirth Requirements untested). Do not
+assume these three match what's in this repo — get the real files before
+touching anything mark/navigate-related again, same lesson as items 4-6
+above: the sync assumption failed once already this session.
+
 ## Current status (2026-09-27): full-project bug sweep
 
 After the level-40/Kyber data went in (see block below), ran a full-scope
