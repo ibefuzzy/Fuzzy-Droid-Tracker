@@ -216,12 +216,15 @@ action needed on droid-data.js/icons-data.js from this effort.
 
 **Also still outstanding from the reconciliation:** `overlay.html`,
 `rebirth-requirements-overlay.html`, and `preload.js` were never sent by
-either the desktop session or the user — these are presumably where the
-actually-working Left/Right mark-navigation code lives (Up/Down don't work
-in "Upcoming RB Req's" per the user; Rebirth Requirements untested). Do not
-assume these three match what's in this repo — get the real files before
-touching anything mark/navigate-related again, same lesson as items 4-6
-above: the sync assumption failed once already this session.
+either the desktop session or the user, so this repo's copies of those
+three are still unconfirmed against the user's real v1.10.8 build. The
+Up/Down mark-navigation bug the user originally reported ("Left and right
+appear to work... up and down isn't working") turned out to be transient —
+the user later confirmed (2026-09-26) navigation is working now, with no
+code change made from this session. So: no known bug remains, but if
+mark/navigate issues resurface, still get the real files first rather than
+assuming this repo's copies match — the sync assumption already failed once
+this session (see items 4-6 above).
 
 ## Current status (2026-09-27): full-project bug sweep
 
