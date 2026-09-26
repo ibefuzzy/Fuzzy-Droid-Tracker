@@ -92,6 +92,19 @@ short on purpose so a fresh session can read it in one pass.
   toolbar, settings panel, Rebirth Reqs side panel and droid list stay a fixed
   blue, not user-borderable. Don't expand past 7 or add sourced-image skins
   without the user raising it again.
+- **Never open/save any project file (JS/HTML, this repo's or the sibling
+  web tracker's) without pinning `encoding='utf-8'` explicitly, especially
+  from a Windows-side script.** Windows' default `open()` locale encoding is
+  cp1252, not UTF-8; reading UTF-8 source that way and writing it back out as
+  UTF-8 double-encodes every em-dash/emoji/special character into mojibake
+  that looks fine in a diff tool set to the same wrong encoding but is
+  actually corrupt. This cost a full session on the sibling
+  `ibefuzzy/ibefuzzy.github.io` repo (v1.10.8, 2026-09-26) before it was
+  diagnosed — see that repo's `memory/encoding_corruption_playbook.md` for
+  the exact byte-level diagnostic (how to tell recoverable double-encoding
+  apart from an earlier "fix" that destroyed it with U+FFFD, and how to
+  reverse it) if this project's own README/HTML ever shows `�` or
+  `â€™`-style garbage.
 - No git on this machine (not installed). GitHub repo: ibefuzzy/Fuzzy-Droid-Tracker.
   Source pushes go through Claude in Chrome's `file_upload` onto
   `github.com/ibefuzzy/Fuzzy-Droid-Tracker/upload/main` — works directly from the
