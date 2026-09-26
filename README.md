@@ -329,7 +329,7 @@ game's rebirth requirement tables at all, so they're correctly absent.)
 **A correctness note worth knowing:** this is *not* the same check as "have
 I already seen this droid hit its max colorway" — a droid can reach its
 ceiling colorway at one level and then reappear at a *later* level in the
-same cycle (this happens for 13 of the 224 droid/cycle combinations in the
+same cycle (this happens for 8 of the 238 droid/cycle combinations in the
 real requirement data). The list tracks each droid's true final appearance
 level, so it won't tell you something's safe to retire while the cycle could
 still ask for it again.
