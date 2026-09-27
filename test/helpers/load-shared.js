@@ -16,7 +16,8 @@ const vm = require('vm');
 const ROOT = path.join(__dirname, '..', '..');
 
 function loadShared(files = ['droid-data.js', 'requirements.js']) {
-  const ctx = vm.createContext({ console });
+  // the browser globals requirements.js uses (share codes, v1.13.0)
+  const ctx = vm.createContext({ console, TextEncoder, TextDecoder, atob, btoa });
   for (const f of files) {
     const src = fs.readFileSync(path.join(ROOT, f), 'utf8');
     vm.runInContext(src, ctx, { filename: f });
