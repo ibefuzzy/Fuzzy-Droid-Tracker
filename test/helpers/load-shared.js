@@ -43,6 +43,13 @@ function loadShared(files = ['droid-data.js', 'requirements.js']) {
     getDeclutterList: run('getDeclutterList'),
     nextCycleOf: run('nextCycleOf'),
     getSneakPreview: run('getSneakPreview'),
+    cycleRealLevelCount: run('cycleRealLevelCount'),
+    cycleRealSlotCount: run('cycleRealSlotCount'),
+    cycleCoveredCount: run('cycleCoveredCount'),
+    cycleDroidKeys: run('cycleDroidKeys'),
+    removeCycleMarks: run('removeCycleMarks'),
+    decideOwnedUpdate: run('decideOwnedUpdate'),
+    isValidImportPayload: run('isValidImportPayload'),
     // live views of the mutable module state (re-read after buildIndex())
     get DROID_INDEX() { return run('DROID_INDEX'); },
     get nameMerges() { return run('nameMerges'); },

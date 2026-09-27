@@ -1827,7 +1827,7 @@ async function handleRename(nk, newVal){
 
 /* ---------------- RENDER: LEGEND ---------------- */
 function renderLegend(){
-  const order = ["B","G","D","R","K","X","S"];
+  const order = RARITY_ORDER; // was hardcoded ["B",...,"S"], silently dropping Kyber ("Y")
   const legendEl = getEl('legend');
   legendEl.innerHTML = order.map(code=>{
     return '<span class="item"><span class="dot ' + RCLASS[code] + '"></span>' + RNAME[code] + '</span>';

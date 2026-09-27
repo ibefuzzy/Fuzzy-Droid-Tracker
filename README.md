@@ -526,6 +526,10 @@ a permanent fixture, so it always reopens centered. (**Ctrl+Shift+1**, Hide
 All Overlays, hides this card too, but doesn't have its own on/off state to
 toggle back — see above.)
 
+**v1.10.10:** the card now lists the 🎯/🧬 mark & navigate hotkeys and the
+🔒 Lock/unlock all keybinds hotkey when they're bound — before, the card
+was sized for them but left a blank gap where they should have been.
+
 It reads its rows live from **⚙ Overlay Settings**, so if you rebind any
 hotkey there, the list updates immediately without a restart. Only hotkeys
 that are actually bound are listed — the optional ones (scroll and tier
