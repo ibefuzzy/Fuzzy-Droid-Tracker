@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en" data-ov-name="spawnAlert" data-ov-zoom="fit">
+<head>
+<meta charset="UTF-8">
+<title>Fuzzy's Droid Tracker — Spawn Alert</title>
+<!-- v1.14.0 Spawn Alert. While settings.spawnAlertVisible is on, this page reads
+     the game's feed (a small box at the left of the captured screen) about every
+     1.5 s and shows each NEW "<Type> Droid (<Tier>) spawned" line big:
+     "DROID SPAWN" over "<Type> <Tier>". spawn-parse.js decides what is a spawn
+     line and what is new (test/spawn-parse.test.js replays a real capture).
+     Transparent and click-through while locked, so it draws nothing between
+     alerts; unlocked, it shows a sample to drag. The frame follows the border
+     skin and theme like the other overlays. OCR text is untrusted: only the
+     parsed type/tier keys (fixed lists) reach the page, via textContent. -->
+<link rel="stylesheet" href="overlay-theme.css">
+<style>
+  :root{
+    --accent: #4fa8ff; /* this overlay's border skin, Jedi blue by default */
+    --sw-rgb: 79,168,255;
+    --ov-backdrop-rgb: 6,12,16;
+    --ov-backdrop-alpha: 0.8;
+    /* tier colours (the user's picks, 2026-09-27) */
+    --t-common: #ffffff; --t-rare: #4fb8ff; --t-epic: #b46bff; --t-legendary: #ffc83d; --t-mythic: #ff6ec7;
+  }
+  html,body{
+    margin:0; padding:0; background:transparent; overflow:hidden; width:100%; height:100%;
+    font-family:'Segoe UI',system-ui,sans-serif;
+    -webkit-user-select:none; user-select:none;
+  }
+  body{ display:flex; flex-direction:column; box-sizing:border-box; padding:4px; }
+  .drag-handle{
+    display:none; flex:0 0 auto;
+    cursor:move; touch-action:none; /* moved by overlay-drag.js, never -webkit-app-region */
+    align-items:center; justify-content:space-between; gap:8px;
+    background:rgba(94,242,166,0.22); border:1px solid rgba(94,242,166,0.55); border-radius:6px;
+    padding:3px 8px; font-size:11px; color:#eafff3; letter-spacing:.02em;
+  }
+  body.unlocked .drag-handle{ display:flex; }
+  .drag-handle button{
+    background:var(--accent); color:#08130d; border:none; border-radius:4px;
+    font-size:11px; font-weight:700; padding:3px 9px; cursor:pointer;
+  }
+  .stage{ flex:1; min-height:0; display:flex; align-items:center; justify-content:center; padding-top:12px; }
+
+  /* the alert: slim holo frame (mockup round 3, user-approved) */
+  .alert{
+    --tc: var(--t-rare);
+    position:relative; display:none; text-align:center;
+    padding:14px 28px 11px; border-radius:6px;
+    background:rgba(var(--ov-backdrop-rgb), var(--ov-backdrop-alpha));
+    border:1px solid rgba(var(--sw-rgb),.35);
+    box-shadow:0 0 16px -6px rgba(var(--sw-rgb),.6), inset 0 0 26px -18px rgba(var(--sw-rgb),.8);
+  }
+  .alert.show{ display:inline-block; animation:pop .22s ease-out; }
+  .alert::before,.alert::after{ content:''; position:absolute; width:14px; height:14px; border:2px solid rgba(var(--sw-rgb),.9); }
+  .alert::before{ left:-2px; top:-2px; border-right:0; border-bottom:0; }
+  .alert::after{ right:-2px; bottom:-2px; border-left:0; border-top:0; }
+  @keyframes pop{ from{ opacity:0; transform:translateY(-8px) scale(.96); } to{ opacity:1; transform:none; } }
+  .border-badge{
+    position:absolute; left:50%; top:-14px; transform:translateX(-50%);
+    width:26px; height:26px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    background:#08131a; border:1.5px solid rgba(var(--sw-rgb),.9); color:var(--accent);
+  }
+  .hdr{
+    font-size:12px; letter-spacing:.24em; padding-left:.24em; font-weight:800; text-transform:uppercase;
+    color:rgba(var(--sw-rgb),.95); text-shadow:0 0 3px #000, 0 1px 2px #000;
+  }
+  .hdr.warn{ color:#f2b95e; }
+  .line{ margin-top:2px; font-size:32px; font-weight:900; line-height:1.12; white-space:nowrap; filter:drop-shadow(0 2px 2px rgba(0,0,0,.8)); }
+  .line.small{ font-size:15px; font-weight:700; white-space:normal; color:#e8ece9; max-width:340px; }
+  .tier{ color:var(--tc); margin-left:.25em; text-shadow:0 0 12px color-mix(in srgb, var(--tc) 55%, transparent); }
+  .tier:empty{ display:none; }
+
+  /* each type's own look (the app's --r-* colours, as metal/gem gradients) */
+  .vw{ display:inline-block; color:#d7ddd9; }
+  .v-gold .vw, .v-diamond .vw, .v-rainbow .vw, .v-beskar .vw, .v-galactic .vw, .v-stellar .vw, .v-kyber .vw{
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .v-gold .vw{ background-image:linear-gradient(180deg,#fff6c4 0%,#f4d565 38%,#e8c04a 55%,#b8861a 100%); }
+  .v-diamond .vw{ background-image:linear-gradient(160deg,#e9fdff 0%,#8eeaf7 30%,#4fd3e8 55%,#b9f5ff 75%,#3fb6d2 100%); }
+  .v-rainbow .vw{ background-image:linear-gradient(90deg,#ff6ec7,#ffb86e,#fff06e,#6ef7a0,#6ecbff,#b98cff,#ff6ec7); background-size:200% 100%; animation:rb 4s linear infinite; }
+  @keyframes rb{ to{ background-position:200% 0; } }
+  .v-beskar .vw{ background-image:linear-gradient(180deg,#f4f7fa 0%,#c9d1d9 40%,#8e99a5 60%,#dfe5ea 80%,#9aa5b0 100%); }
+  .v-galactic .vw{ background-image:linear-gradient(120deg,#f0b8ff 0%,#c96bf2 35%,#7a5cff 65%,#e38bff 100%); }
+  .v-stellar .vw{ background-image:linear-gradient(180deg,#ffe0a8 0%,#f0a650 45%,#e08a3c 65%,#b85e1e 100%); }
+  .v-kyber .vw{ background-image:linear-gradient(180deg,#d6ffe6 0%,#7ee8a6 40%,#50c878 65%,#2f9a58 100%); }
+  @media (prefers-reduced-motion:reduce){ .v-rainbow .vw, .alert.show{ animation:none; } }
+
+  .status{ display:none; flex:0 0 auto; text-align:center; font-size:10.5px; color:#dfe8e2; text-shadow:0 1px 2px #000; padding-top:2px; }
+  body.unlocked .status{ display:block; }
+</style>
+</head>
+<body>
+  <div class="drag-handle" id="dragHandle">
+    <span>📡 Spawn Alert — drag to move</span>
+    <button id="lockBtn">Lock</button>
+  </div>
+  <div class="stage">
+    <div class="alert" id="alert">
+      <div class="border-badge" id="borderBadge"></div>
+      <div class="hdr" id="alertHdr">Droid Spawn</div>
+      <div class="line"><span class="vw" id="alertType"></span><span class="tier" id="alertTier"></span></div>
+    </div>
+  </div>
+  <div class="status" id="status"></div>
+<script src="droid-data.js"></script>
+<script src="requirements.js"></script>
+<script src="spawn-parse.js"></script>
+<script src="sounds/good-news-data.js"></script>
+<script src="alert-sound.js"></script>
+<script src="node_modules/tesseract.js/dist/tesseract.min.js"></script>
+<script>
+(function(){
+  if(!window.overlayAPI) return;
+
+  const READ_MS = 1500;   // one read per 1.5 s: a spawn line stays up 5-10 s
+  const UPSCALE = 2;      // Tesseract reads the ~12 px game text far better doubled
+  const CUT = 160;        // max(R,G,B) above this counts as text (tuned on the real capture)
+  const MAX_BLOB_H = 20;  // a bright blob taller than this (px, native) is a wall/sky/panel, not a letter
+  const DARK = 60;        // ...and game text has a dark outline 2 px to its side
+  const EMPTY_BELOW = 250;// fewer outlined-text pixels than this = nothing in the feed (spawn frames had 634+)
+  const MAX_REUSE = 3;    // an unchanged box skips at most this many reads in a row
+  const FORGET_MS = 8000; // spawn-parse.js createSpawnTracker(): gone this long = a later one is new
+  // The game's feed, as fractions of the captured screen (measured at 1920x1080:
+  // lines start at y≈410 and stack downwards, x 25-420).
+  const REGION = { x: 0, y: 0.355, w: 0.235, h: 0.165 };
+  const TYPE_LABEL = { gold: 'Gold', diamond: 'Diamond', rainbow: 'Rainbow', beskar: 'Beskar', galactic: 'Galactic', stellar: 'Stellar', kyber: 'Kyber' };
+  const TIER_LABEL = { common: 'Common', rare: 'Rare', epic: 'Epic', legendary: 'Legendary', mythic: 'Mythic' };
+
+  const alertEl = document.getElementById('alert');
+  const hdrEl = document.getElementById('alertHdr');
+  const typeEl = document.getElementById('alertType');
+  const tierEl = document.getElementById('alertTier');
+  const statusEl = document.getElementById('status');
+  const lineEl = typeEl.parentElement;
+
+  let settings = {};
+  let unlocked = false;
+  // Starts on the switch going ON, not on every settings broadcast: a failed start
+  // (picker cancelled, no OCR) then stays stopped until the player turns it off and on.
+  let wantOn = false;
+
+  /* ---------------- showing alerts ---------------- */
+  const queue = [];
+  let showing = null, hideTimer = null;
+
+  function paint(sp){
+    alertEl.className = 'alert show v-' + sp.variant;
+    alertEl.style.setProperty('--tc', 'var(--t-' + sp.tier + ')');
+    hdrEl.className = 'hdr';
+    hdrEl.textContent = 'Droid Spawn';
+    lineEl.className = 'line';
+    typeEl.textContent = TYPE_LABEL[sp.variant] || '';
+    tierEl.textContent = TIER_LABEL[sp.tier] || '';
+  }
+  function paintNotice(title, text){
+    alertEl.className = 'alert show';
+    hdrEl.className = 'hdr warn';
+    hdrEl.textContent = title;
+    lineEl.className = 'line small';
+    typeEl.textContent = text;
+    tierEl.textContent = '';
+  }
+  function holdMs(){
+    const s = Number(settings.spawnAlertHoldSec);
+    return (Number.isFinite(s) && s > 0 ? Math.min(s, 60) : 6) * 1000;
+  }
+  function next(){
+    clearTimeout(hideTimer);
+    showing = queue.shift() || null;
+    if(showing){
+      if(showing.notice) paintNotice(showing.title, showing.text); else paint(showing);
+      if(showing.sound) playSound();
+      void alertEl.offsetWidth;
+      // a backlog moves along faster, so a burst of spawns doesn't lag behind the game
+      hideTimer = setTimeout(next, queue.length ? Math.min(2500, holdMs()) : holdMs());
+    } else if(unlocked){
+      paint({ variant: 'diamond', tier: 'rare' }); // the sample to drag
+    } else {
+      alertEl.className = 'alert';
+    }
+  }
+  function push(item){
+    queue.push(item);
+    if(!showing) next();
+    else if(hideTimer && queue.length === 1){ // shorten the current one now there's a backlog
+      clearTimeout(hideTimer);
+      hideTimer = setTimeout(next, 1500);
+    }
+  }
+  function notice(title, text){ push({ notice: true, title, text }); }
+  // Played as the alert appears, so a queued burst sounds one at a time with its card.
+  function playSound(){
+    const v = Number(settings.spawnAlertVolume);
+    playAlert(settings.spawnAlertSound || 'goodnews', Number.isFinite(v) ? v : 0.35, id => window.overlayAPI.readCustomSound(id))
+      .catch(err => console.error('Spawn Alert sound failed', err));
+  }
+
+  /* ---------------- reading the feed ---------------- */
+  let running = false, starting = false;
+  let stream = null, video = null, timer = null, worker = null, busy = false;
+  let tracker = createSpawnTracker(FORGET_MS);
+  let lastSig = null, lastSpawns = [], reused = 0;
+  const crop = document.createElement('canvas');
+  const cropCtx = crop.getContext('2d', { willReadFrequently: true });
+  const big = document.createElement('canvas');
+  const bigCtx = big.getContext('2d', { willReadFrequently: true });
+  let stats = { reads: 0, ocr: 0, ocrMs: 0, skippedEmpty: 0, reusedSame: 0, alerts: 0 };
+  const recent = []; // the last 40 checks, for window.spawnAlertStats(): [ms, 'empty'|'same'|'ocr', text pixels, spawns]
+  function note(path, total, spawns){
+    recent.push([Date.now() % 100000, path, total, spawns.map(s => s.variant + ' ' + s.tier).join(', ')]);
+    if(recent.length > 40) recent.shift();
+  }
+
+  function setStatus(t){ statusEl.textContent = t; }
+
+  // Outlined-text pixels per 6 px band of the box: bright text with a dark edge
+  // 2 px to its left or right. Cheap (the box is ~450x180), and it tells an
+  // empty feed and an unchanged one apart from new text without any OCR.
+  function signature(img){
+    const d = img.data, W = img.width, H = img.height;
+    const bands = new Array(Math.ceil(H / 6)).fill(0);
+    let total = 0;
+    for(let y = 0; y < H; y++){
+      const row = y * W * 4;
+      for(let x = 2; x < W - 2; x++){
+        const i = row + x * 4;
+        if(Math.max(d[i], d[i + 1], d[i + 2]) <= CUT) continue;
+        const l = i - 8, r = i + 8;
+        if(Math.min(Math.max(d[l], d[l + 1], d[l + 2]), Math.max(d[r], d[r + 1], d[r + 2])) < DARK){ bands[(y / 6) | 0]++; total++; }
+      }
+    }
+    return { bands, total };
+  }
+  // Black-on-white text mask at native size: bright pixels, minus every bright
+  // blob taller than a line of text. Game text has a dark outline, so each
+  // letter is its own small blob; a white wall, bright sand or the crafting
+  // panel behind it is one tall blob and goes (a plain cutoff turned the wall
+  // black along with the letters). Tuned on the real capture: 10/10 spawns.
+  const maskBuf = { w: 0, h: 0, px: null, lab: null, stack: [], members: [] };
+  function textMask(img){
+    const d = img.data, W = img.width, H = img.height, N = W * H;
+    if(maskBuf.w !== W || maskBuf.h !== H){ maskBuf.w = W; maskBuf.h = H; maskBuf.px = new Uint8Array(N); maskBuf.lab = new Uint8Array(N); }
+    const px = maskBuf.px, seen = maskBuf.lab, stack = maskBuf.stack, members = maskBuf.members;
+    for(let p = 0, i = 0; p < N; p++, i += 4) px[p] = Math.max(d[i], d[i + 1], d[i + 2]) > CUT ? 1 : 0;
+    seen.fill(0);
+    for(let s = 0; s < N; s++){
+      if(!px[s] || seen[s]) continue;
+      let y0 = H, y1 = -1;
+      members.length = 0; stack.length = 0;
+      stack.push(s); seen[s] = 1;
+      while(stack.length){
+        const p = stack.pop(); members.push(p);
+        const y = (p / W) | 0, x = p - y * W;
+        if(y < y0) y0 = y;
+        if(y > y1) y1 = y;
+        if(x > 0 && px[p - 1] && !seen[p - 1]){ seen[p - 1] = 1; stack.push(p - 1); }
+        if(x < W - 1 && px[p + 1] && !seen[p + 1]){ seen[p + 1] = 1; stack.push(p + 1); }
+        if(y > 0 && px[p - W] && !seen[p - W]){ seen[p - W] = 1; stack.push(p - W); }
+        if(y < H - 1 && px[p + W] && !seen[p + W]){ seen[p + W] = 1; stack.push(p + W); }
+      }
+      if(y1 - y0 + 1 > MAX_BLOB_H) for(let k = 0; k < members.length; k++) px[members[k]] = 0;
+    }
+    for(let p = 0, i = 0; p < N; p++, i += 4){
+      const v = px[p] ? 0 : 255;
+      d[i] = d[i + 1] = d[i + 2] = v; d[i + 3] = 255;
+    }
+    return img;
+  }
+
+  function sameSig(a, b){
+    if(!a || !b || a.bands.length !== b.bands.length) return false;
+    return a.bands.every((n, i) => Math.abs(n - b.bands[i]) <= Math.max(12, b.bands[i] * 0.2));
+  }
+
+  async function ensureWorker(){
+    if(worker) return worker;
+    if(typeof Tesseract === 'undefined') throw new Error("text recognition didn't load");
+    const w = await Tesseract.createWorker('eng');
+    await w.setParameters({ tessedit_pageseg_mode: '4' }); // one column of lines: the feed (read the most lines, fastest)
+    worker = w;
+    return w;
+  }
+
+  async function tick(){
+    if(busy || !video || video.readyState < 2 || !video.videoWidth) return;
+    busy = true;
+    try{
+      const vw = video.videoWidth, vh = video.videoHeight;
+      const sx = Math.round(REGION.x * vw), sy = Math.round(REGION.y * vh);
+      const w = Math.max(1, Math.round(REGION.w * vw)), h = Math.max(1, Math.round(REGION.h * vh));
+      if(crop.width !== w || crop.height !== h){ crop.width = w; crop.height = h; }
+      cropCtx.drawImage(video, sx, sy, w, h, 0, 0, w, h);
+      const img = cropCtx.getImageData(0, 0, w, h);
+      const sig = signature(img);
+      const now = Date.now();
+      stats.reads++;
+      let spawns, path = 'ocr';
+      if(sig.total < EMPTY_BELOW){
+        spawns = []; stats.skippedEmpty++; lastSig = null; reused = 0; path = 'empty';
+      } else if(reused < MAX_REUSE && sameSig(sig, lastSig)){
+        spawns = lastSpawns; stats.reusedSame++; reused++; path = 'same';
+      } else {
+        // text mask at native size, then 2x (smoothed) and back to pure black/white
+        cropCtx.putImageData(textMask(img), 0, 0);
+        big.width = w * UPSCALE; big.height = h * UPSCALE;
+        bigCtx.imageSmoothingEnabled = true;
+        bigCtx.imageSmoothingQuality = 'high';
+        bigCtx.drawImage(crop, 0, 0, big.width, big.height);
+        const bi = bigCtx.getImageData(0, 0, big.width, big.height), d = bi.data;
+        for(let i = 0; i < d.length; i += 4){ const v = d[i] < 128 ? 0 : 255; d[i] = d[i + 1] = d[i + 2] = v; }
+        bigCtx.putImageData(bi, 0, 0);
+        const t0 = performance.now();
+        const { data } = await (await ensureWorker()).recognize(big);
+        stats.ocr++; stats.ocrMs += performance.now() - t0;
+        if(!running) return;
+        spawns = parseSpawnText(data && data.text);
+        lastSig = sig; lastSpawns = spawns; reused = 0;
+      }
+      note(path, sig.total, spawns);
+      // ⚙ Overlay Settings → Filters: each type x tier is off, shown, or shown + sound
+      tracker.update(spawns, now).forEach(sp => {
+        const rule = spawnRuleFor(settings.spawnAlertRules, sp.variant, sp.tier);
+        if(rule === SPAWN_RULE_OFF) return;
+        stats.alerts++;
+        push({ ...sp, sound: rule === SPAWN_RULE_SOUND });
+      });
+      if(unlocked) setStatus('Watching the feed · ' + stats.ocr + (stats.ocr === 1 ? ' read' : ' reads') + ' · ' + stats.alerts + (stats.alerts === 1 ? ' spawn' : ' spawns') + ' so far');
+    }catch(err){
+      console.error('Spawn Alert read failed', err);
+      stop();
+      notice("Spawn Alert couldn't read", (err && err.message) || 'text recognition failed');
+      setStatus('Stopped: ' + ((err && err.message) || 'read failed') + '. Turn it off and on to retry.');
+    }finally{
+      busy = false;
+    }
+  }
+
+  async function start(){
+    if(running || starting) return;
+    starting = true;
+    setStatus('Starting…');
+    try{
+      const s = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 2, max: 5 } }, audio: false });
+      if(!wantOn){ s.getTracks().forEach(t => t.stop()); return; } // turned off while the picker was up
+      stream = s;
+      const track = stream.getVideoTracks()[0];
+      try{ await track.applyConstraints({ frameRate: 2 }); }catch(e){ /* best effort */ }
+      track.addEventListener('ended', ()=>{ if(running){ stop(); notice('Spawn Alert stopped', 'The screen capture ended. Turn it off and on to start again.'); } });
+      video = document.createElement('video');
+      video.muted = true;
+      video.srcObject = stream;
+      await video.play();
+      running = true;
+      tracker = createSpawnTracker(FORGET_MS);
+      lastSig = null; lastSpawns = []; reused = 0;
+      timer = setInterval(tick, READ_MS);
+      setStatus('Watching the feed…');
+      ensureWorker().catch(err => {
+        console.error('Spawn Alert OCR failed to start', err);
+        stop();
+        notice("Spawn Alert couldn't start", 'Text recognition failed to load (the first run needs the internet once).');
+      });
+    }catch(err){
+      console.error('Spawn Alert capture failed', err);
+      notice("Spawn Alert couldn't start", 'No screen to read: ' + ((err && err.message) || 'capture was cancelled') + '. Turn it off and on to pick one.');
+      setStatus('Not watching: no screen capture.');
+    }finally{
+      starting = false;
+    }
+  }
+
+  function stop(){
+    running = false;
+    if(timer){ clearInterval(timer); timer = null; }
+    if(stream){ stream.getTracks().forEach(t => t.stop()); stream = null; }
+    if(video){ video.srcObject = null; video = null; }
+    const w = worker; worker = null;
+    if(w) w.terminate().catch(()=>{}); // frees the OCR engine's memory while off
+    setStatus('Off');
+  }
+
+  // For checking the read cost in the built app (DevTools / CDP): reads, OCR runs, average OCR ms.
+  window.spawnAlertStats = () => ({ ...stats, avgOcrMs: stats.ocr ? Math.round(stats.ocrMs / stats.ocr) : 0, running, recent: recent.slice() });
+
+  /* ---------------- settings ---------------- */
+  function applySettings(s){
+    settings = s || {};
+    const skin = BORDER_SKINS[settings.spawnAlertBorder] || BORDER_SKINS.jedi;
+    document.documentElement.style.setProperty('--accent', skin.hex);
+    document.documentElement.style.setProperty('--sw-rgb', skin.rgb);
+    document.getElementById('borderBadge').innerHTML = borderIconSvg(settings.spawnAlertBorder || 'jedi', 15);
+    const wasUnlocked = unlocked;
+    unlocked = settings.spawnAlertLocked === false;
+    document.body.classList.toggle('unlocked', unlocked);
+    if(unlocked !== wasUnlocked && !showing) next(); // show / clear the sample
+    const on = !!settings.spawnAlertVisible;
+    if(on && !wantOn){ wantOn = true; start(); }
+    else if(!on && wantOn){ wantOn = false; stop(); queue.length = 0; if(showing){ showing = null; next(); } }
+    if(!on) setStatus('Off: turn it on with 📡 Spawn Alert or its hotkey.');
+  }
+  window.overlayAPI.onSettingsChanged(applySettings);
+  window.overlayAPI.getSettings().then(applySettings);
+
+  document.getElementById('lockBtn').addEventListener('click', ()=>{
+    window.overlayAPI.setSpawnAlertLocked(true);
+  });
+})();
+</script>
+<script src="overlay-theme.js"></script>
+<script src="overlay-drag.js"></script>
+</body>
+</html>

@@ -13,6 +13,8 @@
      - sneakWindow (sneak-preview.html) — next cycle's Mythic droids
      - critGuideWindow (crit-guide-overlay.html) — static crit-investment
        purchase order + hit-calculation formula for one specific build
+     - spawnAlertWindow (spawn-alert.html) — reads the game's "droid spawned"
+       lines off a screen capture and shows each new one big (v1.14.0)
      - hotkeyListWindow (hotkey-list.html) — on-screen hotkey reference card
    None of them ever touch Fortnite's process, memory, or input — they only
    ever read/write this app's own JSON store on disk and draw their own
@@ -179,6 +181,21 @@ const DEFAULT_SETTINGS = {
   critGuidePosition: null,
   critGuideBorder: 'tatooine',
   critGuideShowInfo: true, // v1.10.1: the "How a Critical Hit is Calculated" box is toggleable in-overlay (see the ℹ button) — the subtitle + calc-box eat a lot of vertical space, so hiding it leaves more room for the purchase list before scrolling kicks in
+  // Spawn Alert (v1.14.0): reads the game's "<Type> Droid (<Tier>) spawned"
+  // lines off the screen (spawn-alert.html + spawn-parse.js) and shows each new
+  // one big. Visible = watching, so it's off by default: it reads the screen
+  // while on. Hold = seconds each alert stays up. Rules = which "<type>|<tier>"
+  // spawns are off (0) or also play spawnAlertSound (2); missing = show (1).
+  // See spawnRuleFor() in spawn-parse.js.
+  spawnAlertHotkey: '',
+  spawnAlertVisible: false,
+  spawnAlertLocked: true,
+  spawnAlertPosition: null,
+  spawnAlertBorder: 'jedi',
+  spawnAlertHoldSec: 6,
+  spawnAlertRules: {},
+  spawnAlertSound: 'goodnews',
+  spawnAlertVolume: 0.35,
   hasSeenIntroGuide: false, // first-launch walkthrough (guide.js) — set true once dismissed or finished; an existing settings file just merges this in as false via loadJson(), so upgraders see it once too
   hotkeyLayoutVersion: 0,   // bumped by the migrations below; never hand-edit
   markDroid: '\\',          // mark selected droid in Upcoming RB Req's overlay (v1.10.3)
@@ -209,6 +226,7 @@ const DEFAULT_SETTINGS = {
   rebirthReqSize: null,
   sneakSize: null,
   critGuideSize: null,
+  spawnAlertSize: null,
   // v1.11.1: which list the rebirthMark* keys drive while more than one is
   // open ('rebirthReq' | 'declutter' | 'sneak'), flipped by markTargetHotkey.
   markTarget: 'rebirthReq',
@@ -433,6 +451,7 @@ let declutterWindow = null;
 let rebirthReqWindow = null;
 let sneakWindow = null;
 let critGuideWindow = null;
+let spawnAlertWindow = null;
 let hotkeyListWindow = null;
 let hotkeyListVisible = true; // runtime-only — always shown fresh each launch, not persisted
 let storeData = {};
@@ -528,6 +547,19 @@ function computeDefaultDeclutterBounds(){
   return { x, y, width: w, height: h };
 }
 
+/* ---------------- default Spawn Alert position (v1.14.0) ----------------
+   Centred, a fifth of the way down: under the timers banner, clear of the
+   game's own feed at the left edge (which is what the alert repeats, bigger).
+   460x150 fits the longest alert ("Galactic Legendary") at zoom 1. */
+function computeDefaultSpawnAlertBounds(){
+  const display = screen.getPrimaryDisplay();
+  const { width, height } = display.workAreaSize;
+  const w = 460, h = 150;
+  const x = Math.round((width - w) / 2) + display.workArea.x;
+  const y = Math.round(height * 0.2) + display.workArea.y;
+  return { x, y, width: w, height: h };
+}
+
 /* ---------------- default hotkey-list position ----------------
    Always centered on the primary display — the user asked for this list
    in "the middle of the screen," not somewhere draggable, so unlike the
@@ -558,12 +590,13 @@ function clampToDisplay(bounds){
    saved size and position on top. A saved size larger than the work area
    (e.g. after switching to a smaller monitor) is shrunk to fit first. */
 const OVERLAY_MIN_SIZE = { width: 200, height: 160 };
-function overlayBounds(defaults, position, size){
+function overlayBounds(defaults, position, size, minSize){
   if(!position && !size) return defaults;
+  const min = minSize || OVERLAY_MIN_SIZE;
   const b = { ...defaults, ...(size || {}), ...(position || {}) };
   const wa = (screen.getDisplayMatching(b) || screen.getPrimaryDisplay()).workArea;
-  b.width = Math.max(OVERLAY_MIN_SIZE.width, Math.min(b.width, wa.width));
-  b.height = Math.max(OVERLAY_MIN_SIZE.height, Math.min(b.height, wa.height));
+  b.width = Math.max(min.width, Math.min(b.width, wa.width));
+  b.height = Math.max(min.height, Math.min(b.height, wa.height));
   return clampToDisplay(b);
 }
 
@@ -576,14 +609,16 @@ function overlayBounds(defaults, position, size){
    1920x1080 monitors side by side). A new overlay window needs an entry here,
    overlay-drag.js on its page, and a #dragHandle.
    sizeKey/defaults: only the droid overlays resize (overlay-theme.js zooms
-   relative to the default size); the timers banner just moves. */
+   relative to the default size); the timers banner just moves. minSize: the
+   Spawn Alert's one-line card is smaller than OVERLAY_MIN_SIZE (v1.14.0). */
 const OVERLAY_WINDOWS = {
   overlay:    { win: () => overlayWindow,    sizeKey: 'size',           defaults: computeDefaultBounds },
   timers:     { win: () => timersWindow },
   declutter:  { win: () => declutterWindow,  sizeKey: 'declutterSize',  defaults: computeDefaultDeclutterBounds },
   rebirthReq: { win: () => rebirthReqWindow, sizeKey: 'rebirthReqSize', defaults: computeDefaultDeclutterBounds },
   sneak:      { win: () => sneakWindow,      sizeKey: 'sneakSize',      defaults: computeDefaultDeclutterBounds },
-  critGuide:  { win: () => critGuideWindow,  sizeKey: 'critGuideSize',  defaults: computeDefaultDeclutterBounds }
+  critGuide:  { win: () => critGuideWindow,  sizeKey: 'critGuideSize',  defaults: computeDefaultDeclutterBounds },
+  spawnAlert: { win: () => spawnAlertWindow, sizeKey: 'spawnAlertSize', defaults: computeDefaultSpawnAlertBounds, minSize: { width: 240, height: 90 } }
 };
 function overlayWindowFor(webContents){
   return Object.values(OVERLAY_WINDOWS).find(o => { const w = o.win(); return w && !w.isDestroyed() && w.webContents === webContents; });
@@ -921,6 +956,64 @@ function setCritGuideVisible(visible){
   broadcast('critGuide:visibility-changed', settings.critGuideVisible);
 }
 
+/* Spawn Alert (v1.14.0): a transparent window that stays on screen while the
+   feature is on and draws nothing until a spawn is read (spawn-alert.html does
+   the screen reading itself). backgroundThrottling off: its reads run on a
+   timer, and Chromium slows timers in windows it thinks nobody is looking at. */
+function createSpawnAlertWindow(){
+  const o = OVERLAY_WINDOWS.spawnAlert;
+  const bounds = overlayBounds(computeDefaultSpawnAlertBounds(), settings.spawnAlertPosition, settings.spawnAlertSize, o.minSize);
+
+  spawnAlertWindow = new BrowserWindow({
+    ...bounds,
+    frame: false,
+    transparent: true,
+    backgroundColor: '#00000000',
+    hasShadow: false,
+    resizable: false,
+    movable: true,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    focusable: false,
+    show: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      backgroundThrottling: false
+    }
+  });
+
+  spawnAlertWindow.setAlwaysOnTop(true, 'screen-saver');
+  spawnAlertWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  if(settings.spawnAlertLocked){
+    spawnAlertWindow.setIgnoreMouseEvents(true, { forward: true });
+  } else {
+    spawnAlertWindow.setFocusable(true);
+  }
+  spawnAlertWindow.loadFile(path.join(__dirname, 'spawn-alert.html'));
+
+  spawnAlertWindow.once('ready-to-show', ()=>{
+    if(settings.spawnAlertVisible) spawnAlertWindow.showInactive();
+  });
+
+  spawnAlertWindow.on('close', (e)=>{ if(isQuitting) return; e.preventDefault(); setSpawnAlertVisible(false); });
+  spawnAlertWindow.on('closed', ()=>{ spawnAlertWindow = null; });
+}
+
+function toggleSpawnAlertVisible(){ setSpawnAlertVisible(!settings.spawnAlertVisible); }
+// The page starts/stops its screen reading from settings.spawnAlertVisible
+// (settings:changed), so turning it off also stops the capture and frees OCR.
+function setSpawnAlertVisible(visible){
+  settings.spawnAlertVisible = !!visible;
+  persistSettingsNow();
+  broadcast('settings:changed', { ...settings });
+  broadcast('spawnAlert:visibility-changed', settings.spawnAlertVisible);
+  if(!spawnAlertWindow) return;
+  if(settings.spawnAlertVisible) spawnAlertWindow.showInactive();
+  else spawnAlertWindow.hide();
+}
+
 function toggleDeclutterVisible(){
   setDeclutterVisible(!settings.declutterVisible);
 }
@@ -1148,6 +1241,7 @@ function hideAllOverlays(){
   setRebirthReqVisible(false);
   setSneakVisible(false);
   setCritGuideVisible(false);
+  setSpawnAlertVisible(false);
   hideHotkeyList();
   if(toastWindow && !toastWindow.isDestroyed()) toastWindow.hide();
 }
@@ -1209,6 +1303,7 @@ const HOTKEY_HANDLERS = {
   critGuide: () => toggleCritGuideVisible(),
   critGuideScrollUp: () => broadcast('hotkey:triggered', 'critGuideScrollUp'),
   critGuideScrollDown: () => broadcast('hotkey:triggered', 'critGuideScrollDown'),
+  spawnAlert: () => toggleSpawnAlertVisible(),
   // Safe to Retire tier filters live in settings (main process owns them),
   // so these flip the flag here and let the normal settings:changed
   // broadcast re-render declutter.html — no new IPC channel needed.
@@ -1305,6 +1400,7 @@ const HOTKEY_LABELS = {
   critGuide: 'Toggle Optimal Crit Guide',
   critGuideScrollUp: 'Scroll Crit Guide Up',
   critGuideScrollDown: 'Scroll Crit Guide Down',
+  spawnAlert: 'Turn Spawn Alert On / Off',
   markDroid: 'Mark Selected Droid',
   markLevel: 'Mark Entire Level',
   markLeft: 'Navigate Left',
@@ -1344,6 +1440,7 @@ const HOTKEY_SETTINGS_KEY = {
   critGuide: 'critGuideHotkey',
   critGuideScrollUp: 'critGuideScrollUpHotkey',
   critGuideScrollDown: 'critGuideScrollDownHotkey',
+  spawnAlert: 'spawnAlertHotkey',
   markDroid: 'markDroid',
   markLevel: 'markLevel',
   markLeft: 'markLeft',
@@ -1723,6 +1820,9 @@ function wireIpc(){
     if(critGuideWindow && (partial.critGuidePosition)){
       critGuideWindow.setBounds(clampToDisplay({ ...critGuideWindow.getBounds(), ...partial.critGuidePosition }));
     }
+    if(spawnAlertWindow && (partial.spawnAlertPosition)){
+      spawnAlertWindow.setBounds(clampToDisplay({ ...spawnAlertWindow.getBounds(), ...partial.spawnAlertPosition }));
+    }
     broadcast('settings:changed', { ...settings });
     return { settings: { ...settings }, hotkeyResult };
   });
@@ -1751,6 +1851,8 @@ function wireIpc(){
   ipcMain.handle('sneak:show', ()=>{ showSneakFocused(); return settings.sneakVisible; });
 
   ipcMain.handle('critGuide:toggle', ()=>{ toggleCritGuideVisible(); return settings.critGuideVisible; });
+
+  ipcMain.handle('spawnAlert:toggle', ()=>{ toggleSpawnAlertVisible(); return settings.spawnAlertVisible; });
 
   // Cycle-complete prompt (v1.7.1). A native box instead of the renderer's
   // confirm() because confirm() can only say OK/Cancel. Both buttons reset
@@ -1847,8 +1949,9 @@ function wireIpc(){
       const sizes = settings.overlaySnapSize !== false ? r.others.filter(b => b.resizable) : [];
       size = snapResize(size, edges, sizes, wa);
     }
-    const width = Math.round(Math.max(OVERLAY_MIN_SIZE.width, Math.min(size.width, wa.x + wa.width - start.x)));
-    const height = Math.round(Math.max(OVERLAY_MIN_SIZE.height, Math.min(size.height, wa.y + wa.height - start.y)));
+    const min = o.minSize || OVERLAY_MIN_SIZE;
+    const width = Math.round(Math.max(min.width, Math.min(size.width, wa.x + wa.width - start.x)));
+    const height = Math.round(Math.max(min.height, Math.min(size.height, wa.y + wa.height - start.y)));
     win.setBounds({ x: start.x, y: start.y, width, height });
     if(data.phase === 'end'){
       resizeStart.delete(evt.sender.id);
@@ -1940,7 +2043,7 @@ function wireIpc(){
     if(!entry) return false;
     try{ fs.rmSync(soundPath(entry), { force: true }); }catch(e){ /* the app's own copy; nothing else to do */ }
     settings.customSounds = settings.customSounds.filter(s => s.id !== id);
-    ['missionSoundChoice', 'blueprintSoundChoice'].forEach(k => { if(settings[k] === 'custom:' + id) settings[k] = 'goodnews'; });
+    ['missionSoundChoice', 'blueprintSoundChoice', 'spawnAlertSound'].forEach(k => { if(settings[k] === 'custom:' + id) settings[k] = 'goodnews'; });
     ['stellarSoundChoice', 'mythicSoundChoice', 'kyberSoundChoice'].forEach(k => { if(settings[k] === 'custom:' + id) settings[k] = null; });
     persistSettingsNow();
     broadcast('settings:changed', { ...settings });
@@ -1995,6 +2098,15 @@ function wireIpc(){
     settings.critGuidePosition = null;
     settings.critGuideSize = null;
     if(critGuideWindow) critGuideWindow.setBounds(computeDefaultDeclutterBounds());
+    persistSettingsNow();
+    broadcast('settings:changed', { ...settings });
+    return { ...settings };
+  });
+
+  ipcMain.handle('spawnAlert:resetPosition', ()=>{
+    settings.spawnAlertPosition = null;
+    settings.spawnAlertSize = null;
+    if(spawnAlertWindow) spawnAlertWindow.setBounds(computeDefaultSpawnAlertBounds());
     persistSettingsNow();
     broadcast('settings:changed', { ...settings });
     return { ...settings };
@@ -2109,6 +2221,29 @@ function wireIpc(){
     broadcast('settings:changed', { ...settings });
     return { ...settings };
   });
+
+  // Unlocked, spawn-alert.html shows a sample alert and its drag bar so it can be placed.
+  ipcMain.handle('spawnAlert:setLocked', (evt, locked)=>{
+    settings.spawnAlertLocked = !!locked;
+    if(spawnAlertWindow){
+      if(settings.spawnAlertLocked){
+        const b = spawnAlertWindow.getBounds();
+        settings.spawnAlertPosition = { x: b.x, y: b.y };
+        spawnAlertWindow.setFocusable(false);
+        spawnAlertWindow.setIgnoreMouseEvents(true, { forward: true });
+        // See the matching comment in overlay:setLocked.
+        if(!settings.spawnAlertVisible) spawnAlertWindow.hide();
+      } else {
+        spawnAlertWindow.setFocusable(true);
+        spawnAlertWindow.setIgnoreMouseEvents(false);
+        spawnAlertWindow.showInactive();
+        spawnAlertWindow.focus();
+      }
+    }
+    persistSettingsNow();
+    broadcast('settings:changed', { ...settings });
+    return { ...settings };
+  });
 }
 
 /* ---------------- one-time userData migration (2026-09-22 rename) ----------------
@@ -2156,6 +2291,7 @@ function createSecondaryWindows(){
   createRebirthReqWindow();
   createSneakWindow();
   createCritGuideWindow();
+  createSpawnAlertWindow();
   createHotkeyListWindow();
 }
 

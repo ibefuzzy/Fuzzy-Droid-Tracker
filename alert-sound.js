@@ -1,8 +1,8 @@
 'use strict';
 /* ---------------------------------------------------------------------------
-   alert-sound.js — every timer alert sound, for timers.html (on expiry) and
-   tracker.html (the ▶ preview buttons), so both sound the same. Needs
-   sounds/good-news-data.js loaded first.
+   alert-sound.js — every alert sound, for timers.html (on expiry), spawn-alert.html
+   (a spawn marked 🔊, v1.14.0) and tracker.html (the ▶ preview buttons), so all
+   sound the same. Needs sounds/good-news-data.js loaded first.
 
    playAlert(choice, volume, readCustom) plays one alert:
      'beep' | 'boop' | 'chime'  — three short sine tones (v1.10.2)

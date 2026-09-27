@@ -405,7 +405,7 @@ function borderIconSvg(key, size){
 
 /* ---------------- APPEARANCE: looks, per-overlay colours, share codes (v1.13.0) ----
    A "look" is everything the Appearance tab controls, as one plain object:
-     { borders:       { border, declutterBorder, rebirthReqBorder, sneakBorder, critGuideBorder, timersBorder },
+     { borders:       { border, declutterBorder, rebirthReqBorder, sneakBorder, critGuideBorder, timersBorder, spawnAlertBorder },
        theme:         { themeBackdrop, ..., themeCompact, themeTextScale }   // all overlays
        overlayThemes: { declutter: { themeCompact: true }, ... } }         // per-overlay overrides
    Settings hold the same keys flat (plus settings.overlayThemes). Theme presets,
@@ -413,11 +413,13 @@ function borderIconSvg(key, size){
    from outside (a pasted share code, the settings file) goes through
    sanitizeLook(), which keeps only known keys with valid values. */
 const THEME_KEYS = ['themeBackdrop', 'themeBackdropAlpha', 'themeBox', 'themeBoxAlpha', 'themeHighlight', 'themeCompact', 'themeTextScale'];
-const THEMED_OVERLAYS = ['overlay', 'declutter', 'rebirthReq', 'sneak', 'critGuide', 'timers'];
+const THEMED_OVERLAYS = ['overlay', 'declutter', 'rebirthReq', 'sneak', 'critGuide', 'timers', 'spawnAlert'];
 // Each overlay's border-skin settings key, and its default (main.js DEFAULT_SETTINGS
 // agrees; test/skins.test.js checks). The timers had no skin before v1.13.0: null.
-const DEFAULT_BORDERS = { border: 'jedi', declutterBorder: 'grogu', rebirthReqBorder: 'mando', sneakBorder: 'rebel', critGuideBorder: 'tatooine', timersBorder: null };
-const OVERLAY_BORDER_KEY = { overlay: 'border', declutter: 'declutterBorder', rebirthReq: 'rebirthReqBorder', sneak: 'sneakBorder', critGuide: 'critGuideBorder', timers: 'timersBorder' };
+// v1.14.0 added the Spawn Alert; a look or share code saved before it has no
+// spawnAlertBorder, and sanitizeLook() gives it the default.
+const DEFAULT_BORDERS = { border: 'jedi', declutterBorder: 'grogu', rebirthReqBorder: 'mando', sneakBorder: 'rebel', critGuideBorder: 'tatooine', timersBorder: null, spawnAlertBorder: 'jedi' };
+const OVERLAY_BORDER_KEY = { overlay: 'border', declutter: 'declutterBorder', rebirthReq: 'rebirthReqBorder', sneak: 'sneakBorder', critGuide: 'critGuideBorder', timers: 'timersBorder', spawnAlert: 'spawnAlertBorder' };
 const THEME_RANGES = { themeBackdropAlpha: [0.2, 0.95], themeBoxAlpha: [0, 0.5], themeTextScale: [0.8, 1.4] };
 
 /** True if `v` is an allowed value for theme key `key` (null = "use the default"). */

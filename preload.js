@@ -104,6 +104,13 @@ contextBridge.exposeInMainWorld('overlayAPI', {
   setCritGuideLocked: (locked) => ipcRenderer.invoke('critGuide:setLocked', locked),
   resetCritGuidePosition: () => ipcRenderer.invoke('critGuide:resetPosition'),
 
+  // Spawn Alert (v1.14.0) — spawn-alert.html reads the game's spawn lines while
+  // settings.spawnAlertVisible is on (+ the toggle button/hotkey in tracker.html)
+  toggleSpawnAlert: () => ipcRenderer.invoke('spawnAlert:toggle'),
+  onSpawnAlertVisibility: (cb) => subscribe('spawnAlert:visibility-changed', cb), // cb(boolean)
+  setSpawnAlertLocked: (locked) => ipcRenderer.invoke('spawnAlert:setLocked', locked),
+  resetSpawnAlertPosition: () => ipcRenderer.invoke('spawnAlert:resetPosition'),
+
   // hotkey-triggered button actions: the Ctrl+Shift+5 hotkey fires the same
   // click listener as manually clicking 📸 Read Rebirth Screen — this just
   // tells the renderer which one to click

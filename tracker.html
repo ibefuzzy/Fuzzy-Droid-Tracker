@@ -748,6 +748,32 @@
   .pos-actions .btn{font-size:12.5px;padding:6px 10px;white-space:normal;text-align:left;}
   .pos-slider{display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;letter-spacing:.04em;}
   .pos-slider input[type="range"]{accent-color:var(--accent);width:100%;}
+  .pos-opts{display:flex;gap:10px;flex-wrap:wrap;font-size:11.5px;color:var(--text-dim);}
+  .pos-opts label{display:inline-flex;align-items:center;gap:5px;}
+  .pos-opts select{padding:4px 6px;border-radius:6px;border:1px solid var(--holo-line);background:rgba(0,0,0,.35);color:var(--text);font:inherit;font-size:12px;}
+  /* v1.14.0 Spawn Alert rules: types x tiers, each Off / Show / Show + sound (overlay-controls.js) */
+  .spawn-rule-grid{border-collapse:separate;border-spacing:4px;margin:2px 0 6px;
+    --t-common:#ffffff;--t-rare:#4fb8ff;--t-epic:#b46bff;--t-legendary:#ffc83d;--t-mythic:#ff6ec7;}
+  .spawn-rule-grid th{font-size:12px;font-weight:700;padding:4px 6px;border-radius:5px;cursor:pointer;user-select:none;white-space:nowrap;}
+  .spawn-rule-grid th:hover{background:rgba(255,255,255,.06);}
+  .spawn-rule-grid th.corner{cursor:default;background:none;}
+  .spawn-rule-grid th.row{text-align:left;min-width:74px;}
+  .spawn-rule-grid td{padding:0;}
+  .spawn-rule-cell{min-width:66px;height:28px;padding:0 6px;white-space:nowrap;border-radius:6px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.03);
+    color:var(--text-dim);font:inherit;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:3px;}
+  .spawn-rule-cell.show{background:color-mix(in srgb,var(--tc) 18%,transparent);border-color:color-mix(in srgb,var(--tc) 55%,transparent);color:var(--text);}
+  .spawn-rule-cell.sound{background:color-mix(in srgb,var(--tc) 32%,transparent);border-color:var(--tc);color:#fff;box-shadow:0 0 8px -2px var(--tc);}
+  .spawn-type{-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .spawn-type.v-gold{background-image:linear-gradient(180deg,#fff6c4,#e8c04a 55%,#b8861a);}
+  .spawn-type.v-diamond{background-image:linear-gradient(160deg,#e9fdff,#4fd3e8 55%,#3fb6d2);}
+  .spawn-type.v-rainbow{background-image:linear-gradient(90deg,#ff6ec7,#ffb86e,#fff06e,#6ef7a0,#6ecbff,#b98cff);}
+  .spawn-type.v-beskar{background-image:linear-gradient(180deg,#f4f7fa,#8e99a5 60%,#dfe5ea);}
+  .spawn-type.v-galactic{background-image:linear-gradient(120deg,#f0b8ff,#c96bf2 35%,#7a5cff);}
+  .spawn-type.v-stellar{background-image:linear-gradient(180deg,#ffe0a8,#e08a3c 65%,#b85e1e);}
+  .spawn-type.v-kyber{background-image:linear-gradient(180deg,#d6ffe6,#50c878 65%,#2f9a58);}
+  .spawn-rule-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:6px 0;font-size:12.5px;color:var(--text);}
+  .spawn-rule-vol{display:inline-flex;align-items:center;gap:6px;color:var(--text-dim);font-size:12px;}
+  .spawn-rule-vol input{accent-color:var(--accent);}
 
   /* ---- Borders tab (v1.10.0, was Colors): one row per overlay, a swatch
      button per border skin. Swatches are generated in JS from
@@ -924,6 +950,7 @@
         <button class="btn" id="sneakToggleBtn" hidden title="Show or hide the Sneak Preview — next cycle's Mythic droids">🔮 Sneak Preview: Off</button>
         <button class="btn" id="rebirthReqToggleBtn" hidden title="Show or hide the standalone Rebirth Requirements overlay — every droid this cycle needs, in-game (toggle with the hotkey too)">🧬 Rebirth Req: On</button>
         <button class="btn" id="critGuideToggleBtn" hidden title="Show or hide the Optimal Crit Guide — crystal-spend order + hit-calculation formula">⚡ Crit Guide: Off</button>
+        <button class="btn" id="spawnAlertToggleBtn" hidden title="Watch the game's droid-spawn lines and show each new spawn big (reads the screen while on)">📡 Spawn Alert: Off</button>
         <button class="btn" id="keybindsLockToggleBtn" hidden title="Lock every overlay hotkey so they stop responding while you're doing something else (e.g. schoolwork) — unlock to resume">🔓 Keybinds: Unlocked</button>
       </div>
     </div>
@@ -1047,6 +1074,10 @@
             <div class="kb-row">
               <div class="kb-label"><b>⚡ Optimal Crit Guide</b><small>The crystal-spend order for crit chance/damage/multi-crit, plus the hit-calculation formula.</small></div>
               <button class="btn kb-key" id="critGuideHotkeyBtn">(none set)</button>
+            </div>
+            <div class="kb-row">
+              <div class="kb-label"><b>📡 Spawn Alert</b><small>Turns spawn watching on / off. While on, each new droid spawn shows big.</small></div>
+              <button class="btn kb-key" id="spawnAlertHotkeyBtn">(none set)</button>
             </div>
           </div>
 
@@ -1232,6 +1263,18 @@
                 <button class="btn" id="critGuideResetPosBtn" title="Snap the Optimal Crit Guide overlay back to its default position">↺ Reset</button>
               </div>
             </div>
+            <div class="pos-card">
+              <div class="pos-title">📡 Spawn Alert</div>
+              <div class="pos-hint">Shows each new droid spawn big, read from the game's own line at the left of the screen. Nothing shows until a spawn appears; unlocked, it shows a sample to drag. The corner grip resizes it.</div>
+              <div class="pos-opts">
+                <label>Stays up <select id="spawnAlertHoldSel"><option value="3">3 s</option><option value="6">6 s</option><option value="10">10 s</option><option value="15">15 s</option></select></label>
+                <button type="button" class="holo-link" data-goto="filters">Which spawns + sound → Filters</button>
+              </div>
+              <div class="pos-actions">
+                <button class="btn" id="spawnAlertRepositionBtn">🎯 Drag into place</button>
+                <button class="btn" id="spawnAlertResetPosBtn" title="Snap the Spawn Alert back to its default position and size">↺ Reset</button>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -1263,6 +1306,7 @@
               <option value="sneak">🔮 Sneak Preview</option>
               <option value="critGuide">⚡ Optimal Crit Guide</option>
               <option value="timers">⏱ Timers</option>
+              <option value="spawnAlert">📡 Spawn Alert</option>
             </select>
             <span class="theme-target-hint" id="themeTargetHint"></span>
           </div>
@@ -1327,6 +1371,10 @@
             <div class="color-row-label"><b>⏱ Timers</b><small>Tints the banner outlines and adds the emblem. ⊘ keeps the classic look.</small></div>
             <div class="color-swatches"></div>
           </div>
+          <div class="color-row" data-color-key="spawnAlertBorder">
+            <div class="color-row-label"><b>📡 Spawn Alert</b><small>The frame, glow and emblem. The droid and tier keep their own colors.</small></div>
+            <div class="color-swatches"></div>
+          </div>
         </section>
 
         <!-- ============ FILTERS ============ -->
@@ -1346,6 +1394,23 @@
             <button class="btn tier-btn" data-tier-key="declutterShowMythic">Mythic</button>
           </div>
           <p class="overlay-panel-hint">Want to flip tiers mid-game? Each one has an optional hotkey under <button type="button" class="holo-link" data-goto="keys">Keybinds → Tier filter</button>.</p>
+
+          <div class="kb-group-title">📡 Spawn Alert: which spawns</div>
+          <p class="overlay-panel-hint">Click a box to cycle <b>Off → Show → Show + 🔊</b>. Click a type or tier heading to set its whole row or column. Off spawns never pop up; 🔊 ones also play the sound below.</p>
+          <table class="spawn-rule-grid" id="spawnRuleGrid"></table>
+          <div class="spawn-rule-row">
+            <button class="btn" type="button" id="spawnRuleAllShowBtn">Show all</button>
+            <button class="btn" type="button" id="spawnRuleAllSoundBtn">Sound for all</button>
+            <button class="btn" type="button" id="spawnRuleNoSoundBtn">No sounds</button>
+            <span class="theme-target-hint" id="spawnRuleSummary"></span>
+          </div>
+          <div class="spawn-rule-row">
+            <label for="spawnAlertSound">Sound</label>
+            <select class="sound-select" id="spawnAlertSound"></select>
+            <button class="btn sound-play" type="button" id="spawnAlertSoundPlayBtn" title="Preview">▶</button>
+            <label class="spawn-rule-vol">Volume <input type="range" id="spawnAlertVolume" min="0.05" max="0.8" step="0.05" value="0.35"> <b id="spawnAlertVolumeVal">35%</b></label>
+          </div>
+          <p class="overlay-panel-hint">Your own sound files from <button type="button" class="holo-link" data-goto="timers">Timers → 🎵 Your sounds</button> show up in this list too.</p>
         </section>
 
         <!-- ============ TIMERS ============ -->
@@ -2872,6 +2937,7 @@ document.getElementById('bgDimRange').addEventListener('change', async (e)=>{
 <script src="rebirth-screen-read.js"></script>
 <script src="sounds/good-news-data.js"></script>
 <script src="alert-sound.js"></script>
+<script src="spawn-parse.js"></script>
 <script src="overlay-controls.js"></script>
 <script src="settings-tabs.js"></script>
 <script src="guide.js"></script>

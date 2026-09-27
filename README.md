@@ -407,6 +407,42 @@ it can be corrected.
   Leftovers of the in-game "PREVIEW" banner, the card frame and the colored card glow are
   gone.
 
+## 📡 Spawn Alert (v1.14.0)
+
+The game announces world droid spawns in small text at the left of the screen
+("Diamond Droid (Rare) spawned at the Sandcrawler"). **📡 Spawn Alert** watches that line
+and shows each new spawn big, wherever you put it:
+
+- **DROID SPAWN** on top, then the droid type and tier, e.g. **Diamond Rare**. The type
+  has its own look (gold, icy diamond, a moving rainbow, beskar silver, galactic purple,
+  stellar amber, kyber green) and the tier its own color: Common white, Rare blue, Epic
+  purple, Legendary gold, Mythic pink.
+- **Only spawns.** "crafted a … Droid", "has reached Rebirth", the crafting-boost notice
+  and chat are ignored. A line that stays on screen alerts once; a second identical spawn
+  under it alerts again.
+- **Turn it on** with the 📡 Spawn Alert button or its hotkey (unbound by default; set it
+  in ⚙ Overlay Settings → Keybinds). It's off by default because it reads the screen while
+  on: it checks a small box every 1.5 s and only runs text recognition when that box has
+  new text (about 0.1–0.2 s each time). Turning it off stops the screen capture and frees
+  the text recognition.
+- **Place it** in ⚙ Overlay Settings → Layout → 📡 Spawn Alert: 🎯 Drag into place shows a
+  sample alert with a drag bar and a corner resize grip. The same card picks how long an
+  alert **stays up** (3–15 s). A burst of spawns queues up and moves along faster.
+- **Pick which spawns, and which ones make a sound,** in ⚙ Overlay Settings → Filters →
+  📡 Spawn Alert: a grid of every type × tier where each box cycles **Off → Show →
+  Show + 🔊** (e.g. Diamond Mythic on, Diamond Rare off, Kyber Rare with a sound). Click a
+  type or tier heading to change its whole row or column; Show all / Sound for all / No
+  sounds reset the grid. Everything starts on Show with no sound. The sound is one pick for
+  all 🔊 boxes, from the same list as the timers (including your own files), with its own
+  volume and a ▶ preview; it plays as each alert appears.
+- **Its look** follows ⚙ Overlay Settings → Appearance like the other overlays: border skin
+  (frame, glow and emblem), theme presets, backdrop color, and "Edit colors for: 📡 Spawn
+  Alert". Saved looks and share codes include it.
+- It reads the screen you picked for 📸 Read Rebirth Screen (🖥 Change screen switches it)
+  and expects the game's usual layout at 1920×1080 or another 16:9 resolution. The first
+  run needs the internet once to fetch the text recognition data, same as Read Rebirth
+  Screen.
+
 ## ⏱ Kyber timer back to normal (v1.13.1, hotfix)
 
 - The Kyber launch event (a Kyber Blueprint every 5 minutes) is over. The 💎 Kyber
@@ -736,6 +772,7 @@ changeable from **⚙ Overlay Settings**:
 | Scroll List: Up / Down | Pages whichever of the ♻ Safe to Retire / 🧬 Rebirth Requirements lists is open, one screen at a time — one shared pair, not one per overlay | *(unbound)* |
 | Scroll Sneak Preview Up / Down | Same, for the Sneak Preview overlay | *(unbound)* |
 | Scroll Crit Guide Up / Down | Same, for the Optimal Crit Guide overlay | *(unbound)* |
+| Turn Spawn Alert On / Off | Starts/stops 📡 Spawn Alert watching the game's droid-spawn lines | *(unbound)* |
 | Tier Filter: Toggle All Tiers | Shows all five rarity tiers if any is hidden, otherwise hides all — in both Safe to Retire and Rebirth Requirements | *(unbound)* |
 | Tier Filter: Toggle Default / Rare / Epic / Legendary / Mythic | Show or hide that one tier in both the Safe to Retire and Rebirth Requirements overlays | *(unbound, one each)* |
 | Switch Mark Keys to the Next Open List | With two or more of 🧬 Rebirth Requirements / ♻ Safe to Retire / 🔮 Sneak Preview open, moves the mark & navigate keys to the next one (v1.11.1) | *(unbound)* |
@@ -979,6 +1016,10 @@ and testing everything above:
   read ownership/cycle progress at all — droid-data.js/requirements.js are
   only loaded for `BORDER_SKINS`/`borderIconSvg`, same as every other
   overlay's script list.
+- `spawn-alert.html` + `spawn-parse.js` (v1.14.0) — the 📡 Spawn Alert. The page
+  captures the screen, cleans up the game's feed box and runs text recognition on it;
+  `spawn-parse.js` decides which lines are droid spawns and which are new (tested
+  against a real 90-second capture in `test/fixtures/spawn-feed-ocr.json`).
 - `droid-data.js` — CYCLES + rarity data, shared verbatim by both windows.
   Also holds `DROID_RARITY_CLASS` + `RARITY_CLASS_ORDER` (the separate,
   community-sourced Default/Rare/Epic/Legendary/Mythic tier map the Safe to

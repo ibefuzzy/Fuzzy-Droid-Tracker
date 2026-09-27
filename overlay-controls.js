@@ -38,6 +38,10 @@
   const critGuideRepositionBtn = document.getElementById('critGuideRepositionBtn');
   const critGuideResetPosBtn = document.getElementById('critGuideResetPosBtn');
   const critGuideToggleBtn = document.getElementById('critGuideToggleBtn');
+  const spawnAlertRepositionBtn = document.getElementById('spawnAlertRepositionBtn'); // v1.14.0
+  const spawnAlertResetPosBtn = document.getElementById('spawnAlertResetPosBtn');
+  const spawnAlertToggleBtn = document.getElementById('spawnAlertToggleBtn');
+  const spawnAlertHoldSel = document.getElementById('spawnAlertHoldSel');
   const keybindsLockToggleBtn = document.getElementById('keybindsLockToggleBtn'); // v1.10.8
 
   /* Every "press to rebind" hotkey button: [button id, settings key, label].
@@ -75,6 +79,7 @@
     ['critGuideHotkeyBtn', 'critGuideHotkey', 'Toggle Optimal Crit Guide'],
     ['critGuideScrollUpHotkeyBtn', 'critGuideScrollUpHotkey', 'Scroll Crit Guide Up'],
     ['critGuideScrollDownHotkeyBtn', 'critGuideScrollDownHotkey', 'Scroll Crit Guide Down'],
+    ['spawnAlertHotkeyBtn', 'spawnAlertHotkey', 'Turn Spawn Alert On / Off'],
     // v1.10.3: hotkey-based marking in Upcoming RB Req's overlay
     ['markDroidBtn', 'markDroid', 'Mark Selected Droid'],
     ['markLevelBtn', 'markLevel', 'Mark Entire Level'],
@@ -145,6 +150,7 @@
   if(rebirthReqToggleBtn) rebirthReqToggleBtn.hidden = false;
   if(sneakToggleBtn) sneakToggleBtn.hidden = false;
   if(critGuideToggleBtn) critGuideToggleBtn.hidden = false;
+  if(spawnAlertToggleBtn) spawnAlertToggleBtn.hidden = false;
   if(keybindsLockToggleBtn) keybindsLockToggleBtn.hidden = false;
 
   let opacityDebounce = null;
@@ -191,6 +197,12 @@
     critGuideToggleBtn.classList.toggle('on', visible);
   }
 
+  function setSpawnAlertToggleLabel(visible){
+    if(!spawnAlertToggleBtn) return;
+    spawnAlertToggleBtn.textContent = visible ? '📡 Spawn Alert: On' : '📡 Spawn Alert: Off';
+    spawnAlertToggleBtn.classList.toggle('on', !!visible);
+  }
+
   // v1.10.8: inverted sense vs. the toggles above — "on" (accent-highlighted)
   // means LOCKED, since that's the state worth calling attention to.
   function setKeybindsLockToggleLabel(locked){
@@ -220,6 +232,7 @@
     setRebirthReqToggleLabel(settings.rebirthReqVisible);
     setSneakToggleLabel(settings.sneakVisible);
     setCritGuideToggleLabel(settings.critGuideVisible);
+    setSpawnAlertToggleLabel(settings.spawnAlertVisible);
     setKeybindsLockToggleLabel(settings.keybindsLocked);
     repositionBtn.textContent = settings.locked ? '🎯 Drag into place' : '🔓 Unlocked — drag the HUD, then use its Lock button';
     repositionBtn.classList.toggle('on', !settings.locked);
@@ -243,6 +256,11 @@
       critGuideRepositionBtn.textContent = settings.critGuideLocked ? '🎯 Drag into place' : '🔓 Unlocked — drag the overlay, then use its Lock button';
       critGuideRepositionBtn.classList.toggle('on', !settings.critGuideLocked);
     }
+    if(spawnAlertRepositionBtn){
+      spawnAlertRepositionBtn.textContent = settings.spawnAlertLocked ? '🎯 Drag into place' : '🔓 Unlocked — drag the sample alert, then use its Lock button';
+      spawnAlertRepositionBtn.classList.toggle('on', !settings.spawnAlertLocked);
+    }
+    if(spawnAlertHoldSel) spawnAlertHoldSel.value = String(settings.spawnAlertHoldSec || 6);
     // Sound notifications (v1.10.2)
     const timerSoundEnabledCheckbox = document.getElementById('timerSoundEnabledCheckbox');
     if(timerSoundEnabledCheckbox) timerSoundEnabledCheckbox.checked = settings.timerSoundEnabled !== false;
@@ -269,6 +287,7 @@
       if(blueprintVolumeDisplay) blueprintVolumeDisplay.textContent = Math.round((settings.blueprintSoundVolume || 0.35) * 100) + '%';
     }
     renderSounds(settings); // v1.13.0: the per-timer pickers + your own sounds
+    renderSpawnRules(settings); // v1.14.0: Filters → 📡 Spawn Alert grid + sound
   }
 
   function acceleratorFromEvent(e){
@@ -738,6 +757,114 @@
     else if(r && r.reason && r.reason !== 'cancelled') showToast(r.reason);
   });
 
+  /* 📡 Spawn Alert rules (v1.14.0, ⚙ Overlay Settings → Filters): a grid of the
+     types x tiers in spawn-parse.js, each box Off / Show / Show + sound
+     (spawnRuleFor()); only boxes that aren't plain Show are saved
+     (cleanSpawnRules()). pendingSpawnRules keeps a quick run of clicks from being
+     undone by the settings echo of an earlier click. The sound list is the timers'
+     built-ins (minus Off: a box without 🔊 is already silent) + your own files. */
+  const spawnRuleGrid = document.getElementById('spawnRuleGrid');
+  const spawnSoundSel = document.getElementById('spawnAlertSound');
+  const spawnVolume = document.getElementById('spawnAlertVolume');
+  const spawnVolumeVal = document.getElementById('spawnAlertVolumeVal');
+  const RULE_TEXT = ['Off', 'Show', 'Show 🔊'];
+  const capWord = (w) => w[0].toUpperCase() + w.slice(1);
+  const ruleCells = {};
+  let spawnRules = {}, pendingSpawnRules = null, spawnSoundKey = null;
+  function ruleOf(k){ const [v, t] = k.split('|'); return spawnRuleFor(spawnRules, v, t); }
+  function setRules(r){
+    spawnRules = cleanSpawnRules(r);
+    pendingSpawnRules = spawnRules;
+    paintRules();
+    window.overlayAPI.setSettings({ spawnAlertRules: spawnRules });
+  }
+  function cycleMany(keys){
+    const next = (ruleOf(keys[0]) + 1) % 3, r = { ...spawnRules };
+    keys.forEach(k => { r[k] = next; });
+    setRules(r);
+  }
+  function allRules(fn){
+    const r = {};
+    Object.keys(ruleCells).forEach(k => { r[k] = fn(ruleOf(k)); });
+    setRules(r);
+  }
+  (function buildSpawnRuleGrid(){
+    const head = spawnRuleGrid.insertRow();
+    const corner = document.createElement('th');
+    corner.className = 'corner';
+    head.appendChild(corner);
+    SPAWN_TIERS.forEach(t => {
+      const th = document.createElement('th');
+      th.textContent = capWord(t);
+      th.style.color = 'var(--t-' + t + ')';
+      th.title = 'Change every ' + capWord(t) + ' spawn';
+      th.addEventListener('click', ()=> cycleMany(SPAWN_VARIANTS.map(v => v + '|' + t)));
+      head.appendChild(th);
+    });
+    SPAWN_VARIANTS.forEach(v => {
+      const tr = spawnRuleGrid.insertRow();
+      const th = document.createElement('th');
+      th.className = 'row';
+      th.title = 'Change every ' + capWord(v) + ' spawn';
+      const name = document.createElement('span');
+      name.className = 'spawn-type v-' + v;
+      name.textContent = capWord(v);
+      th.appendChild(name);
+      th.addEventListener('click', ()=> cycleMany(SPAWN_TIERS.map(t => v + '|' + t)));
+      tr.appendChild(th);
+      SPAWN_TIERS.forEach(t => {
+        const k = v + '|' + t;
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'spawn-rule-cell';
+        b.style.setProperty('--tc', 'var(--t-' + t + ')');
+        b.title = capWord(v) + ' ' + capWord(t) + ': click for Off → Show → Show + sound';
+        b.addEventListener('click', ()=> setRules({ ...spawnRules, [k]: (ruleOf(k) + 1) % 3 }));
+        tr.insertCell().appendChild(b);
+        ruleCells[k] = b;
+      });
+    });
+  })();
+  function paintRules(){
+    let shown = 0, loud = 0;
+    Object.keys(ruleCells).forEach(k => {
+      const r = ruleOf(k), b = ruleCells[k];
+      b.className = 'spawn-rule-cell' + (r === SPAWN_RULE_SHOW ? ' show' : r === SPAWN_RULE_SOUND ? ' sound' : '');
+      b.textContent = RULE_TEXT[r];
+      if(r !== SPAWN_RULE_OFF) shown++;
+      if(r === SPAWN_RULE_SOUND) loud++;
+    });
+    document.getElementById('spawnRuleSummary').textContent = 'Shows ' + shown + ' of ' + Object.keys(ruleCells).length + ' kinds · sound for ' + loud + '.';
+  }
+  function renderSpawnRules(s){
+    const saved = cleanSpawnRules(s.spawnAlertRules);
+    if(pendingSpawnRules && JSON.stringify(saved) === JSON.stringify(pendingSpawnRules)) pendingSpawnRules = null;
+    if(!pendingSpawnRules) spawnRules = saved;
+    paintRules();
+    const customs = Array.isArray(s.customSounds) ? s.customSounds : [];
+    const key = JSON.stringify(customs);
+    if(key !== spawnSoundKey){
+      spawnSoundKey = key;
+      spawnSoundSel.textContent = '';
+      BUILTIN_SOUNDS.filter(([v]) => v !== 'off').forEach(([v, t]) => spawnSoundSel.appendChild(option(v, t)));
+      customs.forEach(c => spawnSoundSel.appendChild(option('custom:' + c.id, '🎵 ' + c.name)));
+    }
+    spawnSoundSel.value = s.spawnAlertSound || 'goodnews';
+    if(spawnSoundSel.selectedIndex < 0) spawnSoundSel.value = 'goodnews'; // e.g. a removed file
+    const vol = typeof s.spawnAlertVolume === 'number' ? s.spawnAlertVolume : 0.35;
+    if(document.activeElement !== spawnVolume){ spawnVolume.value = vol; spawnVolumeVal.textContent = Math.round(vol * 100) + '%'; }
+  }
+  document.getElementById('spawnRuleAllShowBtn').addEventListener('click', ()=> allRules(r => Math.max(SPAWN_RULE_SHOW, r)));
+  document.getElementById('spawnRuleAllSoundBtn').addEventListener('click', ()=> allRules(()=> SPAWN_RULE_SOUND));
+  document.getElementById('spawnRuleNoSoundBtn').addEventListener('click', ()=> allRules(r => Math.min(SPAWN_RULE_SHOW, r)));
+  spawnSoundSel.addEventListener('change', ()=> window.overlayAPI.setSettings({ spawnAlertSound: spawnSoundSel.value }));
+  spawnVolume.addEventListener('input', ()=>{ spawnVolumeVal.textContent = Math.round(spawnVolume.value * 100) + '%'; });
+  spawnVolume.addEventListener('change', ()=> window.overlayAPI.setSettings({ spawnAlertVolume: parseFloat(spawnVolume.value) }));
+  document.getElementById('spawnAlertSoundPlayBtn').addEventListener('click', ()=>{
+    playAlert(spawnSoundSel.value || 'goodnews', parseFloat(spawnVolume.value) || 0.35, readCustomSound)
+      .catch(()=> showToast("Couldn't play that sound — the file may be damaged or in a format this app can't read"));
+  });
+
   function applyAppearanceUI(s){
     lastSettings = s;
     if(pendingOverlayThemes && JSON.stringify(s.overlayThemes || {}) === JSON.stringify(pendingOverlayThemes)) pendingOverlayThemes = null;
@@ -764,11 +891,13 @@
     themeCardRow.classList.toggle('is-default', isOwnDefault('themeTextScale') && isOwnDefault('themeCompact'));
     themeHighlightBorderBtn.classList.toggle('on', v.themeHighlight === 'border');
     // what applies to the chosen overlay
-    ['themeBoxRow', 'themeHighlightRow'].forEach(id => document.getElementById(id).classList.toggle('is-hidden', t === 'timers'));
-    themeCardRow.classList.toggle('is-hidden', t === 'timers' || t === 'critGuide');
+    const backdropOnly = t === 'timers' || t === 'spawnAlert'; // v1.14.0: the Spawn Alert has no boxes or selection
+    ['themeBoxRow', 'themeHighlightRow'].forEach(id => document.getElementById(id).classList.toggle('is-hidden', backdropOnly));
+    themeCardRow.classList.toggle('is-hidden', backdropOnly || t === 'critGuide');
     THEME_ROWS[0].alpha.disabled = t === 'overlay';
     themeTargetHint.textContent = !t ? 'Every overlay, unless one has its own colors.'
-      : 'Only this one. Default follows All overlays.' + (t === 'overlay' ? ' Its backdrop opacity is under Layout.' : '') + (t === 'timers' ? ' The timers use the backdrop only.' : '');
+      : 'Only this one. Default follows All overlays.' + (t === 'overlay' ? ' Its backdrop opacity is under Layout.' : '')
+        + (t === 'timers' ? ' The timers use the backdrop only.' : '') + (t === 'spawnAlert' ? ' The Spawn Alert uses the backdrop only.' : '');
     themeResetBtn.textContent = t ? '↺ Reset this overlay' : '↺ Reset all colors';
     renderPresets(s);
     overlaySnapCheckbox.checked = s.overlaySnap !== false;
@@ -978,6 +1107,39 @@
     });
   }
 
+  // Spawn Alert (v1.14.0): on = spawn-alert.html watches the game's feed.
+  if(spawnAlertToggleBtn){
+    spawnAlertToggleBtn.addEventListener('click', async ()=>{
+      const visible = await window.overlayAPI.toggleSpawnAlert();
+      setSpawnAlertToggleLabel(visible);
+    });
+  }
+  if(spawnAlertRepositionBtn){
+    spawnAlertRepositionBtn.addEventListener('click', async ()=>{
+      const s = await window.overlayAPI.getSettings();
+      if(s.spawnAlertLocked){
+        await window.overlayAPI.setSpawnAlertLocked(false);
+        showToast('Spawn Alert unlocked — drag the sample alert into place, then click its own Lock button');
+      } else {
+        await window.overlayAPI.setSpawnAlertLocked(true);
+        showToast('Spawn Alert position locked');
+      }
+    });
+  }
+  if(spawnAlertResetPosBtn){
+    spawnAlertResetPosBtn.addEventListener('click', async ()=>{
+      const s = await window.overlayAPI.resetSpawnAlertPosition();
+      applySettingsToUI(s);
+      showToast('Spawn Alert position and size reset to default');
+    });
+  }
+  if(spawnAlertHoldSel){
+    spawnAlertHoldSel.addEventListener('change', ()=>{
+      const n = parseInt(spawnAlertHoldSel.value, 10);
+      if(n > 0) window.overlayAPI.setSettings({ spawnAlertHoldSec: n });
+    });
+  }
+
   /* Ctrl+Shift+6 (Read Rebirth Screen) fires from a global OS-level hotkey
      in the main process, which can't call renderer functions directly — it
      broadcasts that it fired, and this just clicks the real button, so the
@@ -1063,6 +1225,7 @@
   if(window.overlayAPI.onRebirthReqVisibility) window.overlayAPI.onRebirthReqVisibility(setRebirthReqToggleLabel);
   if(window.overlayAPI.onSneakVisibility) window.overlayAPI.onSneakVisibility(setSneakToggleLabel);
   if(window.overlayAPI.onCritGuideVisibility) window.overlayAPI.onCritGuideVisibility(setCritGuideToggleLabel);
+  if(window.overlayAPI.onSpawnAlertVisibility) window.overlayAPI.onSpawnAlertVisibility(setSpawnAlertToggleLabel);
 
   (async ()=>{
     const s = await window.overlayAPI.getSettings();
