@@ -377,6 +377,23 @@ and insider-gaming.com. It's the one piece of data in the app that isn't
 from the game's own tables — if a droid's tier ever looks wrong, say so and
 it can be corrected.
 
+## 🪟 Resize & move overlays (v1.11.0)
+
+- **Resize any droid overlay** (Upcoming RB Req's, Rebirth Requirements, Safe to
+  Retire, Sneak Preview, Crit Guide): ⚙ Overlay Settings → Layout → **🎯 Drag into
+  place**, then drag the striped grip in the overlay's bottom-right corner. Icons, text
+  and spacing scale up together, right up to the droid art's full sharpness. Past that,
+  the lists fit more columns instead of blurring. **Lock** keeps the size, and **↺ Reset**
+  now restores the default size as well as the default spot.
+- **Moving an overlay keeps it on one monitor.** Drag it to the edge of a screen and it
+  stops there. Keep going and it hops across whole, and pulling back returns it to right
+  where you grabbed it. (Before, dragging across the edge between two monitors could show
+  a flickering copy of the overlay on the other screen.)
+- **Kyber droid icons** are now clean transparent cut-outs like every other colorway.
+  Leftovers of the in-game "PREVIEW" banner, the card frame and the colored card glow are
+  gone.
+- Coming next (v1.11.1): pick your own backdrop, box and highlighter colors.
+
 ## 🧬 Rebirth Requirements overlay
 
 A standalone always-on-top **"what do I still need"** checklist for the

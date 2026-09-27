@@ -51,6 +51,11 @@ short on purpose so a fresh session can read it in one pass.
   tracker.html's globals (`ownedRank`, `activeCycle`, `markRowObtained`,
   `cycleCoveredCount`, etc.) — see the Rules section below, this is exactly where
   the v1.9.0 regression happened.
+- `overlay-theme.css` / `overlay-theme.js` (v1.11.0) — the 5 droid overlays' shared
+  look variables (`--ov-*`), corner resize grip and size-driven zoom. `overlay-drag.js`
+  (v1.11.0) — every overlay window's drag bar (see the no-`-webkit-app-region` Rule).
+- `build-kyber-card-icons.js` (v1.11.0, not in the exe) — regenerates card-icons-data.js's
+  75 Kyber slots as transparent cut-outs from the local Droidex screenshots.
 - `release/` keeps only the current build's exe. No `src/` snapshot anymore.
 
 ## Rules
@@ -113,13 +118,33 @@ short on purpose so a fresh session can read it in one pass.
   source, open `releases/new?tag=vX.Y.Z&target=main&title=...&body=...` prefilled
   with notes + the exe's SHA256; the user drags the exe in (too large — 65+MB — for
   `file_upload`'s 10MB cap) and publishes themselves.
+  **Push source BEFORE the release is published, and verify it landed**: v1.10.10–
+  v1.10.12 shipped as exes while `main` stayed on v1.10.9 source, so those tags
+  point at stale code. Diff local vs `main` by git blob SHA, and use one upload page
+  per folder (`/upload/main/test`, `/upload/main/test/helpers`). Exact steps in
+  GOTCHAS_AND_CONSTRAINTS.md → "No Git Locally".
+- **Overlay marks that aren't real ownership never write ownedRank** (v1.10.13).
+  Sneak Preview "held" marks and Safe to Retire "retired" marks each have their own
+  per-cycle store key (`rebirth-heldMarks`, `rebirth-retired`). Writing them to
+  ownedRank would either count toward the wrong cycle / get wiped at completion,
+  or un-cover past levels so the cycle can never complete. Follow the same pattern
+  for any future "mark X" idea. Details: GOTCHAS_AND_CONSTRAINTS.md.
+- **Hotkeys that act on an overlay's selection go through `sendToMarkList()`**,
+  never `broadcast()`: hidden overlays keep their DOM and still receive broadcasts.
+- **Overlay windows never use `-webkit-app-region: drag`** (v1.10.14). They move only
+  through `overlay-drag.js` (`#dragHandle` -> `overlay:drag`) and resize only through
+  overlay-theme.js's grip (`overlay:resize`); main.js places them, always wholly on ONE
+  monitor. Windows' own drag let an overlay straddle two monitors, and Windows then drew
+  the second monitor's part again on the first (a moving mirror). A new overlay window:
+  `#dragHandle` + `overlay-drag.js` on its page, and an entry in `OVERLAY_WINDOWS` in
+  main.js. test/pages.test.js enforces the page side.
 - Build: `npm run dist` (with `$env:CSC_IDENTITY_AUTO_DISCOVERY='false'` set first)
   -> `release\Fuzzy's Droid Tracker X.Y.Z.exe`. The app is single-instance —
   launching a new exe while an old one runs just focuses the old window, so the
   user closes the running app before launching a new build.
 
 ## Tests
-`npm test` runs Node's built-in test runner over `test/**/*.test.js` (65 tests).
+`npm test` runs Node's built-in test runner over `test/**/*.test.js` (67 tests).
 `test/helpers/load-shared.js` loads droid-data.js + requirements.js into an isolated vm
 context the same way a browser window does. Top-level let/const must be read with
 `run('NAME')`; functions are exposed directly (e.g. `s.cycleCoveredCount(...)`) — see
@@ -144,7 +169,78 @@ plumbing, since it reads no droid/cycle data at all). The tracker itself still
 works normally outside Electron via a localStorage fallback (real progress in
 userData is never touched).
 
-## Current status (2026-09-27): v1.10.13 — mark droids from Sneak Preview + Safe to Retire
+## Current status (2026-09-27): v1.11.0 — overlay rehaul part 1 (resize + zoom), released
+
+Built during development as "v1.10.14"; the user promoted it to **v1.11.0** for release
+(user-tested: resize, zoom, Kyber icons, monitor-edge fix all confirmed working).
+**Phase 3 is shelved for v1.11.1** — start there next session.
+
+User goal: overlays that look nicer and are customizable. Agreed plan, in phases:
+1. **Done:** shared theme variables. `overlay-theme.css` (linked BEFORE each page's
+   `<style>`) defines `--ov-backdrop-rgb/-alpha`, `--ov-box-rgb/-alpha`,
+   `--ov-highlight-rgb` (defaults to the border's `--sw-rgb`), `--ov-icon-size`.
+   All 5 droid overlays use them instead of literals, with page overrides that keep
+   the old look (HUD: alpha 0.55 from its `opacity` setting, 34px icons, green
+   highlight, `--ov-backdrop-current-rgb`; Rebirth Reqs: purple highlight). Proven
+   zero visual change by diffing computed styles of all 853 elements before/after.
+2. **Done (user-confirmed in the real app):** corner-grip resize
+   + size-driven zoom in `overlay-theme.js`. Grip shows while unlocked; main.js
+   `overlay:resize` (ipcMain.on, start/move/end with screen-px deltas) setBounds +
+   saves `size`/`declutterSize`/`rebirthReqSize`/`sneakSize`/`critGuideSize`;
+   `overlayBounds()` restores them at launch; Reset position also clears size.
+   Zoom = CSS `zoom` on `<html>` relative to the DEFAULT size (`overlay:baseSize`), so
+   default = 1.0; capped where the 96px card art would upscale
+   (`96 / ((icon - 4px frame) * devicePixelRatio)`), min 0.8. Lists zoom by width;
+   the HUD (`data-ov-zoom="fit"`) by min(width, height). CSS zoom (not
+   webContents.setZoomFactor, whose zoom is shared per-origin across every file://
+   window) and verified: page stays inside the window, grid reflows, overlay-scroll
+   math still correct.
+   **Bug found during testing, NOT caused by this release (fixed, user-confirmed):**
+   dragging an overlay showed a moving copy of it at the top-left of monitor 1. Cause: the
+   user has two 1920x1080 @100% monitors, the second to the right, and while an overlay
+   STRADDLES the edge Windows also draws its monitor-2 part onto monitor 1, exactly 1920px
+   to the left (measured from their screenshots). It vanishes once the window is back on one
+   monitor. First guess (the grip's filter/fixed + always-set zoom) was wrong; those were
+   made plain/removed anyway. Second try clamped Windows' drag in 'will-move', but its drag
+   loop still drew half-crossed frames (mirror came back once the mouse was fully on
+   monitor 2). Final fix, now a Rule (see Rules): no `-webkit-app-region` anywhere; the app
+   drags every overlay itself (`overlay-drag.js` -> `overlay:drag` -> `onOneDisplay()`).
+   Simulated with main.js's own function on the user's layout: stops at the edge, hops
+   whole, returns to the grab point, never straddles. User confirmed fixed on 2 monitors.
+   **Kyber card icons rebuilt:** the 75 Kyber slots in card-icons-data.js were opaque crops
+   still showing bits of the in-game "PREVIEW" banner, unlike every other variant (transparent
+   gonk.tools portraits). `build-kyber-card-icons.js` (excluded from the exe) re-extracts them
+   from droidex-card-screenshots/KYBER with extract-droid-cards.js's detector and cuts the droid
+   out by comparing each Kyber card with the same droid's other plain-backdrop variants
+   (DEFAULT/GOLD/BESKAR/GALACTIC/STELLAR; DIAMOND/RAINBOW have sparkle backdrops) plus a
+   per-rarity-class backdrop; only the Kyber slots are rewritten. KX (black droid on a black
+   card) is the weakest result.
+3. **NEXT — v1.11.1 (bump package.json to 1.11.1 first):** Appearance tab in ⚙ Overlay
+   Settings (the Borders tab grows into it) — backdrop / box / highlighter color pickers,
+   each with opacity, ONE global theme (settings → the `--ov-*` variables via
+   overlay-theme.js), per-overlay overrides later. "Backdrop" = the dark panel behind the
+   droid boxes (user's word was "back pack color"). Open decisions: the HUD's existing
+   `opacity` slider vs. the theme's backdrop alpha; whether the highlight default should
+   become "match border" everywhere (today HUD green / Rebirth Reqs purple / others border).
+4. Later: more border skins + full-theme presets (user lifted the 7-skin cap).
+Timer banners: user wants to restyle them too, undecided how; not in scope yet.
+
+## Known follow-ups (spotted, deliberately not fixed yet)
+- `overlay:markDroid`/`overlay:markLevel` (main.js) compute `nk` without the player's
+  `nameMerges`, so marking a renamed/merged droid from overlay.html or Rebirth Reqs
+  writes the un-merged key. The v1.10.13 handlers avoid this by taking `nk` from the renderer.
+- Rebirth Reqs overlay doesn't call `scroller.reveal()` on navigate, so its selection
+  can move off-screen on a long list (Sneak Preview + Safe to Retire do).
+- Sneak Preview's "✓ Have" counts global ownership, which mid-cycle includes droids
+  the current cycle's completion wipe will erase. Marking them ("✓ Marked") is the safe path.
+- Export/Import only covers ownedRank/nameMerges/displayOverrides, not
+  `rebirth-heldMarks` / `rebirth-retired`.
+- tracker.html's `window.overlayAPI.onStoreChanged(...)` at the end of init isn't
+  guarded, so it throws in browser/localStorage mode (harmless, runs last).
+- User idea, deferred: a manual "Sync Kyber timer" like the mission sync, if event
+  timers drift again.
+
+## Current status (2026-09-27): v1.10.13 — mark droids from Sneak Preview + Safe to Retire (released)
 
 (v1.10.12, published: Kyber event timer fired at :00:00 instead of :00:20 —
 `nextKyber()` now uses `setSeconds(20, 0)`, matching the 7:30:20 window.)

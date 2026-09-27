@@ -26,7 +26,7 @@
   }
   .drag-handle{
     display:none;
-    -webkit-app-region: drag;
+    cursor:move; touch-action:none; /* moved by overlay-drag.js, never -webkit-app-region */
     align-items:center; justify-content:space-between;
     background:rgba(94,242,166,0.22);
     border:1px solid rgba(94,242,166,0.55);
@@ -38,7 +38,6 @@
   }
   body.unlocked .drag-handle{ display:flex; }
   .drag-handle button{
-    -webkit-app-region: no-drag;
     background:#5ef2a6; color:#08130d; border:none; border-radius:4px;
     font-size:11px; font-weight:700; padding:3px 9px; cursor:pointer;
   }
@@ -469,5 +468,6 @@
   })();
 })();
 </script>
+<script src="overlay-drag.js"></script>
 </body>
 </html>

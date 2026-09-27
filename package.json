@@ -1,6 +1,6 @@
 {
     "name":  "fuzzys-droid-tracker",
-    "version":  "1.10.13",
+    "version":  "1.11.0",
     "description":  "Fuzzy\u0027s Droid Tracker — a Droid Tycoon rebirth tracker with an always-on-top requirements HUD",
     "main":  "main.js",
     "author":  "Fuzzy",
@@ -46,6 +46,7 @@
                                 "!card-full-data.js",
                                 "!extract-droid-cards.js",
                                 "!build-card-icons.js",
+                                "!build-kyber-card-icons.js",
                                 "!capture-droid-variants.js",
                                 "!scrape-droidex.js",
                                 "!DROIDEX_IMAGE_IMPORT_GUIDE.md",

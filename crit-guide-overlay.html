@@ -5,6 +5,7 @@
 <title>Fuzzy's Droid Tracker — Optimal Crit Guide</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="overlay-theme.css">
 <style>
   :root{
     --r-gold: #e8c04a;
@@ -36,7 +37,7 @@
   }
   .drag-handle{
     display:none;
-    -webkit-app-region: drag;
+    cursor:move; touch-action:none; /* moved by overlay-drag.js, never -webkit-app-region */
     align-items:center; justify-content:space-between;
     background:rgba(94,242,166,0.22);
     border:1px solid rgba(94,242,166,0.55);
@@ -48,13 +49,12 @@
   }
   body.unlocked .drag-handle{ display:flex; }
   .drag-handle button{
-    -webkit-app-region: no-drag;
     background:var(--accent); color:#08130d; border:none; border-radius:4px;
     font-size:11px; font-weight:700; padding:3px 9px; cursor:pointer;
   }
   .card{
     flex:1; min-height:0; display:flex; flex-direction:column; gap:6px;
-    background:rgba(10,14,12,0.62);
+    background:rgba(var(--ov-backdrop-rgb), var(--ov-backdrop-alpha));
     border:1px solid rgba(255,255,255,0.14);
     border-top:3px solid var(--accent);
     border-radius:10px;
@@ -93,7 +93,7 @@
   }
   .calc-box{
     flex:0 0 auto;
-    background:color-mix(in srgb, var(--accent) 12%, rgba(10,14,12,0.4));
+    background:color-mix(in srgb, var(--accent) 12%, rgba(var(--ov-backdrop-rgb), 0.4));
     border:1px solid color-mix(in srgb, var(--accent) 45%, transparent);
     border-radius:8px;
     padding:6px 8px;
@@ -151,7 +151,7 @@
     padding:4.5px 5px;
     border-left:3px solid var(--tc, var(--r-gold));
     border-radius:4px;
-    background:rgba(255,255,255,0.03);
+    background:rgba(var(--ov-box-rgb), calc(var(--ov-box-alpha) * 0.5)); /* rows sit fainter than a droid box */
   }
   .g-row .n{ font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:rgba(255,255,255,0.4); }
   .g-row .name{ font-size:11px; font-weight:700; color:#f2f6f4; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -167,7 +167,7 @@
   }
   .g-milestones .m{
     flex:1; min-width:0;
-    background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.14);
+    background:rgba(var(--ov-box-rgb), calc(var(--ov-box-alpha) * 5 / 6)); border:1px solid rgba(255,255,255,0.14);
     border-radius:6px; padding:4px 5px; text-align:center;
   }
   .g-milestones .m .ml{ font-size:7.5px; font-weight:700; letter-spacing:.02em; text-transform:uppercase; color:rgba(255,255,255,0.5); }
@@ -175,7 +175,7 @@
   .g-milestones .m .md{ font-size:8px; color:#5ef2a6; margin-top:1px; }
   .g-takeaway{
     animation:fdt-in .18s ease-out both;
-    background:color-mix(in srgb, var(--r-galactic) 14%, rgba(10,14,12,0.4));
+    background:color-mix(in srgb, var(--r-galactic) 14%, rgba(var(--ov-backdrop-rgb), 0.4));
     border:1px solid color-mix(in srgb, var(--r-galactic) 45%, transparent);
     border-radius:8px; padding:6px 8px; margin-top:2px;
   }
@@ -198,7 +198,7 @@
   <div class="panel">
     <div class="border-badge" id="borderBadge"></div>
     <div class="drag-handle" id="dragHandle">
-      <span>Drag to position, then Lock</span>
+      <span>Drag to move, corner to resize, then Lock</span>
       <button id="lockBtn">Lock</button>
     </div>
     <div class="card">
@@ -384,5 +384,7 @@
   })();
 })();
 </script>
+<script src="overlay-theme.js"></script>
+<script src="overlay-drag.js"></script>
 </body>
 </html>

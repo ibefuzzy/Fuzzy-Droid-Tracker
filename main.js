@@ -198,7 +198,15 @@ const DEFAULT_SETTINGS = {
   // unregisters every hotkey with the OS entirely (see applyKeybindsLock())
   // so the keys behave completely normally in whatever app is actually
   // focused, then re-registers them all from settings when unlocked again.
-  keybindsLocked: false
+  keybindsLocked: false,
+  // v1.10.14: each droid overlay's {width, height} from its corner resize grip
+  // (overlay-theme.js), or null for the default size. Separate from the
+  // xPosition keys so an older settings file simply merges these in as null.
+  size: null,
+  declutterSize: null,
+  rebirthReqSize: null,
+  sneakSize: null,
+  critGuideSize: null
 };
 
 /* ---------------- convention: hotkeys for FUTURE overlays (2026-09-23) ----
@@ -492,6 +500,53 @@ function clampToDisplay(bounds){
   return { ...bounds, x, y };
 }
 
+/* v1.10.14: a droid overlay's starting bounds — its tuned default, then the
+   saved size and position on top. A saved size larger than the work area
+   (e.g. after switching to a smaller monitor) is shrunk to fit first. */
+const OVERLAY_MIN_SIZE = { width: 200, height: 160 };
+function overlayBounds(defaults, position, size){
+  if(!position && !size) return defaults;
+  const b = { ...defaults, ...(size || {}), ...(position || {}) };
+  const wa = (screen.getDisplayMatching(b) || screen.getPrimaryDisplay()).workArea;
+  b.width = Math.max(OVERLAY_MIN_SIZE.width, Math.min(b.width, wa.width));
+  b.height = Math.max(OVERLAY_MIN_SIZE.height, Math.min(b.height, wa.height));
+  return clampToDisplay(b);
+}
+
+/* Every overlay window the user can move (v1.10.14). RULE: overlay windows never
+   use -webkit-app-region: drag. They move only through overlay-drag.js ->
+   'overlay:drag' below, and resize only through overlay-theme.js -> 'overlay:resize',
+   so main.js always places them and keeps each wholly on ONE monitor. Windows'
+   own drag let a window straddle two monitors, and Windows then drew the part on
+   the second monitor again on the first, a moving "mirror" (v1.10.14 testing, two
+   1920x1080 monitors side by side). A new overlay window needs an entry here,
+   overlay-drag.js on its page, and a #dragHandle.
+   sizeKey/defaults: only the droid overlays resize (overlay-theme.js zooms
+   relative to the default size); the timers banner just moves. */
+const OVERLAY_WINDOWS = {
+  overlay:    { win: () => overlayWindow,    sizeKey: 'size',           defaults: computeDefaultBounds },
+  timers:     { win: () => timersWindow },
+  declutter:  { win: () => declutterWindow,  sizeKey: 'declutterSize',  defaults: computeDefaultDeclutterBounds },
+  rebirthReq: { win: () => rebirthReqWindow, sizeKey: 'rebirthReqSize', defaults: computeDefaultDeclutterBounds },
+  sneak:      { win: () => sneakWindow,      sizeKey: 'sneakSize',      defaults: computeDefaultDeclutterBounds },
+  critGuide:  { win: () => critGuideWindow,  sizeKey: 'critGuideSize',  defaults: computeDefaultDeclutterBounds }
+};
+function overlayWindowFor(webContents){
+  return Object.values(OVERLAY_WINDOWS).find(o => { const w = o.win(); return w && !w.isDestroyed() && w.webContents === webContents; });
+}
+
+// Where a dragged window goes: wholly inside the work area of the monitor under
+// its centre. It stops at a monitor's edge and hops across once its centre is
+// over the next one; pulled back, it resumes exactly under the original grab point.
+function onOneDisplay(b){
+  const wa = screen.getDisplayNearestPoint({ x: Math.round(b.x + b.width / 2), y: Math.round(b.y + b.height / 2) }).workArea;
+  return {
+    x: Math.round(Math.min(Math.max(b.x, wa.x), wa.x + wa.width - b.width)),
+    y: Math.round(Math.min(Math.max(b.y, wa.y), wa.y + wa.height - b.height)),
+    width: b.width, height: b.height
+  };
+}
+
 /* ---------------- windows ---------------- */
 function createMainWindow(){
   mainWindow = new BrowserWindow({
@@ -515,7 +570,7 @@ function createMainWindow(){
 }
 
 function createOverlayWindow(){
-  const bounds = settings.position ? clampToDisplay({ ...computeDefaultBounds(), ...settings.position }) : computeDefaultBounds();
+  const bounds = overlayBounds(computeDefaultBounds(), settings.position, settings.size);
 
   overlayWindow = new BrowserWindow({
     ...bounds,
@@ -617,7 +672,7 @@ function createTimersWindow(){
 }
 
 function createDeclutterWindow(){
-  const bounds = settings.declutterPosition ? clampToDisplay({ ...computeDefaultDeclutterBounds(), ...settings.declutterPosition }) : computeDefaultDeclutterBounds();
+  const bounds = overlayBounds(computeDefaultDeclutterBounds(), settings.declutterPosition, settings.declutterSize);
 
   declutterWindow = new BrowserWindow({
     ...bounds,
@@ -668,7 +723,7 @@ function createDeclutterWindow(){
    size and position can never drift out of sync with the Safe to Retire
    window it's meant to match exactly. */
 function createRebirthReqWindow(){
-  const bounds = settings.rebirthReqPosition ? clampToDisplay({ ...computeDefaultDeclutterBounds(), ...settings.rebirthReqPosition }) : computeDefaultDeclutterBounds();
+  const bounds = overlayBounds(computeDefaultDeclutterBounds(), settings.rebirthReqPosition, settings.rebirthReqSize);
 
   rebirthReqWindow = new BrowserWindow({
     ...bounds,
@@ -715,7 +770,7 @@ function createRebirthReqWindow(){
 /* ---------------- declutter list ---------------- */
 /* Sneak Preview — same bounds as Safe to Retire / Rebirth Requirements. */
 function createSneakWindow(){
-  const bounds = settings.sneakPosition ? clampToDisplay({ ...computeDefaultDeclutterBounds(), ...settings.sneakPosition }) : computeDefaultDeclutterBounds();
+  const bounds = overlayBounds(computeDefaultDeclutterBounds(), settings.sneakPosition, settings.sneakSize);
 
   sneakWindow = new BrowserWindow({
     ...bounds,
@@ -764,7 +819,7 @@ function createSneakWindow(){
    Same window shape as Safe to Retire / Rebirth Requirements / Sneak
    Preview otherwise, so it reuses their default bounds. */
 function createCritGuideWindow(){
-  const bounds = settings.critGuidePosition ? clampToDisplay({ ...computeDefaultDeclutterBounds(), ...settings.critGuidePosition }) : computeDefaultDeclutterBounds();
+  const bounds = overlayBounds(computeDefaultDeclutterBounds(), settings.critGuidePosition, settings.critGuideSize);
 
   critGuideWindow = new BrowserWindow({
     ...bounds,
@@ -1599,6 +1654,49 @@ function wireIpc(){
     return { ...settings };
   });
 
+  // v1.10.14: moving (overlay-drag.js) and corner-grip resizing (overlay-theme.js).
+  // The renderer sends how far the pointer has moved since it went down; the
+  // starting bounds are kept here so the window tracks the pointer exactly.
+  // `send`, not `invoke`: pointermove fires fast and needs no reply. See
+  // OVERLAY_WINDOWS for why overlays never use Windows' own drag.
+  const dragStart = new Map(); // webContents id -> bounds when the drag began
+  ipcMain.on('overlay:drag', (evt, data)=>{
+    const o = overlayWindowFor(evt.sender);
+    if(!o || !data) return;
+    const win = o.win();
+    if(data.phase === 'start'){ dragStart.set(evt.sender.id, win.getBounds()); return; }
+    const start = dragStart.get(evt.sender.id);
+    if(!start || !Number.isFinite(data.dx) || !Number.isFinite(data.dy)) return;
+    win.setBounds(onOneDisplay({ ...start, x: start.x + data.dx, y: start.y + data.dy }));
+    if(data.phase === 'end') dragStart.delete(evt.sender.id);
+  });
+
+  const resizeStart = new Map(); // webContents id -> bounds when the resize began
+  ipcMain.on('overlay:resize', (evt, data)=>{
+    const o = overlayWindowFor(evt.sender);
+    if(!o || !o.sizeKey || !data) return;
+    const win = o.win();
+    if(data.phase === 'start'){ resizeStart.set(evt.sender.id, win.getBounds()); return; }
+    const start = resizeStart.get(evt.sender.id);
+    if(!start || !Number.isFinite(data.dx) || !Number.isFinite(data.dy)) return;
+    const wa = (screen.getDisplayMatching(start) || screen.getPrimaryDisplay()).workArea;
+    const width = Math.round(Math.max(OVERLAY_MIN_SIZE.width, Math.min(start.width + data.dx, wa.x + wa.width - start.x)));
+    const height = Math.round(Math.max(OVERLAY_MIN_SIZE.height, Math.min(start.height + data.dy, wa.y + wa.height - start.y)));
+    win.setBounds({ x: start.x, y: start.y, width, height });
+    if(data.phase === 'end'){
+      resizeStart.delete(evt.sender.id);
+      settings[o.sizeKey] = { width, height };
+      persistSettingsNow();
+    }
+  });
+  // The default size this overlay's zoom is measured against (1.0 at default).
+  ipcMain.handle('overlay:baseSize', (evt)=>{
+    const o = overlayWindowFor(evt.sender);
+    if(!o || !o.defaults) return null;
+    const d = o.defaults();
+    return { width: d.width, height: d.height };
+  });
+
   // "Reset position" — snaps a window straight back to its tuned default
   // spot and forgets the saved custom position, for when a drag went
   // somewhere awkward (or a resolution/monitor change left it looking
@@ -1607,6 +1705,7 @@ function wireIpc(){
   // only mouse-passthrough does (see createOverlayWindow and friends).
   ipcMain.handle('overlay:resetPosition', ()=>{
     settings.position = null;
+    settings.size = null; // v1.10.14: reset = default spot AND default size
     if(overlayWindow) overlayWindow.setBounds(computeDefaultBounds());
     persistSettingsNow();
     broadcast('settings:changed', { ...settings });
@@ -1623,6 +1722,7 @@ function wireIpc(){
 
   ipcMain.handle('declutter:resetPosition', ()=>{
     settings.declutterPosition = null;
+    settings.declutterSize = null;
     if(declutterWindow) declutterWindow.setBounds(computeDefaultDeclutterBounds());
     persistSettingsNow();
     broadcast('settings:changed', { ...settings });
@@ -1631,6 +1731,7 @@ function wireIpc(){
 
   ipcMain.handle('rebirthReq:resetPosition', ()=>{
     settings.rebirthReqPosition = null;
+    settings.rebirthReqSize = null;
     if(rebirthReqWindow) rebirthReqWindow.setBounds(computeDefaultDeclutterBounds());
     persistSettingsNow();
     broadcast('settings:changed', { ...settings });
@@ -1639,6 +1740,7 @@ function wireIpc(){
 
   ipcMain.handle('sneak:resetPosition', ()=>{
     settings.sneakPosition = null;
+    settings.sneakSize = null;
     if(sneakWindow) sneakWindow.setBounds(computeDefaultDeclutterBounds());
     persistSettingsNow();
     broadcast('settings:changed', { ...settings });
@@ -1647,6 +1749,7 @@ function wireIpc(){
 
   ipcMain.handle('critGuide:resetPosition', ()=>{
     settings.critGuidePosition = null;
+    settings.critGuideSize = null;
     if(critGuideWindow) critGuideWindow.setBounds(computeDefaultDeclutterBounds());
     persistSettingsNow();
     broadcast('settings:changed', { ...settings });

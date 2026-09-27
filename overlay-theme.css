@@ -1,0 +1,45 @@
+/* ---------------------------------------------------------------------------
+   overlay-theme.css — the look-and-feel variables every droid overlay shares
+   (v1.10.14): overlay.html, declutter.html, rebirth-requirements-overlay.html,
+   sneak-preview.html, crit-guide-overlay.html.
+
+   Each page's own <style> uses these variables instead of literal colors and
+   sizes, so a theme setting is one variable set in one place rather than an
+   edit in five files. The defaults below reproduce the look from before
+   v1.10.14 exactly. Linked BEFORE each page's <style>, so a page can override
+   a default on its own :root (the HUD's backdrop opacity, for example).
+
+   Colors are "R,G,B" triplets plus a separate alpha, used as
+   rgba(var(--x-rgb), var(--x-alpha)), so opacity can be themed on its own.
+--------------------------------------------------------------------------- */
+:root{
+  /* Backdrop: the dark panel behind everything (the HUD's level blocks). */
+  --ov-backdrop-rgb: 10,14,12;
+  --ov-backdrop-alpha: 0.62;
+
+  /* Box: the tile behind each droid icon (each row, in the Crit Guide). */
+  --ov-box-rgb: 255,255,255;
+  --ov-box-alpha: 0.06;
+
+  /* Highlighter: the glow around the droid selected with the mark/move keys.
+     Follows the overlay's border color unless a page or theme sets it. */
+  --ov-highlight-rgb: var(--sw-rgb, 94,242,166);
+
+  /* Droid icon edge length. List columns are sized from it (2x), so a bigger
+     icon gets a wider column instead of overflowing. */
+  --ov-icon-size: 40px;
+}
+
+/* Corner resize grip (overlay-theme.js): only while the overlay is unlocked. */
+.ov-resize-grip{
+  display:none;
+  position:absolute; right:1px; bottom:1px; width:18px; height:18px;
+  z-index:20; cursor:nwse-resize; touch-action:none;
+  border-bottom-right-radius:8px;
+  background:
+    linear-gradient(135deg, transparent 0 48%, rgba(var(--sw-rgb, 94,242,166),0.95) 48% 56%, transparent 56% 66%,
+                            rgba(var(--sw-rgb, 94,242,166),0.95) 66% 74%, transparent 74% 84%,
+                            rgba(var(--sw-rgb, 94,242,166),0.95) 84% 92%, transparent 92%),
+    rgba(0,0,0,0.35);
+}
+body.unlocked .ov-resize-grip{ display:block; }

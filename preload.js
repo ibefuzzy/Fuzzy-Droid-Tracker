@@ -28,6 +28,13 @@ contextBridge.exposeInMainWorld('overlayAPI', {
   holdNextCycleMark: (data) => ipcRenderer.invoke('overlay:holdNextCycleMark', data), // data: {cycle, nk, rank} — Sneak Preview, held until that cycle is active
   toggleRetired: (data) => ipcRenderer.invoke('overlay:toggleRetired', data), // data: {cycle, nk, rank} — Safe to Retire, never touches ownedRank
 
+  // v1.10.14: every overlay moves via overlay-drag.js and resizes via overlay-theme.js;
+  // main.js places the window (on one monitor). phase: 'start' | 'move' | 'end';
+  // dx/dy = screen px since 'start'.
+  dragOverlay: (phase, dx, dy) => ipcRenderer.send('overlay:drag', { phase, dx, dy }),
+  resizeOverlay: (phase, dx, dy) => ipcRenderer.send('overlay:resize', { phase, dx, dy }),
+  getOverlayBaseSize: () => ipcRenderer.invoke('overlay:baseSize'), // -> {width, height} default size, or null
+
   // overlay settings (hotkey, opacity, position, visible, locked)
   getSettings: () => ipcRenderer.invoke('settings:get'),
   setSettings: (partial) => ipcRenderer.invoke('settings:set', partial),
