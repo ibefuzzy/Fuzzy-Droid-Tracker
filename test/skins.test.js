@@ -36,7 +36,7 @@ test("players' saved skins and main.js's defaults still exist (keys never change
   for (const key of ['rebel', 'empire', 'jedi', 'mando', 'hunter', 'tatooine', 'grogu']) assert.ok(SKINS[key], key);
   const main = fs.readFileSync(path.join(ROOT, 'main.js'), 'utf8');
   const defaults = [...main.matchAll(/^\s*(?:border|\w+Border):\s*'(\w+)'/gm)].map((m) => m[1]);
-  assert.equal(defaults.length, 5, 'expected the 5 overlay border defaults in DEFAULT_SETTINGS');
+  assert.equal(defaults.length, 6, 'expected the 6 overlay border defaults in DEFAULT_SETTINGS (v1.14.0 added spawnAlertBorder)');
   for (const key of defaults) assert.ok(SKINS[key], `DEFAULT_SETTINGS border '${key}' isn't a skin`);
 });
 

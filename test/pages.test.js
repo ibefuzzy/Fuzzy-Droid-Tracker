@@ -112,7 +112,7 @@ test('tracker.html has every element id the settings scripts look up, exactly on
 /* v1.10.14: every droid overlay takes its backdrop/box/highlight/icon size from
    overlay-theme.css variables, which is how a theme setting reaches all of them.
    A literal color pasted back into one page would silently opt that overlay out. */
-const THEMED_OVERLAYS = ['overlay.html', 'declutter.html', 'rebirth-requirements-overlay.html', 'sneak-preview.html', 'crit-guide-overlay.html'];
+const THEMED_OVERLAYS = ['overlay.html', 'declutter.html', 'rebirth-requirements-overlay.html', 'sneak-preview.html', 'crit-guide-overlay.html', 'spawn-alert.html'];
 test('droid overlays link overlay-theme.css before their own styles and use its variables', () => {
   assert.ok(fs.existsSync(path.join(ROOT, 'overlay-theme.css')), 'overlay-theme.css is missing');
   for (const page of THEMED_OVERLAYS) {
@@ -147,6 +147,13 @@ test('overlay windows move via overlay-drag.js, never -webkit-app-region', () =>
     if (!/id="dragHandle"/.test(html)) continue;
     assert.ok(scriptsOf(page).some((s) => s.name === 'overlay-drag.js'), `${page} has a drag bar (#dragHandle) but doesn't load overlay-drag.js, so it can't be moved`);
   }
+});
+
+// v1.14.0: the Spawn Alert reads the screen itself, so it needs the line reader,
+// the OCR engine, and requirements.js for its border skin.
+test('spawn-alert.html loads spawn-parse.js, Tesseract and requirements.js', () => {
+  const names = scriptsOf('spawn-alert.html').map((s) => s.name);
+  for (const n of ['requirements.js', 'spawn-parse.js', 'tesseract.min.js']) assert.ok(names.some((s) => s === n || s.endsWith('/' + n)), `spawn-alert.html doesn't load ${n}`);
 });
 
 test('tracker.html uses the shared requirements.js', () => {
