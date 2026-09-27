@@ -55,26 +55,17 @@ const shared = loadSharedFunctions();
 // the other's changes, with real tracked progress lost and no warning on
 // either side. Refuse a second launch outright and just focus the window
 // the first instance already has open.
-// app.quit() below only REQUESTS a quit — it doesn't synchronously abort
-// this module, so without gating app.whenReady() itself on the lock result,
-// a second instance would still register its whenReady callback and (per
-// Electron's own docs, this is undocumented/version-dependent timing, not
-// guaranteed) could go on to load its own copy of the store/settings,
-// create a full window set, etc. before the requested quit actually lands —
-// exactly the two-instances-both-writing scenario the comment below warns
-// about. Gate on the captured gotLock value explicitly instead of relying
-// on quit() timing.
-const gotLock = app.requestSingleInstanceLock();
-if(!gotLock){
+const singleInstanceLock = app.requestSingleInstanceLock();
+if(!singleInstanceLock){
   app.quit();
-} else {
-  app.on('second-instance', ()=>{
-    if(mainWindow){
-      if(mainWindow.isMinimized()) mainWindow.restore();
-      mainWindow.focus();
-    }
-  });
 }
+
+app.on('second-instance', ()=>{
+  if(mainWindow){
+    if(mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.focus();
+  }
+});
 
 const STORE_PATH = path.join(app.getPath('userData'), 'droid-tycoon-store.json');
 const SETTINGS_PATH = path.join(app.getPath('userData'), 'overlay-settings.json');
@@ -194,7 +185,16 @@ const DEFAULT_SETTINGS = {
   rebirthMarkLeft: '',      // navigate left in grid (v1.10.3)
   rebirthMarkRight: '',     // navigate right in grid (v1.10.3)
   rebirthMarkUp: '',        // navigate up in grid (v1.10.3)
-  rebirthMarkDown: ''       // navigate down in grid (v1.10.3)
+  rebirthMarkDown: '',      // navigate down in grid (v1.10.3)
+  keybindsLockHotkey: '',   // v1.10.8: unbound by default, same convention as every other hotkey added after 2026-09-23 — see keybindsLocked below for what it does
+  // v1.10.8: master kill switch for every global hotkey above — a player
+  // reported the overlay's mark/navigate keys (arrow keys etc.) still firing
+  // while they were doing schoolwork in another app, since these are OS-level
+  // global shortcuts and don't care which window has focus. Toggling this
+  // unregisters every hotkey with the OS entirely (see applyKeybindsLock())
+  // so the keys behave completely normally in whatever app is actually
+  // focused, then re-registers them all from settings when unlocked again.
+  keybindsLocked: false
 };
 
 /* ---------------- convention: hotkeys for FUTURE overlays (2026-09-23) ----
@@ -1092,7 +1092,9 @@ const HOTKEY_HANDLERS = {
   rebirthMarkLeft: () => broadcast('hotkey:triggered', 'rebirthMarkLeft'),
   rebirthMarkRight: () => broadcast('hotkey:triggered', 'rebirthMarkRight'),
   rebirthMarkUp: () => broadcast('hotkey:triggered', 'rebirthMarkUp'),
-  rebirthMarkDown: () => broadcast('hotkey:triggered', 'rebirthMarkDown')
+  rebirthMarkDown: () => broadcast('hotkey:triggered', 'rebirthMarkDown'),
+  // v1.10.8: master lock — see toggleKeybindsLock()/applyKeybindsLock() above
+  keybindsLock: () => toggleKeybindsLock()
 };
 const DECLUTTER_TIER_KEYS = ['declutterShowDefault','declutterShowRare','declutterShowEpic','declutterShowLegendary','declutterShowMythic'];
 // A tier counts as ON unless explicitly false — the same rule declutter.html
@@ -1167,7 +1169,8 @@ const HOTKEY_LABELS = {
   rebirthMarkLeft: 'Navigate Left (Rebirth Requirements)',
   rebirthMarkRight: 'Navigate Right (Rebirth Requirements)',
   rebirthMarkUp: 'Navigate Up (Rebirth Requirements)',
-  rebirthMarkDown: 'Navigate Down (Rebirth Requirements)'
+  rebirthMarkDown: 'Navigate Down (Rebirth Requirements)',
+  keybindsLock: 'Lock/Unlock All Keybinds'
 };
 const HOTKEY_SETTINGS_KEY = {
   hideAll: 'hideAllHotkey',
@@ -1201,7 +1204,8 @@ const HOTKEY_SETTINGS_KEY = {
   rebirthMarkLeft: 'rebirthMarkLeft',
   rebirthMarkRight: 'rebirthMarkRight',
   rebirthMarkUp: 'rebirthMarkUp',
-  rebirthMarkDown: 'rebirthMarkDown'
+  rebirthMarkDown: 'rebirthMarkDown',
+  keybindsLock: 'keybindsLockHotkey'
 };
 
 /* Registers all twenty-one global hotkeys from current settings and returns each
@@ -1215,9 +1219,54 @@ const HOTKEY_SETTINGS_KEY = {
 function registerAllHotkeys(){
   const results = {};
   Object.keys(HOTKEY_LABELS).forEach(name=>{
+    // v1.10.8: while locked, every hotkey except the lock toggle itself stays
+    // unregistered with the OS — keybindsLock must keep working so there's
+    // always a way back out of a lock without touching the app window.
+    if(settings.keybindsLocked && name !== 'keybindsLock'){
+      results[name] = { ok:false, reason:'empty' };
+      return;
+    }
     results[name] = registerHotkeyFor(name, settings[HOTKEY_SETTINGS_KEY[name]]);
   });
   return results;
+}
+
+/* v1.10.8: the lock toggle's actual effect — globalShortcut intercepts the
+   key combo system-wide the moment it's registered, so merely ignoring the
+   keypress inside HOTKEY_HANDLERS would still swallow it from whatever app
+   the player is actually using (this is exactly what a user reported: the
+   overlay's mark/navigate hotkeys firing while typing in another app for
+   schoolwork). The fix has to unregister with the OS entirely, not just gate
+   the handler — and keybindsLock's own registration is deliberately left
+   alone so locking never strands the player with no keyboard way to undo it. */
+function applyKeybindsLock(locked){
+  if(locked){
+    Object.keys(registeredHotkeys).forEach(name=>{
+      if(name === 'keybindsLock') return;
+      try{ globalShortcut.unregister(registeredHotkeys[name]); }catch(e){ /* ignore */ }
+      delete registeredHotkeys[name];
+    });
+  } else {
+    // Deliberately NOT registerAllHotkeys() here — that would also
+    // unregister-then-immediately-re-register keybindsLock's own accelerator
+    // even though locking never touched it, and that redundant cycle on the
+    // exact key combo currently held down was silently failing to
+    // re-register (Electron/OS race), leaving the lock hotkey dead after
+    // its first use. keybindsLock is registered once at launch and never
+    // touched again by the lock/unlock cycle itself.
+    Object.keys(HOTKEY_LABELS).forEach(name=>{
+      if(name === 'keybindsLock') return;
+      registerHotkeyFor(name, settings[HOTKEY_SETTINGS_KEY[name]]);
+    });
+  }
+}
+
+function toggleKeybindsLock(){
+  settings.keybindsLocked = !settings.keybindsLocked;
+  persistSettingsNow();
+  applyKeybindsLock(settings.keybindsLocked);
+  broadcast('settings:changed', { ...settings });
+  notify(settings.keybindsLocked ? '🔒 Keybinds locked' : '🔓 Keybinds unlocked');
 }
 
 function reportHotkeyRegistrationFailures(results){
@@ -1344,14 +1393,27 @@ function wireIpc(){
     // and a new hotkey now only needs its map entries, not another block.
     const prevHotkeys = {};
     Object.keys(HOTKEY_SETTINGS_KEY).forEach(name=>{ prevHotkeys[name] = settings[HOTKEY_SETTINGS_KEY[name]]; });
+    const prevKeybindsLocked = settings.keybindsLocked;
     settings = { ...settings, ...partial };
     persistSettingsNow();
+
+    // v1.10.8: lock toggled from the toolbar button (not the hotkey path,
+    // which calls applyKeybindsLock itself via toggleKeybindsLock()).
+    if('keybindsLocked' in partial && partial.keybindsLocked !== prevKeybindsLocked){
+      applyKeybindsLock(settings.keybindsLocked);
+    }
 
     let hotkeyResult = { ok: true, reason: null };
     let boundSetChanged = false;
     Object.keys(HOTKEY_SETTINGS_KEY).forEach(name=>{
       const key = HOTKEY_SETTINGS_KEY[name];
       if(!(key in partial) || partial[key] === prevHotkeys[name]) return;
+      if(settings.keybindsLocked && name !== 'keybindsLock'){
+        // Locked: record the new binding but leave the OS registration
+        // alone — applyKeybindsLock(false) picks it up on unlock.
+        boundSetChanged = true;
+        return;
+      }
       if(!partial[key]){
         // Cleared (Backspace in the rebind UI). registerHotkeyFor('') drops
         // the old OS registration and reports 'empty' — that IS the success
@@ -1671,19 +1733,6 @@ function migrateUserDataFromOldAppName(){
   }
 }
 
-/* ---------------- lifecycle ---------------- */
-// The 7 overlay/side windows are all created hidden (show:false) — nothing
-// needs them before the user can plausibly reach for a hotkey or toolbar
-// toggle. But 5 of them (overlay/declutter/rebirth-req/sneak, same as
-// tracker.html itself) each independently load and parse their own copy of
-// the ~3.3MB icons-data.js. Creating all 8 windows synchronously at launch
-// made every one of those parses compete for CPU with the main window's own
-// startup at the exact same instant, which is what made the app slow to
-// open — the window appears but stays unresponsive while several renderer
-// processes all tokenize a multi-megabyte JS file at once. Deferring these
-// until the main window has actually finished loading gives tracker.html
-// the CPU to itself first, then lets the rest load in the background once
-// the app already looks and feels open.
 function createSecondaryWindows(){
   createOverlayWindow();
   createTimersWindow();
@@ -1694,45 +1743,42 @@ function createSecondaryWindows(){
   createHotkeyListWindow();
 }
 
-if(gotLock) app.whenReady().then(()=>{
-  migrateUserDataFromOldAppName();
-  storeData = loadJson(STORE_PATH, {});
-  settings = loadJson(SETTINGS_PATH, DEFAULT_SETTINGS);
-  migrateHotkeyLayout();
+/* ---------------- lifecycle ---------------- */
+if(singleInstanceLock){
+  app.whenReady().then(()=>{
+    migrateUserDataFromOldAppName();
+    storeData = loadJson(STORE_PATH, {});
+    settings = loadJson(SETTINGS_PATH, DEFAULT_SETTINGS);
+    migrateHotkeyLayout();
 
   wireIpc();
   setupDisplayMediaHandler();
   createMainWindow();
-  // Wait for the tracker window's own scripts (overlay-controls.js's
-  // onNotify subscription) to actually be wired up before pushing hotkey
-  // failures to it — sending it any earlier would go out before anything is
-  // listening and just be lost, since webContents.send() doesn't queue
-  // across page loads. Creating the secondary windows and registering
-  // hotkeys from this same callback (instead of immediately, up front) is
-  // what defers their startup cost past the main window's own load — see
-  // comment on createSecondaryWindows above.
+  const hotkeyRegResults = registerAllHotkeys();
+
+  // Defer secondary window creation until mainWindow loads, so tracker.html
+  // gets CPU priority to finish its own startup (~3.3MB icons-data.js parse)
+  // instead of competing with 5 other overlay windows all parsing the same
+  // file simultaneously.
   if(mainWindow){
     mainWindow.webContents.once('did-finish-load', ()=>{
       createSecondaryWindows();
-      const hotkeyRegResults = registerAllHotkeys();
       reportHotkeyRegistrationFailures(hotkeyRegResults);
     });
   } else {
+    // Fallback if mainWindow failed to create (shouldn't happen, but just in case)
     createSecondaryWindows();
-    reportHotkeyRegistrationFailures(registerAllHotkeys());
+    reportHotkeyRegistrationFailures(hotkeyRegResults);
   }
 
   app.on('activate', ()=>{
     if(BrowserWindow.getAllWindows().length === 0){
       createMainWindow();
-      if(mainWindow){
-        mainWindow.webContents.once('did-finish-load', createSecondaryWindows);
-      } else {
-        createSecondaryWindows();
-      }
+      createSecondaryWindows();
     }
   });
-});
+  });
+}
 
 app.on('before-quit', ()=>{ isQuitting = true; });
 

@@ -28,7 +28,7 @@
     --r-beskar: #b9c2cc;
     --r-galactic: #c96bf2;
     --r-stellar: #e08a3c;
-    --r-kyber: #50c878; /* confirmed 2026-09-26 from in-game Kyber cards (emerald), same as timers.html's --kyber — keep both in sync */
+    --r-kyber: #50c878; /* confirmed 2026-09-26 from in-game Kyber cards (emerald), same as timers.html's --kyber — keep both in sync */ /* placeholder — same as timers.html's --kyber, pending in-game color */
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;}
@@ -313,7 +313,7 @@
     display:flex; align-items:center; justify-content:center; overflow:hidden;
     border:1px solid rgba(255,255,255,0.08); box-shadow:inset 0 0 0 1px rgba(0,0,0,0.25);
   }
-  .icon-badge img{width:88%;height:88%;object-fit:contain;position:relative;z-index:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.5));}
+  .icon-badge img{width:100%;height:100%;object-fit:cover;position:relative;z-index:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.5));}
 
   .rarity-base{background:linear-gradient(160deg,#20272c,#171c1f 70%);}
   .rarity-gold{background:linear-gradient(155deg,#8a641c 0%,#f0c04e 38%,#fff3c4 50%,#e8ab2e 62%,#7a5615 100%);}
@@ -322,13 +322,13 @@
   .rarity-beskar{background:linear-gradient(155deg,#6b7178 0%,#c9ced3 35%,#f5f7f8 50%,#aab0b6 65%,#4c5157 100%);}
   .rarity-galactic{background:linear-gradient(155deg,#3d1a63 0%,#9b4de0 38%,#e2c3ff 50%,#8536d6 62%,#2c0f4d 100%);}
   .rarity-stellar{background:linear-gradient(155deg,#7a3d0a 0%,#e2841f 30%,#ffe2a6 48%,#ffb545 58%,#c9670f 75%,#5c2a05 100%);}
-  .rarity-kyber{background:linear-gradient(155deg,#0b3d24 0%,#1fae65 35%,#eafff2 50%,#50c878 65%,#0a3320 100%);} /* confirmed emerald, see --r-kyber above */
+  .rarity-kyber{background:linear-gradient(155deg,#0b3d24 0%,#1fae65 35%,#eafff2 50%,#50c878 65%,#0a3320 100%);} /* confirmed emerald */
   .icon-badge.rarity-beskar::before, .icon-badge.rarity-stellar::before, .icon-badge.rarity-kyber::before{
     content:'';position:absolute;inset:0;z-index:0;
     background:linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.55) 46%, transparent 58%);
     mix-blend-mode:overlay;
   }
-  .icon-badge.rarity-stellar::before{background:linear-gradient(115deg, transparent 25%, rgba(255,255,255,0.75) 44%, transparent 56%);}
+  .icon-badge.rarity-stellar::before, .icon-badge.rarity-kyber::before{background:linear-gradient(115deg, transparent 25%, rgba(255,255,255,0.75) 44%, transparent 56%);}
 
   /* Rebirth Reqs panel only: each badge split diagonally — upper-left half
      shows the rarity you've actually logged for that droid, lower-right half
@@ -344,7 +344,7 @@
     background:linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.55) 46%, transparent 58%);
     mix-blend-mode:overlay;
   }
-  .badge-half.rarity-stellar::after{background:linear-gradient(115deg, transparent 25%, rgba(255,255,255,0.75) 44%, transparent 56%);}
+  .badge-half.rarity-stellar::after, .badge-half.rarity-kyber::after{background:linear-gradient(115deg, transparent 25%, rgba(255,255,255,0.75) 44%, transparent 56%);}
   .icon-badge-split::after{
     content:'';position:absolute;inset:0;z-index:0;pointer-events:none;
     background:linear-gradient(to bottom right, transparent calc(50% - 0.75px), rgba(255,255,255,0.5) 50%, transparent calc(50% + 0.75px));
@@ -881,6 +881,7 @@
         <button class="btn" id="sneakToggleBtn" hidden title="Show or hide the Sneak Preview — next cycle's Mythic droids">🔮 Sneak Preview: Off</button>
         <button class="btn" id="rebirthReqToggleBtn" hidden title="Show or hide the standalone Rebirth Requirements overlay — every droid this cycle needs, in-game (toggle with the hotkey too)">🧬 Rebirth Req: On</button>
         <button class="btn" id="critGuideToggleBtn" hidden title="Show or hide the Optimal Crit Guide — crystal-spend order + hit-calculation formula">⚡ Crit Guide: Off</button>
+        <button class="btn" id="keybindsLockToggleBtn" hidden title="Lock every overlay hotkey so they stop responding while you're doing something else (e.g. schoolwork) — unlock to resume">🔓 Keybinds: Unlocked</button>
       </div>
     </div>
     <div class="console-row">
@@ -955,6 +956,10 @@
             <div class="kb-row danger">
               <div class="kb-label"><b>Hide ALL overlays</b><small>One-way only: instantly hides every overlay, including the hotkey list. Bring them back individually when ready.</small></div>
               <button class="btn kb-key" id="hideAllHotkeyBtn">Control+Shift+1</button>
+            </div>
+            <div class="kb-row danger">
+              <div class="kb-label"><b>🔒 Lock/Unlock ALL keybinds</b><small>Toggles every hotkey below off entirely (they stop responding anywhere, not just in-game) so they can't fire by accident while you're doing something else, then back on again. Keep this one bound so you always have a way to unlock.</small></div>
+              <button class="btn kb-key" id="keybindsLockHotkeyBtn">(none set)</button>
             </div>
             <div class="kb-row">
               <div class="kb-label"><b>📸 Read Rebirth Screen</b><small>Fires the Read Rebirth Screen button without alt-tabbing out of the game.</small></div>
@@ -1293,7 +1298,7 @@
           <ul class="sched-list">
             <li><span class="sched-dot" style="--c:#e08a3c"></span><b>✨ Stellar Blueprint</b><span>every 30 min: 5min and 35min after hour</span></li>
             <li><span class="sched-dot" style="--c:#ff4d6d"></span><b>🌌 Mythic Blueprint</b><span>every hour at :55</span></li>
-            <li><span class="sched-dot" style="--c:#50c878"></span><b>💎 Kyber Blueprint</b><span>every 5 min during the 9/26–9/27 launch event, then hourly on the hour</span></li>
+            <li><span class="sched-dot" style="--c:#d0a0ff"></span><b>💎 Kyber Blueprint</b><span>[Schedule TBD — coming with game update]</span></li>
             <li><span class="sched-dot" style="--c:#5ef2a6"></span><b>🎯 Mission</b><span>every 50 minutes: Stormtrooper → Fishing → D-0 → Mining</span></li>
           </ul>
         </section>
@@ -1511,6 +1516,7 @@
 </div>
 
 <script src="icons-data.js"></script>
+<script src="card-icons-data.js"></script>
 <script src="droid-data.js"></script>
 <script src="requirements.js"></script>
 <script>
@@ -1649,19 +1655,16 @@ async function markRowObtained(row, opts){
 }
 
 /* ---------------- CYCLE COMPLETION: offer to reset + advance ----------------
-   "Covered" here means the same thing renderByLevel()'s "x / N covered"
-   counter shows: every one of a cycle's real (non-placeholder) levels x 3
-   slots has a droid logged (anywhere, any cycle — ownedRank is global by
-   name) at that slot's required rarity or better. N is cycleRealSlotCount(
-   cycle) — 105 today (35 real levels x 3), until levels 36-40 get real data
-   and it becomes 120; nothing here hardcodes 105 so that transition needs no
-   code change. Once a mark-increasing action (a genuine upgrade/new claim in
-   setOwned, or markRowObtained's "mark all 3") pushes coverage from less
-   than N up to exactly N, offer to clear this cycle's droids and then either
-   roll over to the next one ("Next Cycle") or open the Sneak Preview
-   ("Sneak Preview") — never on an unmark, and never again just from
-   re-rendering an already-complete cycle (the coveredBefore !== fullCount
-   guard below). Cycles wrap 5 -> 1.
+   "Covered" here means the same thing renderByLevel()'s "x / 105 covered"
+   counter shows: every one of a cycle's 35 levels x 3 slots has a droid
+   logged (anywhere, any cycle — ownedRank is global by name) at that slot's
+   required rarity or better. Once a mark-increasing action (a genuine
+   upgrade/new claim in setOwned, or markRowObtained's "mark all 3") pushes
+   that from something less than 105 up to exactly 105, offer to clear this
+   cycle's droids and then either roll over to the next one ("Next Cycle")
+   or open the Sneak Preview ("Sneak Preview") — never on an unmark, and
+   never again just from re-rendering an already-105 cycle (the
+   coveredBefore !== 105 guard below). Cycles wrap 5 -> 1.
 
    Deliberately does NOT touch rebirth-currentLevel: that's the OCR/manual
    rebirth counter owned entirely by rebirth-level-detect.js, and the game's
@@ -1702,9 +1705,9 @@ async function resetCycleForSneakPreview(cycle){
 
 let cyclePromptOpen = false;
 async function maybeOfferCycleReset(cycle, coveredBefore){
-  const fullCount = cycleRealSlotCount(cycle);
-  if(coveredBefore === fullCount) return; // was already fully marked before this action — don't re-nag on every subsequent click
-  if(cycleCoveredCount(cycle, ownedRank) !== fullCount) return; // not complete yet
+  const totalSlots = CYCLES[cycle].length * 3; // 105 pre-Kyber, 120 now that levels 36-40 are real (v1.10.7)
+  if(coveredBefore === totalSlots) return; // was already fully marked before this action — don't re-nag on every subsequent click
+  if(cycleCoveredCount(cycle, ownedRank) !== totalSlots) return; // not complete yet
   if(cyclePromptOpen) return;
   // Browser (no app): plain OK/Cancel — OK resets + advances, Cancel leaves everything as it is.
   if(!(window.overlayAPI && window.overlayAPI.askCycleComplete)){
@@ -1824,7 +1827,7 @@ async function handleRename(nk, newVal){
 
 /* ---------------- RENDER: LEGEND ---------------- */
 function renderLegend(){
-  const order = RARITY_ORDER; // was a hardcoded ["B",...,"S"] that silently dropped Kyber ("Y") when it was added
+  const order = ["B","G","D","R","K","X","S"];
   const legendEl = getEl('legend');
   legendEl.innerHTML = order.map(code=>{
     return '<span class="item"><span class="dot ' + RCLASS[code] + '"></span>' + RNAME[code] + '</span>';
@@ -1864,7 +1867,8 @@ function droidRowHtml(nk, occEntry, extraClass){
     entry.entries.forEach(e=>{ if(e.rank===entry.ceilingRank) iconEntry = e; });
   }
   const iconKey = iconEntry.cycle + '-' + iconEntry.level + '-' + iconEntry.slot;
-  const src = (typeof ICONS !== 'undefined' && ICONS[iconKey]) ? ('data:image/webp;base64,' + ICONS[iconKey]) : '';
+  const b64 = (typeof CARD_ICONS !== 'undefined' && CARD_ICONS[iconKey]) || (typeof ICONS !== 'undefined' && ICONS[iconKey]);
+  const src = b64 ? 'data:image/webp;base64,' + b64 : '';
   const imgTag = src ? ('<img src="' + src + '" alt="' + entry.display + '" loading="lazy">') : '';
   const badgeClass = RCLASS[RARITY_ORDER[iconEntry.rank]];
   const statusHtml = st.maxed
@@ -1917,7 +1921,8 @@ function droidCellHtml(nk, occEntry, lastNeeded){
   const code = RARITY_ORDER[occEntry.rank];
   const cls = 'droid-cell ' + code + (covered ? ' covered' : '');
   const iconKey = occEntry.cycle + '-' + occEntry.level + '-' + occEntry.slot;
-  const src = (typeof ICONS !== 'undefined' && ICONS[iconKey]) ? ('data:image/webp;base64,' + ICONS[iconKey]) : '';
+  const b64 = (typeof CARD_ICONS !== 'undefined' && CARD_ICONS[iconKey]) || (typeof ICONS !== 'undefined' && ICONS[iconKey]);
+  const src = b64 ? 'data:image/webp;base64,' + b64 : '';
   const imgTag = src ? ('<img src="' + src + '" alt="" loading="lazy">') : '';
   const badgeClass = RCLASS[code];
   const sellTag = sellable ? '<span class="sell-tag">SELL</span>' : '';
@@ -1936,12 +1941,13 @@ function droidCellHtml(nk, occEntry, lastNeeded){
 function renderByLevel(){
   getEl('cycleSelect').value = String(activeCycle);
   const covered = cycleCoveredCount(activeCycle, ownedRank);
-  getEl('cycleProgress').textContent = covered + ' / ' + cycleRealSlotCount(activeCycle) + ' covered';
+  const totalSlots = CYCLES[activeCycle].length * 3; // 105 pre-Kyber, 120 now that levels 36-40 are real (v1.10.7)
+  getEl('cycleProgress').textContent = covered + ' / ' + totalSlots + ' covered';
   const q = filterText.trim().toLowerCase();
   const lastNeeded = cycleLastNeededLevel(activeCycle); // once per render, not once per cell
   let rowsHtml = '';
   let anyVisible = false;
-  for(let l=1;l<=cycleRealLevelCount(activeCycle);l++){
+  for(let l=1;l<=CYCLES[activeCycle].length;l++){
     const row = CYCLES[activeCycle][l-1];
     const nks = row.map(d=> normKey(canonicalName(d[1])) );
     const matchesAny = !q || nks.some(nk=> DROID_INDEX[nk].display.toLowerCase().indexOf(q)!==-1 );
@@ -2038,7 +2044,8 @@ function rebirthCellHtml(nk, info){
   const ownedCode = (owned !== undefined) ? RARITY_ORDER[owned] : null;
   const ownedClass = ownedCode ? RCLASS[ownedCode] : 'rarity-unowned';
   const iconKey = info.cycle + '-' + info.level + '-' + info.slot;
-  const src = (typeof ICONS !== 'undefined' && ICONS[iconKey]) ? ('data:image/webp;base64,' + ICONS[iconKey]) : '';
+  const b64 = (typeof CARD_ICONS !== 'undefined' && CARD_ICONS[iconKey]) || (typeof ICONS !== 'undefined' && ICONS[iconKey]);
+  const src = b64 ? 'data:image/webp;base64,' + b64 : '';
   const imgTag = src ? ('<img src="' + src + '" alt="' + entry.display + '" loading="lazy">') : '';
   const haveText = ownedCode ? ('you have ' + RNAME[ownedCode]) : "you haven't logged this one";
   const titleBits = [entry.display + ' — need ' + RNAME[code], haveText, covered ? 'already covered' : 'tap to log the top tier', 'right-click to pick an exact colorway'];
@@ -2067,7 +2074,8 @@ function renderRebirthPanel(){
   });
 
   let html = '';
-  for(let rank=0; rank<RARITY_ORDER.length; rank++){ // was hardcoded <=6, silently dropping Kyber (rank 7) ceiling droids
+  const maxRank = RARITY_ORDER.length - 1; // was hardcoded to 6 (Stellar); Kyber (7) added in v1.10.5 was silently dropped from this panel until v1.10.7
+  for(let rank=0; rank<=maxRank; rank++){
     const nks = tiers[rank];
     if(!nks || !nks.length) continue;
     nks.sort((a,b)=> DROID_INDEX[a].display.localeCompare(DROID_INDEX[b].display));
@@ -2448,7 +2456,8 @@ document.getElementById('bgDimRange').addEventListener('change', async (e)=>{
     const octx = off.getContext('2d', {willReadFrequently:true});
     const thumbs = [];
     for(let c=1;c<=5;c++){
-      for(let l=1;l<=cycleRealLevelCount(c);l++){
+      const maxLevel = cycleRealLevelCount(c);
+      for(let l=1;l<=maxLevel;l++){
         const row = CYCLES[c][l-1];
         for(let i=0;i<row.length;i++){
           const key = c+'-'+l+'-'+i;
@@ -2613,7 +2622,8 @@ document.getElementById('bgDimRange').addEventListener('change', async (e)=>{
     lastSuggestedKey = key; lastSuggestedAt = now;
 
     const iconKey = t.cycle + '-' + t.level + '-' + t.slot;
-    const src = (typeof ICONS !== 'undefined' && ICONS[iconKey]) ? ('data:image/webp;base64,' + ICONS[iconKey]) : '';
+    const b64 = (typeof CARD_ICONS !== 'undefined' && CARD_ICONS[iconKey]) || (typeof ICONS !== 'undefined' && ICONS[iconKey]);
+    const src = b64 ? 'data:image/webp;base64,' + b64 : '';
     const iconEl = getEl('suggestIcon');
     iconEl.className = 'icon-badge ' + RCLASS[t.code];
     iconEl.innerHTML = src ? ('<img src="' + src + '" alt="">') : '';
@@ -2682,22 +2692,16 @@ document.getElementById('bgDimRange').addEventListener('change', async (e)=>{
   renderStats();
   renderList();
 
-  // Listen for store changes from overlays (e.g. marking from overlay.html or rebirth-requirements-overlay.html).
-  // Guarded like every other window.overlayAPI use in this app (see e.g.
-  // rebirth-level-detect.js) — absent when tracker.html is opened in a plain
-  // browser, which CLAUDE.md documents as a normal smoke-testing workflow;
-  // without the guard this threw an uncaught TypeError at the end of init().
-  if(window.overlayAPI){
-    window.overlayAPI.onStoreChanged(({ key, value })=>{
-      if(key === 'rebirth-ownedRank-v2'){ ownedRank = value || {}; renderList(); renderStats(); }
-      else if(key === 'rebirth-activeCycle'){ activeCycle = value || 1; renderList(); renderStats(); }
-      else if(key === 'rebirth-nameMerges' || key === 'rebirth-displayOverrides'){
-        if(key === 'rebirth-nameMerges') nameMerges = value || {};
-        else displayOverrides = value || {};
-        buildIndex(); renderList(); renderStats();
-      }
-    });
-  }
+  // Listen for store changes from overlays (e.g. marking from overlay.html or rebirth-requirements-overlay.html)
+  window.overlayAPI.onStoreChanged(({ key, value })=>{
+    if(key === 'rebirth-ownedRank-v2'){ ownedRank = value || {}; renderList(); renderStats(); }
+    else if(key === 'rebirth-activeCycle'){ activeCycle = value || 1; renderList(); renderStats(); }
+    else if(key === 'rebirth-nameMerges' || key === 'rebirth-displayOverrides'){
+      if(key === 'rebirth-nameMerges') nameMerges = value || {};
+      else displayOverrides = value || {};
+      buildIndex(); renderList(); renderStats();
+    }
+  });
 })();
 </script>
 <script src="node_modules/tesseract.js/dist/tesseract.min.js"></script>

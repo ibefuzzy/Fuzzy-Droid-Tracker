@@ -136,8 +136,7 @@
     overflow:hidden;
   }
   .d-icon-wrap img{
-    width:100%; height:100%; object-fit:contain;
-    transform:scale(1.3);
+    width:100%; height:100%; object-fit:cover;
   }
   .d-name{
     font-size:9px; font-weight:700; color:#f2f6f4; text-align:center;
@@ -184,6 +183,7 @@
   </div>
 
 <script src="icons-data.js"></script>
+<script src="card-icons-data.js"></script>
 <script src="droid-data.js"></script>
 <script src="requirements.js"></script>
 <script src="overlay-scroll.js"></script>
@@ -231,7 +231,8 @@
     const covered = it.ownedCode != null && rankOf(it.ownedCode) >= it.rank;
     const ownedColor = covered ? 'var(--accent)' : (it.ownedCode ? (DOT_COLOR[it.ownedCode] || 'var(--r-base)') : 'rgba(255,255,255,0.5)');
     const statusText = covered ? ('✓ Have ' + RNAME[it.ownedCode]) : ('Needs ' + RNAME[it.code]);
-    const src = (typeof ICONS !== 'undefined' && ICONS[it.iconKey]) ? ('data:image/webp;base64,' + ICONS[it.iconKey]) : '';
+    const b64 = (typeof CARD_ICONS !== 'undefined' && CARD_ICONS[it.iconKey]) || (typeof ICONS !== 'undefined' && ICONS[it.iconKey]);
+    const src = b64 ? 'data:image/webp;base64,' + b64 : '';
     const imgTag = src ? ('<img src="' + src + '" alt="' + it.display + '" loading="lazy">') : '';
     const title = it.display + ' — next cycle needs ' + RNAME[it.code] + ' — ' + (it.ownedCode ? ('you have ' + RNAME[it.ownedCode]) : 'not logged yet') + (covered ? ' (already covered)' : '');
     return '<div class="d-cell" title="' + title + '">' +

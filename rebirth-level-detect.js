@@ -61,7 +61,6 @@
 
   let rlStream = null, rlVideo = null, rlRegion = null;
   let rlStarting = false; // true while a getDisplayMedia()/picker request is in flight
-  let rlConfirming = false; // true while beginRlSampling() is starting up, guards double-clicking Confirm
   let rlTimer = null;
   let worker = null, workerReady = false, workerFailed = false;
   let pendingValue = null, pendingCount = 0;
@@ -189,28 +188,18 @@
     getEl('rlCalibRedo').onclick = ()=>{ sel = null; redraw(); refreshInfo(); };
     getEl('rlCalibCancel').onclick = stopRebirthLevelDetect;
     getEl('rlCalibConfirm').onclick = async ()=>{
-      // Same guard as rebirth-screen-read.js's rsCalibConfirm: without it, a
-      // double-click races two concurrent beginRlSampling() calls, each
-      // independently racing ensureWorker() (orphaning a worker, never
-      // terminated either way) and each setting up its own recurring
-      // sampling interval - not just a one-time glitch, a permanently
-      // doubled OCR sampling rate for the rest of the session.
-      if(rlConfirming) return;
-      rlConfirming = true;
-      try{
-        rlRegion = sel;
-        savedRegion = {
-          xFrac: sel.x / canvas.width,
-          yFrac: sel.y / canvas.height,
-          wFrac: sel.w / canvas.width,
-          hFrac: sel.h / canvas.height,
-          videoW: canvas.width,
-          videoH: canvas.height
-        };
-        await storeSet(REGION_KEY, savedRegion);
-        getEl('rlCalibOverlay').style.display = 'none';
-        await beginRlSampling();
-      } finally{ rlConfirming = false; }
+      rlRegion = sel;
+      savedRegion = {
+        xFrac: sel.x / canvas.width,
+        yFrac: sel.y / canvas.height,
+        wFrac: sel.w / canvas.width,
+        hFrac: sel.h / canvas.height,
+        videoW: canvas.width,
+        videoH: canvas.height
+      };
+      await storeSet(REGION_KEY, savedRegion);
+      getEl('rlCalibOverlay').style.display = 'none';
+      beginRlSampling();
     };
 
     rlVideo.requestVideoFrameCallback ? rlVideo.requestVideoFrameCallback(()=>{ redraw(); refreshInfo(); }) : (()=>{ redraw(); refreshInfo(); })();
@@ -273,7 +262,7 @@
         }
         const match = text.match(/\d+/);
         const guess = match ? parseInt(match[0], 10) : null;
-        const maxLevel = CYCLES[1] ? cycleRealLevelCount(1) : 40;
+        const maxLevel = CYCLES[1] ? CYCLES[1].length : 40;
 
         if(guess === null || guess < 0 || guess > maxLevel){
           getEl('rlGuess').textContent = 'couldn\'t read a number (saw "' + text.trim() + '")';
@@ -327,7 +316,7 @@
   // Live Detect's single-flag/early-return pattern gates that feature.
   getEl('rlDec').addEventListener('click', ()=> setLevel(Math.max(0, currentLevel-1), 'manual'));
   getEl('rlInc').addEventListener('click', ()=>{
-    const maxLevel = CYCLES[1] ? cycleRealLevelCount(1) : 40;
+    const maxLevel = CYCLES[1] ? CYCLES[1].length : 40;
     setLevel(Math.min(maxLevel, currentLevel+1), 'manual');
   });
 

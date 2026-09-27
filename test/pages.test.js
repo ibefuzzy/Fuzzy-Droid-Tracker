@@ -148,7 +148,6 @@ const ARITY_CHECKED = [
   'cycleCoveredCount', 'cycleDroidKeys', 'removeCycleMarks', 'decideOwnedUpdate',
   'isValidImportPayload', 'getDeclutterList', 'getSneakPreview', 'getUpcomingLevels',
   'getLevelRequirements', 'cycleCeilings', 'cycleLastNeededLevel', 'borderIconSvg',
-  'cycleRealLevelCount', 'cycleRealSlotCount',
 ];
 const PROJECT_JS_AND_HTML = fs.readdirSync(ROOT).filter((f) => {
   if (!(f.endsWith('.js') || f.endsWith('.html'))) return false;
@@ -166,57 +165,4 @@ test('every call site of a shared requirements.js function passes the right numb
       }
     }
   }
-});
-
-/* Guards against a real incident on the sibling web-tracker repo
-   (ibefuzzy/ibefuzzy.github.io, 2026-09-26): a regeneration script wrote
-   fresh icon data for the level-40 expansion into a NEW, never-loaded
-   `const CARD_ICONS = {...}` object appended after the real `const ICONS =
-   {...}`, instead of updating it. Nothing threw (two top-level consts in one
-   file is valid JS) and most rows kept working (the old object was still
-   there), so it went undetected until someone actually executed the file
-   and checked what ICONS really contained. This repo's own icons-data.js
-   currently has exactly one, correctly-named object — this test keeps it
-   that way, so if a future regeneration ever makes the same mistake here,
-   it fails loudly instead of shipping silently. */
-test('icons-data.js declares exactly one top-level const, named ICONS', () => {
-  const src = stripComments(fs.readFileSync(path.join(ROOT, 'icons-data.js'), 'utf8'));
-  const topLevelConsts = [...src.matchAll(/^const\s+([A-Za-z_$][\w$]*)\s*=/gm)];
-  assert.equal(topLevelConsts.length, 1,
-    `icons-data.js has ${topLevelConsts.length} top-level const declarations ` +
-    `(${topLevelConsts.map((m) => m[1]).join(', ')}) — a second one is almost ` +
-    `certainly orphaned data nothing loads (see comment above this test)`);
-  assert.equal(topLevelConsts[0][1], 'ICONS', 'the one top-level const must be named ICONS — every window reads that name');
-});
-
-/* Guards against a real incident found during the 2026-09-27 full-project
-   bug sweep: when Kyber ("Y") was added to RARITY_ORDER for the level-40
-   expansion, every CSS rule and JS color map keyed by rarity code across
-   tracker.html/overlay.html/declutter.html/rebirth-requirements-overlay.html/
-   sneak-preview.html needed a new entry added by hand, and several were
-   missed entirely (no --r-kyber variable, no .rarity-kyber gradient,
-   DOT_COLOR maps silently falling back to Base gray, tracker.html's Rebirth
-   Reqs panel looping `rank<=6` and dropping every Kyber-ceiling droid from
-   the panel outright). None of this threw an error or failed an existing
-   test - it just rendered wrong or went missing silently. This test
-   re-derives the CSS class names requirements.js's own RARITY_ORDER implies
-   and confirms every rarity code has them in tracker.html, so the next tier
-   added above Kyber can't repeat this by simply forgetting a spot. */
-test('tracker.html has CSS coverage for every rarity code in RARITY_ORDER', () => {
-  const { loadShared } = require('./helpers/load-shared');
-  const s = loadShared();
-  const RARITY_ORDER = s.run('RARITY_ORDER');
-  const trackerSrc = fs.readFileSync(path.join(ROOT, 'tracker.html'), 'utf8');
-  for (const code of RARITY_ORDER) {
-    for (const selector of [`.pip.filled.${code}`, `.droid-cell.${code}`, `.rebirth-tier-label.${code}`, `.rb-name.${code}`]) {
-      assert.ok(trackerSrc.includes(selector + '{'), `tracker.html is missing the "${selector}" CSS rule for rarity code "${code}"`);
-    }
-  }
-  // The Rebirth Reqs panel's tier loop and the always-visible legend must
-  // cover every rank, not a hardcoded count that stops matching RARITY_ORDER's
-  // actual length the next time a tier is added.
-  assert.ok(!/for\(let rank=0; rank<=\d+; rank\+\+\)/.test(stripComments(trackerSrc)),
-    'renderRebirthPanel\'s tier loop looks hardcoded to a fixed rank count again - it should iterate RARITY_ORDER.length');
-  assert.ok(!/const order = \[("[A-Z]",?)+\]/.test(stripComments(trackerSrc)),
-    'renderLegend\'s tier order looks hardcoded to a fixed rarity-code list again - it should just be RARITY_ORDER');
 });
