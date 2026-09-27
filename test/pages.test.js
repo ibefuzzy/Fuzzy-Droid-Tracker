@@ -109,6 +109,46 @@ test('tracker.html has every element id the settings scripts look up, exactly on
   }
 });
 
+/* v1.10.14: every droid overlay takes its backdrop/box/highlight/icon size from
+   overlay-theme.css variables, which is how a theme setting reaches all of them.
+   A literal color pasted back into one page would silently opt that overlay out. */
+const THEMED_OVERLAYS = ['overlay.html', 'declutter.html', 'rebirth-requirements-overlay.html', 'sneak-preview.html', 'crit-guide-overlay.html'];
+test('droid overlays link overlay-theme.css before their own styles and use its variables', () => {
+  assert.ok(fs.existsSync(path.join(ROOT, 'overlay-theme.css')), 'overlay-theme.css is missing');
+  for (const page of THEMED_OVERLAYS) {
+    const html = fs.readFileSync(path.join(ROOT, page), 'utf8');
+    const link = html.indexOf('href="overlay-theme.css"');
+    assert.ok(link >= 0, `${page} doesn't link overlay-theme.css`);
+    assert.ok(link < html.indexOf('<style>'), `${page} must link overlay-theme.css BEFORE its own <style>, so the page can override a default`);
+    assert.ok(!/rgba\(\s*10\s*,\s*14\s*,\s*12/.test(html), `${page} has a literal backdrop color; use rgba(var(--ov-backdrop-rgb), var(--ov-backdrop-alpha))`);
+    assert.ok(!/\.d-icon-wrap\{[^}]*rgba\(\s*255\s*,\s*255\s*,\s*255/.test(html), `${page} has a literal droid-box color; use rgba(var(--ov-box-rgb), var(--ov-box-alpha))`);
+    assert.ok(!/\.d-cell\.selected\s*\{[^}]*rgba\(\s*\d/.test(html), `${page} has a literal highlight color; use rgba(var(--ov-highlight-rgb), ...)`);
+    // the corner resize grip + size-driven zoom live in overlay-theme.js
+    assert.ok(scriptsOf(page).some((s) => s.name === 'overlay-theme.js'), `${page} doesn't load overlay-theme.js (no resize grip or zoom)`);
+  }
+  // The HUD's four level blocks always fill its window, so it zooms to fit
+  // both dimensions; the lists zoom by width and scroll for height.
+  assert.ok(/<html[^>]*data-ov-zoom="fit"/.test(fs.readFileSync(path.join(ROOT, 'overlay.html'), 'utf8')), 'overlay.html lost data-ov-zoom="fit"');
+});
+
+/* v1.10.14 RULE: overlay windows never use Windows' own drag (-webkit-app-region).
+   They move through overlay-drag.js, so main.js places them and keeps each wholly
+   on one monitor. Windows' drag let an overlay straddle two monitors, and Windows
+   then drew the part on the second monitor again on the first (a moving "mirror").
+   A page with a drag bar must load overlay-drag.js, or it can't be moved at all. */
+test('overlay windows move via overlay-drag.js, never -webkit-app-region', () => {
+  const styled = fs.readdirSync(ROOT).filter((f) => f.endsWith('.html') || f.endsWith('.css'));
+  for (const f of styled) {
+    const src = fs.readFileSync(path.join(ROOT, f), 'utf8');
+    assert.ok(!/-webkit-app-region\s*:/.test(src), `${f} uses -webkit-app-region; move the window through overlay-drag.js instead (see OVERLAY_WINDOWS in main.js)`);
+  }
+  for (const page of PAGES) {
+    const html = fs.readFileSync(path.join(ROOT, page), 'utf8');
+    if (!/id="dragHandle"/.test(html)) continue;
+    assert.ok(scriptsOf(page).some((s) => s.name === 'overlay-drag.js'), `${page} has a drag bar (#dragHandle) but doesn't load overlay-drag.js, so it can't be moved`);
+  }
+});
+
 test('tracker.html uses the shared requirements.js', () => {
   assert.ok(scriptsOf('tracker.html').some((s) => s.name === 'requirements.js'));
 });
