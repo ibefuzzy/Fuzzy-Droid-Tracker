@@ -43,3 +43,29 @@
     rgba(0,0,0,0.35);
 }
 body.unlocked .ov-resize-grip{ display:block; }
+
+/* Mark-key target (v1.11.1, overlay-theme.js): with several lists open, only
+   the one the mark/navigate keys drive shows its selection glow, and it wears
+   a KEYS tag. The un-glowed icon matches each list page's own .d-icon-wrap. */
+html.mark-off .d-cell.selected{ box-shadow:none; }
+html.mark-off .d-cell.selected .d-icon-wrap{ box-shadow:0 0 5px -1px var(--rc, transparent); transform:none; }
+.ov-mark-chip{
+  display:none;
+  position:absolute; top:5px; left:10px; z-index:4;
+  font:700 9px/1 'IBM Plex Mono',monospace; letter-spacing:.06em;
+  padding:3px 6px; border-radius:999px;
+  color:#08130d; background:rgb(var(--ov-highlight-rgb));
+  box-shadow:0 0 8px -1px rgb(var(--ov-highlight-rgb));
+  pointer-events:none;
+}
+html.mark-contested:not(.mark-off) .ov-mark-chip{ display:block; }
+html.mark-flash .ov-mark-chip{ animation:ov-mark-flash .5s ease-out 2; }
+
+/* Card display (v1.13.0, overlay-theme.js from themeCompact/themeTextScale).
+   Text size: each page's .d-name/.d-owned font-size is calc(base * --ov-text-scale).
+   Compact: icons only. The name and status lines go; states drawn on the icon
+   itself (Sneak Preview's held check, Safe to Retire's dimmed retired cards) stay,
+   and the lists fit more columns. */
+html.ov-compact .d-name, html.ov-compact .d-owned{ display:none; }
+html.ov-compact .list-inner{ grid-template-columns:repeat(auto-fill, minmax(calc(var(--ov-icon-size) + 10px), 1fr)); }
+@keyframes ov-mark-flash{ 50%{ transform:scale(1.2); filter:brightness(1.4); } }

@@ -51,6 +51,8 @@
     ['overlayHotkeyBtn', 'hotkey', 'Toggle Current Rebirth Requirements'],
     ['timersHotkeyBtn', 'timersHotkey', 'Toggle Timers'],
     ['rebirthScreenHotkeyBtn', 'rebirthScreenHotkey', 'Trigger Read Rebirth Screen'],
+    ['rebirthScreenApplyHotkeyBtn', 'rebirthScreenApplyHotkey', 'Read Rebirth Screen: Apply'], // v1.11.1
+    ['rebirthScreenCancelHotkeyBtn', 'rebirthScreenCancelHotkey', 'Read Rebirth Screen: Cancel'], // v1.11.1
     ['hotkeyListHotkeyBtn', 'hotkeyListHotkey', 'Toggle Hotkey List'],
     ['declutterHotkeyBtn', 'declutterHotkey', 'Toggle Declutter List'],
     // v1.7.3: these page whichever of Safe to Retire / Rebirth Requirements
@@ -86,6 +88,7 @@
     ['rebirthMarkRightBtn', 'rebirthMarkRight', 'Navigate Right (Rebirth Reqs / Sneak Preview / Safe to Retire)'],
     ['rebirthMarkUpBtn', 'rebirthMarkUp', 'Navigate Up (Rebirth Reqs / Sneak Preview / Safe to Retire)'],
     ['rebirthMarkDownBtn', 'rebirthMarkDown', 'Navigate Down (Rebirth Reqs / Sneak Preview / Safe to Retire)'],
+    ['markTargetHotkeyBtn', 'markTargetHotkey', 'Switch Mark Keys to the Next Open List'], // v1.11.1
     // v1.10.8
     ['keybindsLockHotkeyBtn', 'keybindsLockHotkey', 'Lock/Unlock All Keybinds']
   ].map(([id, settingsKey, label]) => ({ btn: document.getElementById(id), settingsKey, label }));
@@ -106,12 +109,22 @@
      so the border list only exists in one place — BORDER_SKINS/
      BORDER_SKIN_ORDER in requirements.js, the same object each overlay
      window reads its own border skin from. */
-  const COLOR_ROW_DEFAULT = { border:'jedi', declutterBorder:'grogu', rebirthReqBorder:'mando', sneakBorder:'rebel', critGuideBorder:'tatooine' };
+  const COLOR_ROW_DEFAULT = DEFAULT_BORDERS; // requirements.js; timersBorder's default is null = no skin
   const colorRows = Array.from(document.querySelectorAll('.color-row[data-color-key]'));
   colorRows.forEach(row=>{
     const key = row.dataset.colorKey;
     const wrap = row.querySelector('.color-swatches');
     if(!wrap) return;
+    if(COLOR_ROW_DEFAULT[key] === null){ // v1.13.0 timers: a "no skin" choice first
+      const none = document.createElement('button');
+      none.type = 'button';
+      none.className = 'swatch none-swatch';
+      none.title = 'None: the classic timer look';
+      none.style.setProperty('--sw', '#8fa1ad');
+      none.textContent = '⊘';
+      none.dataset.colorValue = '';
+      wrap.appendChild(none);
+    }
     BORDER_SKIN_ORDER.forEach(name=>{
       const b = document.createElement('button');
       b.type = 'button';
@@ -194,12 +207,13 @@
     if(tierAllBtn) tierAllBtn.classList.toggle('on', TIER_KEYS.every(k => settings[k] !== false));
     colorRows.forEach(row=>{
       const key = row.dataset.colorKey;
-      const active = settings[key] || COLOR_ROW_DEFAULT[key];
+      const active = settings[key] || COLOR_ROW_DEFAULT[key] || ''; // '' = the timers' "none" swatch
       row.querySelectorAll('.swatch').forEach(b=>{
         b.classList.toggle('active', b.dataset.colorValue === active);
       });
     });
     opacityRange.value = settings.opacity != null ? settings.opacity : 0.55;
+    applyAppearanceUI(settings);
     setToggleLabel(settings.visible);
     setTimersToggleLabel(settings.timersVisible);
     setDeclutterToggleLabel(settings.declutterVisible);
@@ -246,8 +260,6 @@
       const missionVolumeDisplay = document.getElementById('missionVolumeDisplay');
       if(missionVolumeDisplay) missionVolumeDisplay.textContent = Math.round((settings.missionSoundVolume || 0.35) * 100) + '%';
     }
-    const missionSoundChoice = document.getElementById('missionSoundChoice');
-    if(missionSoundChoice) missionSoundChoice.value = settings.missionSoundChoice || 'off';
     const blueprintSoundOverride = document.getElementById('blueprintSoundOverrideCheckbox');
     if(blueprintSoundOverride) blueprintSoundOverride.checked = settings.blueprintSoundVolumeOverride !== false;
     const blueprintSoundVolumeSlider = document.getElementById('blueprintSoundVolumeSlider');
@@ -256,8 +268,7 @@
       const blueprintVolumeDisplay = document.getElementById('blueprintVolumeDisplay');
       if(blueprintVolumeDisplay) blueprintVolumeDisplay.textContent = Math.round((settings.blueprintSoundVolume || 0.35) * 100) + '%';
     }
-    const blueprintSoundChoice = document.getElementById('blueprintSoundChoice');
-    if(blueprintSoundChoice) blueprintSoundChoice.value = settings.blueprintSoundChoice || 'off';
+    renderSounds(settings); // v1.13.0: the per-timer pickers + your own sounds
   }
 
   function acceleratorFromEvent(e){
@@ -416,10 +427,359 @@
     const key = row.dataset.colorKey;
     row.querySelectorAll('.swatch').forEach(b=>{
       b.addEventListener('click', async ()=>{
-        await window.overlayAPI.setSettings({ [key]: b.dataset.colorValue });
+        await window.overlayAPI.setSettings({ [key]: b.dataset.colorValue || null });
       });
     });
   });
+
+  /* v1.11.1 controls: Appearance colours, Layout snapping, timer layout/size.
+     Pickers and sliders fire on every pixel of a drag, and each settings save
+     writes the file and re-broadcasts to every window, so they're batched. */
+  const pendingSettings = {};
+  let pendingTimer = null;
+  function flushSettings(){
+    clearTimeout(pendingTimer);
+    pendingTimer = null;
+    if(!Object.keys(pendingSettings).length) return;
+    const p = { ...pendingSettings };
+    Object.keys(pendingSettings).forEach(k => delete pendingSettings[k]);
+    window.overlayAPI.setSettings(p);
+  }
+  function setSettingsSoon(partial){
+    Object.assign(pendingSettings, partial);
+    clearTimeout(pendingTimer);
+    pendingTimer = setTimeout(flushSettings, 120);
+  }
+  // An immediate change joins anything still batched and goes now, so a delayed
+  // save from a moment earlier can never land after it and undo it.
+  function setSettingsNow(partial){
+    Object.assign(pendingSettings, partial);
+    flushSettings();
+  }
+  function discardPendingSettings(){
+    clearTimeout(pendingTimer);
+    pendingTimer = null;
+    Object.keys(pendingSettings).forEach(k => delete pendingSettings[k]);
+  }
+
+  // null in a theme setting = each overlay's own default (overlay-theme.css),
+  // which is what the pickers show until something is chosen.
+  const THEME_ROWS = [
+    { row: document.getElementById('themeBackdropRow'), color: document.getElementById('themeBackdropColor'), colorKey: 'themeBackdrop', colorDefault: '#0a0e0c',
+      alpha: document.getElementById('themeBackdropAlpha'), alphaVal: document.getElementById('themeBackdropAlphaVal'), alphaKey: 'themeBackdropAlpha', alphaDefault: 0.62,
+      reset: document.getElementById('themeBackdropDefaultBtn') },
+    { row: document.getElementById('themeBoxRow'), color: document.getElementById('themeBoxColor'), colorKey: 'themeBox', colorDefault: '#ffffff',
+      alpha: document.getElementById('themeBoxAlpha'), alphaVal: document.getElementById('themeBoxAlphaVal'), alphaKey: 'themeBoxAlpha', alphaDefault: 0.06,
+      reset: document.getElementById('themeBoxDefaultBtn') },
+    { row: document.getElementById('themeHighlightRow'), color: document.getElementById('themeHighlightColor'), colorKey: 'themeHighlight', colorDefault: '#5ef2a6',
+      reset: document.getElementById('themeHighlightDefaultBtn') }
+  ];
+  /* "Edit colors for" (v1.13.0): '' = all overlays (the theme* settings), or one
+     overlay's own overrides in settings.overlayThemes[name]; effectiveTheme() in
+     requirements.js puts those on top. Rows show that overlay's effective values;
+     Default drops its override so it follows All overlays again. The timers use
+     the backdrop only; the HUD's backdrop opacity is its Layout slider. */
+  const themeTargetSel = document.getElementById('themeTargetSel');
+  const themeTargetHint = document.getElementById('themeTargetHint');
+  const themeCardRow = document.getElementById('themeCardRow');
+  const themeTextScale = document.getElementById('themeTextScale');
+  const themeTextScaleVal = document.getElementById('themeTextScaleVal');
+  const themeCompactCheck = document.getElementById('themeCompactCheck');
+  const themeCardDefaultBtn = document.getElementById('themeCardDefaultBtn');
+  let lastSettings = {};
+  // overlayThemes as last edited here, kept until the settings echo catches up,
+  // so quick edits to one overlay never build on a stale copy
+  let pendingOverlayThemes = null;
+  const themeTarget = () => themeTargetSel.value;
+  function setTheme(partial, soon){
+    const t = themeTarget();
+    let out = partial;
+    if(t){
+      const ot = JSON.parse(JSON.stringify(pendingOverlayThemes || lastSettings.overlayThemes || {}));
+      const mine = { ...(ot[t] || {}) };
+      Object.entries(partial).forEach(([k, v]) => { if(v === null) delete mine[k]; else mine[k] = v; });
+      if(Object.keys(mine).length) ot[t] = mine; else delete ot[t];
+      pendingOverlayThemes = ot;
+      out = { overlayThemes: ot };
+    }
+    if(soon) setSettingsSoon(out); else setSettingsNow(out);
+  }
+  function applyLook(name, look, verb){
+    discardPendingSettings(); // a colour tweak still in flight must not land on top of the look
+    pendingOverlayThemes = null;
+    window.overlayAPI.setSettings(lookToSettings(look));
+    showToast(name + ' ' + (verb || 'applied'));
+  }
+
+  /* Presets (v1.12.0) + your saved looks (v1.13.0, settings.customPresets =
+     [{name, look}]). Every entry is a "look" (requirements.js); the highlighted
+     one matches the settings exactly. Names come from the player or a pasted
+     code, so they're only ever set with textContent. */
+  const presetGrid = document.getElementById('themePresetGrid');
+  const lookNameInput = document.getElementById('lookNameInput');
+  const lookCodeInput = document.getElementById('lookCodeInput');
+  const MAX_CUSTOM_PRESETS = 24;
+  let presetItems = [], presetListKey = null;
+  function customPresetsOf(s){ return Array.isArray(s.customPresets) ? s.customPresets.filter(c => c && typeof c.name === 'string') : []; }
+  function presetButton(name, look, skinKey, title){
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'preset-btn';
+    const skin = skinKey && BORDER_SKINS[skinKey];
+    b.style.setProperty('--sw', skin ? skin.hex : '#8fd6ff');
+    const badge = document.createElement('span');
+    badge.className = 'preset-badge';
+    if(skin) badge.innerHTML = borderIconSvg(skinKey, 16); else badge.textContent = '↺';
+    const label = document.createElement('span');
+    label.textContent = name;
+    b.append(badge, label);
+    b.title = title;
+    b.addEventListener('click', ()=> applyLook(name, look, 'applied to every overlay'));
+    return b;
+  }
+  function renderPresets(s){
+    const customs = customPresetsOf(s);
+    const key = JSON.stringify(customs);
+    if(key !== presetListKey){
+      presetListKey = key;
+      presetGrid.textContent = '';
+      presetItems = [];
+      THEME_PRESETS.forEach(p => {
+        const look = presetToLook(p);
+        const skin = p.skin && BORDER_SKINS[p.skin];
+        const b = presetButton(p.name, look, p.skin, skin ? p.name + ': ' + skin.label + ' border and matching colors on every overlay' : "Each overlay's own border and colors");
+        presetGrid.appendChild(b);
+        presetItems.push({ el: b, look });
+      });
+      customs.forEach((c, i) => {
+        const look = sanitizeLook(c.look);
+        const item = document.createElement('div');
+        item.className = 'preset-item';
+        const b = presetButton(c.name, look, look.borders.border, 'Your saved look: ' + c.name);
+        const share = document.createElement('button');
+        share.type = 'button'; share.className = 'preset-act'; share.textContent = '⧉'; share.title = 'Copy a share code for "' + c.name + '"';
+        share.addEventListener('click', ()=>{
+          const code = encodeLookCode(c.name, look);
+          const fallback = ()=>{ lookCodeInput.value = code; lookCodeInput.select(); showToast('Copy the code from the box below'); };
+          if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(()=> showToast('Share code for "' + c.name + '" copied — a friend pastes it into Import'), fallback);
+          else fallback();
+        });
+        const del = document.createElement('button');
+        del.type = 'button'; del.className = 'preset-act'; del.textContent = '✕'; del.title = 'Delete "' + c.name + '"';
+        del.addEventListener('click', ()=>{
+          if(!confirm('Delete your saved look "' + c.name + '"? (The overlays keep their current look.)')) return;
+          window.overlayAPI.setSettings({ customPresets: customPresetsOf(lastSettings).filter((_, j) => j !== i) });
+        });
+        item.append(b, share, del);
+        presetGrid.appendChild(item);
+        presetItems.push({ el: b, look });
+      });
+    }
+    const cur = lookFromSettings(s);
+    presetItems.forEach(({ el, look }) => el.classList.toggle('active', looksEqual(look, cur)));
+  }
+  document.getElementById('lookSaveBtn').addEventListener('click', ()=>{
+    const customs = customPresetsOf(lastSettings);
+    const name = (lookNameInput.value || '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 40) || ('My look ' + (customs.length + 1));
+    const next = customs.filter(c => c.name !== name);
+    if(next.length >= MAX_CUSTOM_PRESETS){ showToast('You have ' + MAX_CUSTOM_PRESETS + ' saved looks — delete one first'); return; }
+    next.push({ name, look: lookFromSettings({ ...lastSettings, ...pendingSettings }) }); // includes a tweak still being batched
+    window.overlayAPI.setSettings({ customPresets: next });
+    lookNameInput.value = '';
+    showToast('Saved "' + name + '"' + (next.length === customs.length ? ' (replaced the old one)' : ''));
+  });
+  document.getElementById('lookImportBtn').addEventListener('click', ()=>{
+    const got = decodeLookCode(lookCodeInput.value);
+    if(!got){ showToast("That isn't a look code — they start with FDT1."); return; }
+    const customs = customPresetsOf(lastSettings);
+    if(customs.length >= MAX_CUSTOM_PRESETS){ showToast('You have ' + MAX_CUSTOM_PRESETS + ' saved looks — delete one first'); return; }
+    let name = got.name, n = 2;
+    while(customs.some(c => c.name === name)) name = got.name.slice(0, 35) + ' (' + (n++) + ')';
+    window.overlayAPI.setSettings({ customPresets: customs.concat({ name, look: got.look }) });
+    lookCodeInput.value = '';
+    applyLook('"' + name + '"', got.look, 'imported and applied');
+  });
+
+  const themeHighlightBorderBtn = document.getElementById('themeHighlightBorderBtn');
+  const themeResetBtn = document.getElementById('themeResetBtn');
+  const overlaySnapCheckbox = document.getElementById('overlaySnapCheckbox');
+  const overlaySnapSizeCheckbox = document.getElementById('overlaySnapSizeCheckbox');
+  const timersLayoutBtns = Array.from(document.querySelectorAll('[data-timers-layout]'));
+  const timersScaleRange = document.getElementById('timersScaleRange');
+  const timersScaleVal = document.getElementById('timersScaleVal');
+  const pct = (v) => Math.round(v * 100) + '%';
+
+  THEME_ROWS.forEach(r=>{
+    r.color.addEventListener('input', ()=> setTheme({ [r.colorKey]: r.color.value }, true));
+    if(r.alpha){
+      r.alpha.addEventListener('input', ()=>{
+        const v = parseFloat(r.alpha.value);
+        r.alphaVal.textContent = pct(v);
+        setTheme({ [r.alphaKey]: v }, true);
+      });
+    }
+    r.reset.addEventListener('click', ()=>{
+      const partial = { [r.colorKey]: null };
+      if(r.alpha) partial[r.alphaKey] = null;
+      setTheme(partial);
+    });
+  });
+  themeHighlightBorderBtn.addEventListener('click', ()=> setTheme({ themeHighlight: 'border' }));
+  themeTextScale.addEventListener('input', ()=>{
+    const v = parseFloat(themeTextScale.value);
+    themeTextScaleVal.textContent = pct(v);
+    setTheme({ themeTextScale: v }, true);
+  });
+  // one overlay can opt OUT of an all-overlays Compact, so it stores false there
+  themeCompactCheck.addEventListener('change', ()=> setTheme({ themeCompact: themeCompactCheck.checked ? true : (themeTarget() ? false : null) }));
+  themeCardDefaultBtn.addEventListener('click', ()=> setTheme({ themeTextScale: null, themeCompact: null }));
+  themeTargetSel.addEventListener('change', ()=> applyAppearanceUI(lastSettings));
+  themeResetBtn.addEventListener('click', ()=>{
+    const t = themeTarget();
+    if(t){
+      const ot = JSON.parse(JSON.stringify(pendingOverlayThemes || lastSettings.overlayThemes || {}));
+      delete ot[t];
+      pendingOverlayThemes = null;
+      setSettingsNow({ overlayThemes: ot });
+      showToast(themeTargetSel.selectedOptions[0].textContent + ' follows All overlays again');
+    } else {
+      const partial = { overlayThemes: {} };
+      THEME_KEYS.forEach(k => { partial[k] = null; });
+      discardPendingSettings();
+      pendingOverlayThemes = null;
+      window.overlayAPI.setSettings(partial);
+      showToast('Overlay colors reset to default');
+    }
+  });
+  overlaySnapCheckbox.addEventListener('change', ()=> window.overlayAPI.setSettings({ overlaySnap: overlaySnapCheckbox.checked }));
+  overlaySnapSizeCheckbox.addEventListener('change', ()=> window.overlayAPI.setSettings({ overlaySnapSize: overlaySnapSizeCheckbox.checked }));
+  timersLayoutBtns.forEach(b => b.addEventListener('click', ()=> window.overlayAPI.setSettings({ timersLayout: b.dataset.timersLayout })));
+  timersScaleRange.addEventListener('input', ()=>{
+    const v = parseFloat(timersScaleRange.value);
+    timersScaleVal.textContent = pct(v);
+    setSettingsSoon({ timersScale: v });
+  });
+
+  /* Alert sounds (v1.13.0). Every timer's picker lists the built-ins plus your own
+     files (settings.customSounds, copied into the app's folder by main.js
+     'sound:add'). Stellar/Mythic/Kyber can follow the Blueprints pick (''). ▶ plays
+     through alert-sound.js, exactly as the timers will. */
+  const BUILTIN_SOUNDS = [['goodnews', 'Good news, everyone!'], ['beep', 'Beep'], ['boop', 'Boop'], ['chime', 'Chime'], ['off', 'Off']];
+  const SOUND_KEYS = ['missionSoundChoice', 'blueprintSoundChoice', 'stellarSoundChoice', 'mythicSoundChoice', 'kyberSoundChoice'];
+  const SOUND_INHERITS = { stellarSoundChoice: true, mythicSoundChoice: true, kyberSoundChoice: true };
+  const customSoundList = document.getElementById('customSoundList');
+  const readCustomSound = (id) => window.overlayAPI.readCustomSound(id);
+  let soundListKey = null;
+  function soundVolume(key){
+    const s = lastSettings;
+    const master = s.timerSoundVolume || 0.35;
+    if(key === 'missionSoundChoice') return s.missionSoundVolumeOverride ? (s.missionSoundVolume || 0.35) : master;
+    return s.blueprintSoundVolumeOverride ? (s.blueprintSoundVolume || 0.35) : master;
+  }
+  function preview(choice, key){
+    playAlert(choice, soundVolume(key), readCustomSound).catch(()=> showToast("Couldn't play that sound — the file may be damaged or in a format this app can't read"));
+  }
+  function option(value, text){ const o = document.createElement('option'); o.value = value; o.textContent = text; return o; }
+  function renderSounds(s){
+    const customs = Array.isArray(s.customSounds) ? s.customSounds : [];
+    const key = JSON.stringify(customs);
+    if(key !== soundListKey){
+      soundListKey = key;
+      SOUND_KEYS.forEach(k => {
+        const sel = document.getElementById(k);
+        sel.textContent = '';
+        if(SOUND_INHERITS[k]) sel.appendChild(option('', 'Same as Blueprints'));
+        BUILTIN_SOUNDS.forEach(([v, t]) => sel.appendChild(option(v, t)));
+        customs.forEach(c => sel.appendChild(option('custom:' + c.id, '🎵 ' + c.name)));
+      });
+      customSoundList.textContent = '';
+      if(!customs.length){
+        const none = document.createElement('div');
+        none.className = 'pos-hint';
+        none.textContent = 'No sounds added yet.';
+        customSoundList.appendChild(none);
+      }
+      customs.forEach(c => {
+        const row = document.createElement('div');
+        row.className = 'custom-sound-row';
+        const name = document.createElement('span');
+        name.textContent = '🎵 ' + c.name;
+        const play = document.createElement('button');
+        play.type = 'button'; play.className = 'btn'; play.textContent = '▶'; play.title = 'Preview';
+        play.addEventListener('click', ()=> preview('custom:' + c.id, 'blueprintSoundChoice'));
+        const del = document.createElement('button');
+        del.type = 'button'; del.className = 'btn'; del.textContent = '✕'; del.title = 'Remove this sound';
+        del.addEventListener('click', ()=>{
+          if(!confirm('Remove "' + c.name + '"? Any timer using it goes back to its default sound.')) return;
+          window.overlayAPI.removeCustomSound(c.id);
+        });
+        row.append(name, play, del);
+        customSoundList.appendChild(row);
+      });
+    }
+    SOUND_KEYS.forEach(k => {
+      const sel = document.getElementById(k);
+      const fallback = SOUND_INHERITS[k] ? '' : 'goodnews';
+      sel.value = s[k] || fallback;
+      if(sel.selectedIndex < 0) sel.value = fallback; // e.g. a removed file
+    });
+  }
+  SOUND_KEYS.forEach(k => {
+    document.getElementById(k).addEventListener('change', (e)=> window.overlayAPI.setSettings({ [k]: e.target.value || null }));
+  });
+  document.querySelectorAll('[data-sound-for]').forEach(b => b.addEventListener('click', ()=>{
+    const k = b.dataset.soundFor;
+    const choice = document.getElementById(k).value || document.getElementById('blueprintSoundChoice').value;
+    preview(choice, k);
+  }));
+  document.getElementById('customSoundAddBtn').addEventListener('click', async ()=>{
+    const r = await window.overlayAPI.addCustomSound();
+    if(r && r.ok) showToast('Added "' + r.sound.name + '" — pick it for any timer above');
+    else if(r && r.reason && r.reason !== 'cancelled') showToast(r.reason);
+  });
+
+  function applyAppearanceUI(s){
+    lastSettings = s;
+    if(pendingOverlayThemes && JSON.stringify(s.overlayThemes || {}) === JSON.stringify(pendingOverlayThemes)) pendingOverlayThemes = null;
+    const t = themeTarget();
+    const all = lookFromSettings(s).theme;
+    const own = t ? ((pendingOverlayThemes || s.overlayThemes || {})[t] || {}) : null;
+    const v = t ? { ...all, ...own } : all;
+    const isOwnDefault = (k) => own ? !(k in own) : v[k] == null;
+    THEME_ROWS.forEach(r=>{
+      const c = v[r.colorKey];
+      // a control being dragged keeps its own value; the echo is a step behind
+      if(document.activeElement !== r.color) r.color.value = /^#[0-9a-f]{6}$/i.test(c || '') ? c : r.colorDefault;
+      let isDefault = isOwnDefault(r.colorKey);
+      if(r.alpha){
+        const a = typeof v[r.alphaKey] === 'number' ? v[r.alphaKey] : r.alphaDefault;
+        if(document.activeElement !== r.alpha){ r.alpha.value = a; r.alphaVal.textContent = pct(a); }
+        isDefault = isDefault && isOwnDefault(r.alphaKey);
+      }
+      r.row.classList.toggle('is-default', isDefault);
+    });
+    const ts = typeof v.themeTextScale === 'number' ? v.themeTextScale : 1;
+    if(document.activeElement !== themeTextScale){ themeTextScale.value = ts; themeTextScaleVal.textContent = pct(ts); }
+    themeCompactCheck.checked = v.themeCompact === true;
+    themeCardRow.classList.toggle('is-default', isOwnDefault('themeTextScale') && isOwnDefault('themeCompact'));
+    themeHighlightBorderBtn.classList.toggle('on', v.themeHighlight === 'border');
+    // what applies to the chosen overlay
+    ['themeBoxRow', 'themeHighlightRow'].forEach(id => document.getElementById(id).classList.toggle('is-hidden', t === 'timers'));
+    themeCardRow.classList.toggle('is-hidden', t === 'timers' || t === 'critGuide');
+    THEME_ROWS[0].alpha.disabled = t === 'overlay';
+    themeTargetHint.textContent = !t ? 'Every overlay, unless one has its own colors.'
+      : 'Only this one. Default follows All overlays.' + (t === 'overlay' ? ' Its backdrop opacity is under Layout.' : '') + (t === 'timers' ? ' The timers use the backdrop only.' : '');
+    themeResetBtn.textContent = t ? '↺ Reset this overlay' : '↺ Reset all colors';
+    renderPresets(s);
+    overlaySnapCheckbox.checked = s.overlaySnap !== false;
+    overlaySnapSizeCheckbox.checked = s.overlaySnapSize !== false;
+    timersLayoutBtns.forEach(b => b.classList.toggle('on', b.dataset.timersLayout === (s.timersLayout || 'row')));
+    if(document.activeElement !== timersScaleRange){
+      const sc = Number(s.timersScale) || 1;
+      timersScaleRange.value = sc;
+      timersScaleVal.textContent = pct(sc);
+    }
+  }
 
   // Toast bridge for one-off messages the main process pushes (e.g. the
   // startup "hotkey couldn't register" notice).
@@ -683,9 +1043,6 @@
     window.overlayAPI.setSettings({ missionSoundVolume: val });
   });
 
-  document.getElementById('missionSoundChoice')?.addEventListener('change', (e)=>{
-    window.overlayAPI.setSettings({ missionSoundChoice: e.target.value });
-  });
 
   document.getElementById('blueprintSoundOverrideCheckbox')?.addEventListener('change', (e)=>{
     window.overlayAPI.setSettings({ blueprintSoundVolumeOverride: e.target.checked });
@@ -697,9 +1054,6 @@
     window.overlayAPI.setSettings({ blueprintSoundVolume: val });
   });
 
-  document.getElementById('blueprintSoundChoice')?.addEventListener('change', (e)=>{
-    window.overlayAPI.setSettings({ blueprintSoundChoice: e.target.value });
-  });
 
   window.overlayAPI.onSettingsChanged(applySettingsToUI);
   window.overlayAPI.onOverlayVisibility(setToggleLabel);

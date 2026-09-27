@@ -1,7 +1,7 @@
 'use strict';
 /* ---------------------------------------------------------------------------
    overlay-theme.js — shared by the five droid overlays (v1.10.14), loaded
-   after each page's own script. Two jobs:
+   after each page's own script. Four jobs (3 and 4 added in v1.11.1, below):
 
    1. Corner resize grip. Shown only while the overlay is unlocked (the same
       body.unlocked class that shows the drag bar). Dragging it reports the
@@ -79,4 +79,71 @@
   grip.addEventListener('pointerup', endDrag);
   grip.addEventListener('pointercancel', endDrag);
   grip.addEventListener('lostpointercapture', endDrag);
+
+  /* 3. Colour theme (v1.11.1, ⚙ Overlay Settings → Appearance; per-overlay,
+     compact mode and text size since v1.13.0). Each setting is an inline :root
+     property, which beats the page's own :root default; a null setting removes
+     it so that default comes back. The HUD (<html data-ov-own-alpha>) keeps its
+     own opacity slider for the backdrop. */
+  function rgbOf(hex){
+    const m = /^#([0-9a-f]{6})$/i.exec(hex || '');
+    if(!m) return null;
+    const n = parseInt(m[1], 16);
+    return ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255);
+  }
+  function numOf(v){ return typeof v === 'number' && Number.isFinite(v) ? v : null; }
+  function setVar(name, value){
+    if(value == null) root.style.removeProperty(name);
+    else root.style.setProperty(name, String(value));
+  }
+  // v1.13.0: this overlay's own overrides (settings.overlayThemes[<html data-ov-name>])
+  // go on top of the all-overlays values — effectiveTheme() in requirements.js.
+  const ovName = root.dataset.ovName || '';
+  let lastTheme = null;
+  function applyTheme(s){
+    const t = effectiveTheme(s, ovName);
+    // settings:changed fires for every setting; skip the ones that aren't the theme
+    const key = JSON.stringify(t);
+    if(key === lastTheme) return;
+    lastTheme = key;
+    const backdrop = rgbOf(t.themeBackdrop);
+    setVar('--ov-backdrop-rgb', backdrop);
+    setVar('--ov-backdrop-current-rgb', backdrop); // the HUD's current-level block
+    if(!('ovOwnAlpha' in root.dataset)) setVar('--ov-backdrop-alpha', numOf(t.themeBackdropAlpha));
+    setVar('--ov-box-rgb', rgbOf(t.themeBox));
+    setVar('--ov-box-alpha', numOf(t.themeBoxAlpha));
+    setVar('--ov-highlight-rgb', t.themeHighlight === 'border' ? 'var(--sw-rgb)' : rgbOf(t.themeHighlight));
+    setVar('--ov-text-scale', numOf(t.themeTextScale));
+    root.classList.toggle('ov-compact', t.themeCompact === true);
+    window.dispatchEvent(new Event('resize')); // compact/text size change the list's rows: rescale the scrollbar
+  }
+  window.overlayAPI.getSettings().then(applyTheme);
+  window.overlayAPI.onSettingsChanged(applyTheme);
+
+  /* 4. Mark-key target (v1.11.1). A list page (<html data-mark-list="name">)
+     shows its selection glow only while the rebirthMark* keys drive it, plus a
+     KEYS tag while more than one list is open. main.js decides the target
+     (markTargetState) and re-sends it whenever a list opens/closes or the
+     markTarget hotkey switches it. */
+  const markName = root.dataset.markList;
+  if(markName && window.overlayAPI.onMarkTargetChanged){
+    const chip = document.createElement('div');
+    chip.className = 'ov-mark-chip';
+    chip.textContent = '⌨ KEYS';
+    (document.querySelector('.panel') || document.body).appendChild(chip);
+    let wasTarget = null;
+    const applyMarkTarget = (st)=>{
+      const on = !!st && st.target === markName;
+      root.classList.toggle('mark-off', !on);
+      root.classList.toggle('mark-contested', !!(st && st.contested));
+      if(on && wasTarget === false && st.contested){
+        root.classList.remove('mark-flash');
+        void chip.offsetWidth; // restart the flash animation
+        root.classList.add('mark-flash');
+      }
+      wasTarget = on;
+    };
+    window.overlayAPI.getMarkTarget().then(applyMarkTarget);
+    window.overlayAPI.onMarkTargetChanged(applyMarkTarget);
+  }
 })();

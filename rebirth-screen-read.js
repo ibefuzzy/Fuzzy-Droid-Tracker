@@ -24,6 +24,12 @@
    getDisplayMedia call, released immediately after the one frame it needs
    (no reason to keep sharing the screen after a one-shot read).
 
+   v1.11.1, reading from in-game without alt-tabbing: main.js remembers the
+   screen picked in "Choose a screen" (🖥 Change screen asks again), the
+   rebirthScreenApply/Cancel hotkeys answer the confirm step, and while this
+   window isn't focused every result is also shown on the game's screen
+   (overlayAPI.showGameToast -> game-toast.html).
+
    Depends on globals from tracker.html's main script: getEl, activeCycle,
    CYCLES, markRowObtained, cycleCoveredCount, maybeOfferCycleReset, storeGet,
    storeSet, showToast; and the Tesseract global from the tesseract.min.js
@@ -50,10 +56,35 @@
   let confirming = false; // true while readRegion() is in flight, guards double-clicking Confirm
   let worker = null, workerFailed = false;
   let savedRegion = null; // { xFrac, yFrac, wFrac, hFrac, videoW, videoH } | null
+  let session = 0;          // bumped by closeAll(), so a read still in flight when the reader is closed is dropped
+  let pendingCycle = null;  // the cycle the open confirm step applies to
+  let applying = false;     // guards a double Apply (button + hotkey)
 
   (async ()=>{
     savedRegion = (await storeGet(REGION_KEY)) || null;
   })();
+
+  const api = window.overlayAPI || null; // null in the plain-browser tracker
+  // The tracker isn't the focused window: the player is in the game, so the
+  // dialog here can't be seen and results go to the in-game notice too.
+  function inGame(){ return !!api && !document.hasFocus(); }
+  function gameToast(msg){ if(api && api.showGameToast) api.showGameToast(msg); }
+  async function appSettings(){
+    try{ return (api && await api.getSettings()) || {}; }catch(e){ return {}; }
+  }
+  function keyHint(s){
+    const a = s.rebirthScreenApplyHotkey, c = s.rebirthScreenCancelHotkey;
+    if(a && c) return a + ' = apply · ' + c + ' = cancel';
+    if(a) return a + ' = apply · alt-tab to cancel';
+    if(c) return c + ' = cancel · alt-tab to apply';
+    return 'Alt-tab to apply, or bind Apply/Cancel keys in ⚙ Keybinds.';
+  }
+  // 🖥 Change screen: only shown once a screen has been picked (multi-monitor).
+  function showScreenControls(s){
+    const name = s.captureScreenName || '';
+    ['rsChangeScreen', 'rsCalibChangeScreen'].forEach(id => { const b = getEl(id); if(b){ b.hidden = !name; b.title = name ? 'Reading ' + name + '. Pick a different screen (it\'s remembered).' : ''; } });
+    const label = getEl('rsScreenName'); if(label) label.textContent = name ? ' on ' + name : '';
+  }
 
   async function ensureWorker(){
     if(worker || workerFailed) return worker;
@@ -71,19 +102,33 @@
   }
 
   async function start(force){
+    // A Cancel (closeAll bumps `session`) can land while the picker or the
+    // capture is still starting; every await below re-checks it.
+    const mine = session;
+    let s;
     try{
-      stream = await navigator.mediaDevices.getDisplayMedia({ video:{ cursor:'never' }, audio:false });
+      s = await navigator.mediaDevices.getDisplayMedia({ video:{ cursor:'never' }, audio:false });
     }catch(err){
-      alert("Couldn't start screen sharing (" + err.message + ").");
+      if(mine !== session) return;
+      // Closing "Choose a screen" is a choice, not a failure (a saved screen stays saved).
+      if(err && err.name === 'AbortError'){ showToast('Screen picker closed — nothing was read.'); return; }
+      // Not alert(): from a hotkey the player is in-game, and a blocked alert
+      // would also stall the Apply/Cancel hotkeys until someone alt-tabbed.
+      showToast("Couldn't start screen sharing (" + err.message + ").");
+      if(inGame()) gameToast({ title: '📸 Screen capture didn\'t start', sub: err.message, tone: 'warn', ms: 6000 });
       return;
     }
-    video = document.createElement('video');
-    video.srcObject = stream;
-    video.muted = true;
-    await video.play();
-    if(!video.videoWidth){
-      await new Promise(res=>{ video.addEventListener('loadedmetadata', res, {once:true}); });
+    if(mine !== session){ s.getTracks().forEach(t=>t.stop()); return; }
+    stream = s;
+    const v = document.createElement('video');
+    video = v;
+    v.srcObject = s;
+    v.muted = true;
+    await v.play();
+    if(!v.videoWidth){
+      await new Promise(res=>{ v.addEventListener('loadedmetadata', res, {once:true}); });
     }
+    if(mine !== session) return; // closeAll() already stopped the share
     // Unlike rebirth-level-detect.js's continuous watcher, this flow can
     // still be sitting in the calibration UI for a while before the stream
     // is released — if the user stops sharing externally (the OS/browser
@@ -105,7 +150,7 @@
       getEl('rsCalibOverlay').style.display = 'flex';
       getEl('rsCalibCanvasWrap').style.display = 'none';
       getEl('rsConfirmStep').style.display = 'none';
-      await readRegion();
+      await readRegion(mine);
     } else {
       if(!force && savedRegion){
         // Had a saved box, but this capture's resolution doesn't match it —
@@ -114,6 +159,7 @@
         showToast('Screen resolution changed since your last box — redraw it once.');
       }
       openCalibration();
+      if(inGame()) gameToast({ title: '📸 Draw the Rank box once in the app', sub: 'New screen or resolution: alt-tab and box the number after "Rank". After that it reads from in-game.', tone: 'warn', ms: 9000 });
     }
   }
 
@@ -123,6 +169,7 @@
   }
 
   function closeAll(){
+    session++;
     stopSharing();
     const overlay = getEl('rsCalibOverlay'); if(overlay) overlay.style.display = 'none';
     const confirmStep = getEl('rsConfirmStep'); if(confirmStep) confirmStep.style.display = 'none';
@@ -173,6 +220,8 @@
     };
     getEl('rsCalibRedo').onclick = ()=>{ sel = null; redraw(); refreshInfo(); };
     getEl('rsCalibCancel').onclick = closeAll;
+    getEl('rsCalibChangeScreen').onclick = changeScreen; // the wrong screen is a common reason to land here
+    appSettings().then(showScreenControls);
     getEl('rsCalibConfirm').onclick = async ()=>{
       // Guards a double-click racing two concurrent readRegion() calls: both
       // would see ensureWorker()'s `worker` as still null and each create
@@ -193,14 +242,14 @@
           videoH: canvas.height
         };
         await storeSet(REGION_KEY, savedRegion);
-        await readRegion();
+        await readRegion(session);
       } finally{ confirming = false; }
     };
 
     video.requestVideoFrameCallback ? video.requestVideoFrameCallback(()=>{ redraw(); refreshInfo(); }) : (()=>{ redraw(); refreshInfo(); })();
   }
 
-  async function readRegion(){
+  async function readRegion(mine){
     getEl('rsCalibStep1').textContent = 'Reading…';
     const w = Math.max(1, Math.round(region.w));
     const h = Math.max(1, Math.round(region.h));
@@ -239,6 +288,9 @@
         guess = parseRank(text);
       }catch(e){ /* falls through to manual entry below */ }
     }
+    if(mine !== session) return; // cancelled (or restarted) while reading
+    // Not awaited: the read is done once the dialog is up, so 🖥 Change screen
+    // (which waits for no read to be starting) works straight away.
     showConfirm(guess, { image: readImage, text, confidence });
   }
 
@@ -253,9 +305,10 @@
 
   const LOW_CONFIDENCE = 70;
 
-  function showConfirm(guess, read){
+  async function showConfirm(guess, read){
     read = read || {};
     const unsure = guess === null || read.confidence < LOW_CONFIDENCE;
+    getEl('rsCalibStep1').textContent = 'Check the number, then Apply.';
     const preview = getEl('rsReadPreview');
     if(read.image){ preview.src = read.image; preview.style.display = ''; } else { preview.style.display = 'none'; }
     getEl('rsReadText').textContent = read.text
@@ -281,12 +334,50 @@
     input.oninput = updateThroughLabels;
     updateThroughLabels();
 
+    pendingCycle = cycle;
     getEl('rsCancelApply').onclick = closeAll;
     getEl('rsRecalib').onclick = ()=>{ closeAll(); start(true); };
-    getEl('rsApply').onclick = async ()=>{
-      const n = parseInt(input.value, 10);
-      const maxLevel = CYCLES[cycle] ? cycleRealLevelCount(cycle) : 40;
-      if(!n || n < 1 || n > maxLevel){ alert('Enter a level between 1 and ' + maxLevel + '.'); return; }
+    getEl('rsChangeScreen').onclick = changeScreen;
+    getEl('rsApply').onclick = ()=> applyInput(false);
+
+    const mine = session;
+    const s = await appSettings();
+    if(mine !== session) return; // cancelled meanwhile
+    showScreenControls(s);
+    if(inGame()){
+      const value = parseInt(input.value, 10);
+      if(value){
+        gameToast({
+          title: '📸 Rank ' + value + (unsure ? '?' : '') + ' · Cycle ' + cycle,
+          sub: (unsure ? 'Not sure (' + Math.round(read.confidence) + '%) — check it. ' : 'Marks rebirths 1–' + (value - 1) + ' done. ') + keyHint(s),
+          tone: unsure ? 'warn' : 'info', ms: 12000
+        });
+      } else {
+        gameToast({
+          title: '📸 Couldn\'t read the rank',
+          sub: 'Alt-tab to type it in or redraw the box.' + (s.rebirthScreenCancelHotkey ? ' ' + s.rebirthScreenCancelHotkey + ' = cancel.' : ''),
+          tone: 'warn', ms: 10000
+        });
+      }
+    }
+  }
+
+  function readerOpen(){ const o = getEl('rsCalibOverlay'); return !!o && o.style.display !== 'none'; }
+  function confirmOpen(){ return readerOpen() && getEl('rsConfirmStep').style.display === 'block'; }
+
+  // Apply button (fromHotkey false) or the rebirthScreenApply hotkey (true).
+  async function applyInput(fromHotkey){
+    if(applying || !confirmOpen()) return;
+    const cycle = pendingCycle;
+    const n = parseInt(getEl('rsManualRank').value, 10);
+    const maxLevel = CYCLES[cycle] ? cycleRealLevelCount(cycle) : 40;
+    if(!n || n < 1 || n > maxLevel){
+      if(fromHotkey) gameToast({ title: '📸 No rank to apply yet', sub: 'Alt-tab and type the rank (1–' + maxLevel + ') in the reader.', tone: 'warn', ms: 6000 });
+      else alert('Enter a level between 1 and ' + maxLevel + '.');
+      return;
+    }
+    applying = true;
+    try{
       const through = n - 1;
       // Check cycle completion once for the whole batch, not once per row:
       // markRowObtained() can pop the cycle-complete prompt, whose choices
@@ -303,8 +394,37 @@
       await storeSet('rebirth-currentLevel', through);
       showToast('Caught up through rebirth ' + through + ' for Cycle ' + cycle);
       closeAll();
+      if(fromHotkey || inGame()){
+        // the cycle-complete prompt opens over the tracker window, behind the game
+        const done = cycleCoveredCount(cycle, ownedRank) === cycleRealSlotCount(cycle) && coveredBefore !== cycleRealSlotCount(cycle);
+        gameToast({
+          title: '✓ Caught up through rebirth ' + through,
+          sub: 'Cycle ' + cycle + (done ? ' is complete 🎉 alt-tab to choose what\'s next.' : ' · current level set to ' + through + '.'),
+          tone: 'ok', ms: done ? 9000 : 4500
+        });
+      }
       maybeOfferCycleReset(cycle, coveredBefore);
-    };
+    } finally{ applying = false; }
+  }
+
+  // 🖥 Change screen: main.js shows "Choose a screen" on the next capture and
+  // saves the new pick; cancelling the picker keeps the old screen.
+  async function changeScreen(){
+    if(!api || !api.changeCaptureScreen || starting) return;
+    await api.changeCaptureScreen();
+    closeAll();
+    starting = true;
+    try{ await start(false); } finally{ starting = false; }
+  }
+
+  if(api && api.onHotkeyTriggered){
+    api.onHotkeyTriggered((name)=>{
+      if(name === 'rebirthScreenApply') applyInput(true);
+      else if(name === 'rebirthScreenCancel' && (readerOpen() || starting)){
+        closeAll();
+        if(inGame()) gameToast({ title: '✕ Rebirth read cancelled', tone: 'info', ms: 2500 });
+      }
+    });
   }
 
   // Unlike rebirth-level-detect.js's toggle button, this one has no "click

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Fuzzy's Droid Tracker — Notice</title>
+<!-- v1.11.1: the in-game notice card (main.js showGameToast). Click-through and
+     never focused, so it can't take input from the game. Text is untrusted OCR
+     output in places, so it's only ever set with textContent. -->
+<style>
+  :root{ --ok:#5ef2a6; --warn:#f2b95e; --info:#4fb8ff; }
+  html,body{
+    margin:0; padding:0; background:transparent; overflow:hidden; width:100%; height:100%;
+    font-family:-apple-system,'Segoe UI',system-ui,sans-serif;
+    -webkit-user-select:none; user-select:none;
+  }
+  body{ display:flex; align-items:flex-start; justify-content:center; padding:6px; box-sizing:border-box; }
+  .toast{
+    --c: var(--info);
+    max-width:100%; box-sizing:border-box;
+    padding:8px 16px 9px 13px; border-radius:10px;
+    background:
+      radial-gradient(120% 160% at 0% 0%, color-mix(in srgb, var(--c) 20%, transparent), transparent 60%),
+      rgba(10,14,12,0.9);
+    border:1px solid color-mix(in srgb, var(--c) 55%, rgba(255,255,255,0.12));
+    border-left:4px solid var(--c);
+    box-shadow:0 4px 14px -4px rgba(0,0,0,0.7), 0 0 12px -4px var(--c);
+  }
+  .toast.ok{ --c: var(--ok); }
+  .toast.warn{ --c: var(--warn); }
+  .toast.show{ animation:pop .18s ease-out; }
+  @keyframes pop{ from{ opacity:0; transform:translateY(-6px); } to{ opacity:1; transform:none; } }
+  @media (prefers-reduced-motion:reduce){ .toast.show{ animation:none; } }
+  .title{
+    font-size:17px; font-weight:800; color:#fff; text-shadow:0 1px 2px #000;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .sub{
+    margin-top:2px; font-size:12px; line-height:1.3; color:#dfe8e2;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+  }
+  .sub:empty{ display:none; }
+</style>
+</head>
+<body>
+  <div class="toast" id="toast"><div class="title" id="toastTitle"></div><div class="sub" id="toastSub"></div></div>
+<script>
+(function(){
+  if(!window.overlayAPI) return;
+  const card = document.getElementById('toast');
+  window.overlayAPI.onGameToast((msg)=>{
+    document.getElementById('toastTitle').textContent = msg.title || '';
+    document.getElementById('toastSub').textContent = msg.sub || '';
+    card.className = 'toast ' + (['ok', 'warn', 'info'].includes(msg.tone) ? msg.tone : 'info');
+    void card.offsetWidth; // restart the pop-in
+    card.classList.add('show');
+  });
+})();
+</script>
+</body>
+</html>

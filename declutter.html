@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-ov-name="declutter" data-mark-list="declutter">
 <head>
 <meta charset="UTF-8">
 <title>Fuzzy's Droid Tracker — Declutter List</title>
@@ -181,7 +181,7 @@
     border:1px solid rgba(0,0,0,0.5);
   }
   .d-name{
-    font-size:9px; font-weight:700; color:#f2f6f4; text-align:center;
+    font-size:calc(9px * var(--ov-text-scale, 1)); font-weight:700; color:#f2f6f4; text-align:center;
     text-shadow:0 1px 2px rgba(0,0,0,0.9);
     line-height:1.15;
     max-width:100%; overflow:hidden;
@@ -191,7 +191,7 @@
   }
   .d-owned{
     font-family:'IBM Plex Mono',monospace;
-    font-size:7.5px; font-weight:600; text-align:center;
+    font-size:calc(7.5px * var(--ov-text-scale, 1)); font-weight:600; text-align:center;
     text-shadow:0 1px 2px rgba(0,0,0,0.9);
     opacity:0.85;
   }
@@ -264,7 +264,7 @@
      requirement table.
 
      Retiring (v1.10.13): the rebirthMark* keys (routed here by main.js when
-     this is the most recently shown list overlay) or a click while unlocked
+     this is the mark-key target, see sendToMarkList) or a click while unlocked
      mark a droid retired for this cycle — it moves to the bottom, dimmed;
      marking it again un-retires it. Stored in 'rebirth-retired', never in
      ownedRank (see isRetired() in requirements.js), so every other list and

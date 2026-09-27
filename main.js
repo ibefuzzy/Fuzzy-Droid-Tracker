@@ -6,7 +6,7 @@
    transparent/click-through/always-on-top overlay windows, each a
    completely separate OS window showing one piece of glanceable info:
      - overlayWindow    (overlay.html)     — current + next 3 rebirth reqs
-     - timersWindow     (timers.html)      — Stellar/Mythic/Galactic/Mission countdowns
+     - timersWindow     (timers.html)      — Stellar/Mythic/Kyber/Mission countdowns
      - declutterWindow  (declutter.html)   — "safe to retire" Legendary/Mythic droids
      - rebirthReqWindow (rebirth-requirements-overlay.html) — every droid the
        active cycle asks for, same full list as the tracker's own 🧬 panel
@@ -28,6 +28,7 @@ const path = require('path');
 const fs = require('fs');
 const vm = require('vm');
 const { loadJson, saveJsonNow } = require('./persistence');
+const { snapMove, snapResize } = require('./overlay-snap');
 
 // Load shared functions from droid-data.js and requirements.js using vm,
 // same pattern as test/helpers/load-shared.js, so the overlay:markDroid and
@@ -101,8 +102,9 @@ const DEFAULT_SETTINGS = {
   missionSoundVolume: 0.35,
   blueprintSoundVolumeOverride: false,
   blueprintSoundVolume: 0.35,
-  missionSoundChoice: 'beep', // 'beep' | 'boop' | 'chime' | 'off'
-  blueprintSoundChoice: 'beep',
+  missionSoundChoice: 'goodnews', // 'goodnews' (alert-sound.js, v1.11.1) | 'beep' | 'boop' | 'chime' | 'off'
+  blueprintSoundChoice: 'goodnews',
+  soundDefaultVersion: 0, // bumped by migrateSoundDefault(); 0 here so an older settings file (which lacks it) runs that once
   declutterHotkey: 'Control+Shift+4', // toggles the "safe to retire" Legendary/Mythic droid list, same deal (moved from Ctrl+Shift+3 on 2026-09-23 — see hotkey above)
   declutterVisible: true,
   declutterLocked: true,
@@ -206,7 +208,52 @@ const DEFAULT_SETTINGS = {
   declutterSize: null,
   rebirthReqSize: null,
   sneakSize: null,
-  critGuideSize: null
+  critGuideSize: null,
+  // v1.11.1: which list the rebirthMark* keys drive while more than one is
+  // open ('rebirthReq' | 'declutter' | 'sneak'), flipped by markTargetHotkey.
+  markTarget: 'rebirthReq',
+  markTargetHotkey: '',
+  // v1.11.1: dragging snaps overlays to each other and to the screen edge;
+  // resizing also snaps to another overlay's size (overlay-snap.js).
+  overlaySnap: true,
+  overlaySnapSize: true,
+  // v1.11.1: one colour theme for every droid overlay (overlay-theme.js). null
+  // = that overlay's own default. Colours are '#rrggbb'; themeHighlight may
+  // also be 'border' (follow each overlay's border colour). The HUD keeps its
+  // own `opacity` slider instead of themeBackdropAlpha.
+  themeBackdrop: null,
+  themeBackdropAlpha: null,
+  themeBox: null,
+  themeBoxAlpha: null,
+  themeHighlight: null,
+  // v1.11.1: compact timer banners — 'row' | 'grid' (2x2) | 'column', and a
+  // size multiplier. The window fits itself to the banners (timers:fit).
+  timersLayout: 'row',
+  timersScale: 1,
+  // v1.11.1: answer the Read Rebirth Screen result from in-game (unbound).
+  rebirthScreenApplyHotkey: '',
+  rebirthScreenCancelHotkey: '',
+  // v1.11.1: the screen picked in "Choose a screen to share", reused by every
+  // screen capture until 🖥 Change screen. Id = desktopCapturer display_id
+  // (or source id where that's empty); name is shown in the reader.
+  captureDisplayId: null,
+  captureScreenName: null,
+  // v1.13.0 appearance (see "APPEARANCE" in requirements.js): card text size and
+  // compact mode for every overlay, per-overlay overrides of any theme* value, a
+  // border skin for the timers (null = the classic look), and saved looks
+  // ({name, look} — lookToSettings() applies one).
+  themeCompact: null,
+  themeTextScale: null,
+  overlayThemes: {},
+  timersBorder: null,
+  customPresets: [],
+  // v1.13.0 sounds: Stellar/Mythic/Kyber can each pick their own (null = the
+  // Blueprints pick), and the player's own files ({id, name, ext}, copied into
+  // userData/custom-sounds by 'sound:add'; a choice of 'custom:<id>').
+  stellarSoundChoice: null,
+  mythicSoundChoice: null,
+  kyberSoundChoice: null,
+  customSounds: []
 };
 
 /* ---------------- convention: hotkeys for FUTURE overlays (2026-09-23) ----
@@ -357,6 +404,18 @@ function migrateHotkeyLayout(){
   persistSettingsNow();
 }
 
+/* v1.11.1: "Good news, everyone!" became the default timer sound. A saved
+   settings file keeps its old values, so an install still on the old default
+   ('beep') moves once; any other pick (boop/chime/off) is left alone. */
+function migrateSoundDefault(){
+  if(settings.soundDefaultVersion >= 1) return;
+  ['missionSoundChoice', 'blueprintSoundChoice'].forEach(key=>{
+    if(settings[key] === 'beep') settings[key] = 'goodnews';
+  });
+  settings.soundDefaultVersion = 1;
+  persistSettingsNow();
+}
+
 // Set true by 'before-quit' (fires once, before Electron attempts to close
 // any window) so the 4 HUD windows' 'close' handlers below know to let a
 // real quit through instead of intercepting it. Without this, app.quit()
@@ -375,11 +434,6 @@ let rebirthReqWindow = null;
 let sneakWindow = null;
 let critGuideWindow = null;
 let hotkeyListWindow = null;
-// The list overlays the rebirthMark* keys can drive, most recently shown LAST.
-// Starts with Rebirth Requirements on top — it owned these keys before v1.10.13.
-// See sendToMarkList().
-let markListOrder = ['declutter', 'sneak', 'rebirthReq'];
-function noteMarkListShown(name){ markListOrder = markListOrder.filter(n => n !== name).concat(name); }
 let hotkeyListVisible = true; // runtime-only — always shown fresh each launch, not persisted
 let storeData = {};
 let settings = { ...DEFAULT_SETTINGS };
@@ -873,11 +927,11 @@ function toggleDeclutterVisible(){
 function setDeclutterVisible(visible){
   settings.declutterVisible = !!visible;
   persistSettingsNow();
-  if(settings.declutterVisible) noteMarkListShown('declutter');
   if(!declutterWindow) return;
   if(settings.declutterVisible) declutterWindow.showInactive();
   else declutterWindow.hide();
   broadcast('declutter:visibility-changed', settings.declutterVisible);
+  broadcastMarkTarget();
 }
 
 /* ---------------- rebirth requirements overlay ---------------- */
@@ -887,11 +941,11 @@ function toggleRebirthReqVisible(){
 function setRebirthReqVisible(visible){
   settings.rebirthReqVisible = !!visible;
   persistSettingsNow();
-  if(settings.rebirthReqVisible) noteMarkListShown('rebirthReq');
   if(!rebirthReqWindow) return;
   if(settings.rebirthReqVisible) rebirthReqWindow.showInactive();
   else rebirthReqWindow.hide();
   broadcast('rebirthReq:visibility-changed', settings.rebirthReqVisible);
+  broadcastMarkTarget();
 }
 
 /* On-screen hotkey reference list: a small centered, click-through card
@@ -960,13 +1014,29 @@ function toggleHotkeyList(){
    browser API and are all fixed by this one piece of main-process plumbing.
    It still only ever hands the renderer a captured screen frame — same as
    OBS or Discord screen-share; nothing here touches Fortnite's process. */
+// v1.11.1: the picked screen is remembered (settings.captureDisplayId) so a
+// multi-monitor capture goes straight through. 'capture:changeScreen' sets
+// forceScreenPicker so the NEXT request shows the picker again; cancelling
+// it keeps the old choice.
+let forceScreenPicker = false;
+function captureKey(source){ return source.display_id || source.id; }
+function rememberCaptureSource(source){
+  settings.captureDisplayId = captureKey(source);
+  settings.captureScreenName = source.name;
+  persistSettingsNow();
+  broadcast('settings:changed', { ...settings });
+}
 function setupDisplayMediaHandler(){
   session.defaultSession.setDisplayMediaRequestHandler(async (request, callback)=>{
     try{
       const sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: 320, height: 200 } });
       if(!sources.length){ callback({}); return; }
-      if(sources.length === 1){ callback({ video: sources[0] }); return; }
+      if(sources.length === 1){ forceScreenPicker = false; callback({ video: sources[0] }); return; }
+      const saved = !forceScreenPicker && settings.captureDisplayId != null && sources.find(s => captureKey(s) === settings.captureDisplayId);
+      if(saved){ callback({ video: saved }); return; }
+      forceScreenPicker = false;
       const chosen = await pickScreenSource(sources);
+      if(chosen) rememberCaptureSource(chosen);
       callback(chosen ? { video: chosen } : {});
     }catch(e){
       console.error('Display media request failed', e);
@@ -1038,11 +1108,11 @@ function toggleSneakVisible(){ setSneakVisible(!settings.sneakVisible); }
 function setSneakVisible(visible){
   settings.sneakVisible = !!visible;
   persistSettingsNow();
-  if(settings.sneakVisible) noteMarkListShown('sneak');
   if(!sneakWindow) return;
   if(settings.sneakVisible) sneakWindow.showInactive();
   else sneakWindow.hide();
   broadcast('sneak:visibility-changed', settings.sneakVisible);
+  broadcastMarkTarget();
 }
 
 // The cycle-complete prompt's "Sneak Preview" choice: clear the stage for
@@ -1079,6 +1149,7 @@ function hideAllOverlays(){
   setSneakVisible(false);
   setCritGuideVisible(false);
   hideHotkeyList();
+  if(toastWindow && !toastWindow.isDestroyed()) toastWindow.hide();
 }
 
 /* ---------------- global hotkeys ----------------
@@ -1162,6 +1233,11 @@ const HOTKEY_HANDLERS = {
   rebirthMarkRight: () => sendToMarkList('rebirthMarkRight'),
   rebirthMarkUp: () => sendToMarkList('rebirthMarkUp'),
   rebirthMarkDown: () => sendToMarkList('rebirthMarkDown'),
+  markTarget: () => cycleMarkTarget(), // v1.11.1
+  // v1.11.1: answer the Read Rebirth Screen result without alt-tabbing. Only the
+  // tracker window owns that dialog (rebirth-screen-read.js).
+  rebirthScreenApply: () => sendToTracker('rebirthScreenApply'),
+  rebirthScreenCancel: () => sendToTracker('rebirthScreenCancel'),
   // v1.10.8: master lock — see toggleKeybindsLock()/applyKeybindsLock() above
   keybindsLock: () => toggleKeybindsLock()
 };
@@ -1240,6 +1316,9 @@ const HOTKEY_LABELS = {
   rebirthMarkRight: 'Navigate Right (Rebirth Reqs / Sneak Preview / Safe to Retire)',
   rebirthMarkUp: 'Navigate Up (Rebirth Reqs / Sneak Preview / Safe to Retire)',
   rebirthMarkDown: 'Navigate Down (Rebirth Reqs / Sneak Preview / Safe to Retire)',
+  markTarget: 'Switch Mark Keys to the Next Open List',
+  rebirthScreenApply: 'Read Rebirth Screen: Apply',
+  rebirthScreenCancel: 'Read Rebirth Screen: Cancel',
   keybindsLock: 'Lock/Unlock All Keybinds'
 };
 const HOTKEY_SETTINGS_KEY = {
@@ -1276,6 +1355,9 @@ const HOTKEY_SETTINGS_KEY = {
   rebirthMarkRight: 'rebirthMarkRight',
   rebirthMarkUp: 'rebirthMarkUp',
   rebirthMarkDown: 'rebirthMarkDown',
+  markTarget: 'markTargetHotkey',
+  rebirthScreenApply: 'rebirthScreenApplyHotkey',
+  rebirthScreenCancel: 'rebirthScreenCancelHotkey',
   keybindsLock: 'keybindsLockHotkey'
 };
 
@@ -1388,17 +1470,81 @@ function broadcast(channel, payload){
 function notify(message){
   broadcast('app:notify', message);
 }
-// Sent to ONE visible list window (the most recently shown), never broadcast:
-// a hidden window keeps its DOM and selection, so a broadcast would mark
-// whatever it had selected, unseen.
+/* The list overlays the rebirthMark* keys can drive (v1.11.1). They go to ONE
+   open list, never a broadcast: a hidden window keeps its DOM and selection, so
+   a broadcast would mark whatever it had selected, unseen. With several open,
+   settings.markTarget picks (Rebirth Requirements unless switched with the
+   markTarget hotkey); if that one is closed, the first open list in this order. */
+const MARK_LISTS = ['rebirthReq', 'declutter', 'sneak'];
+function markListWindow(name){
+  const w = { rebirthReq: settings.rebirthReqVisible && rebirthReqWindow,
+              declutter: settings.declutterVisible && declutterWindow,
+              sneak: settings.sneakVisible && sneakWindow }[name];
+  return w && !w.isDestroyed() ? w : null;
+}
+function markTargetState(){
+  const open = MARK_LISTS.filter(markListWindow);
+  const target = open.includes(settings.markTarget) ? settings.markTarget : (open[0] || null);
+  return { target, contested: open.length > 1 };
+}
+// Every list window shows the selection glow only while it's the target, and a
+// "KEYS" tag while more than one list is open (overlay-theme.js).
+function broadcastMarkTarget(){ broadcast('markTarget:changed', markTargetState()); }
 function sendToMarkList(name){
-  const wins = {
-    rebirthReq: settings.rebirthReqVisible && rebirthReqWindow,
-    sneak: settings.sneakVisible && sneakWindow,
-    declutter: settings.declutterVisible && declutterWindow
-  };
-  const target = markListOrder.slice().reverse().find(n => wins[n] && !wins[n].isDestroyed());
-  if(target) wins[target].webContents.send('hotkey:triggered', name);
+  const w = markListWindow(markTargetState().target);
+  if(w) w.webContents.send('hotkey:triggered', name);
+}
+function sendToTracker(name){
+  if(mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('hotkey:triggered', name);
+}
+
+/* In-game notice (v1.11.1, game-toast.html): a small click-through, never-focused
+   card at the top-centre of the game's screen (the saved capture screen), so a
+   result that only shows in the tracker window (behind the game) can be read
+   without alt-tabbing. Created on first use; hides itself after msg.ms. */
+let toastWindow = null, toastReady = false, toastPending = null, toastTimer = null;
+const TOAST_SIZE = { width: 480, height: 92 };
+function toastBounds(){
+  const ds = screen.getAllDisplays();
+  const d = ds.find(x => String(x.id) === String(settings.captureDisplayId)) || screen.getPrimaryDisplay();
+  const wa = d.workArea;
+  return { x: Math.round(wa.x + (wa.width - TOAST_SIZE.width) / 2), y: Math.round(wa.y + wa.height * 0.1), ...TOAST_SIZE };
+}
+function showGameToast(msg){
+  if(!msg || !msg.title) return;
+  if(!toastWindow || toastWindow.isDestroyed()){
+    toastReady = false;
+    toastWindow = new BrowserWindow({
+      ...toastBounds(),
+      frame: false, transparent: true, backgroundColor: '#00000000', hasShadow: false,
+      resizable: false, movable: false, alwaysOnTop: true, skipTaskbar: true, focusable: false, show: false,
+      webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false }
+    });
+    toastWindow.setAlwaysOnTop(true, 'screen-saver');
+    toastWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+    toastWindow.setIgnoreMouseEvents(true);
+    toastWindow.webContents.once('did-finish-load', ()=>{ toastReady = true; if(toastPending){ const m = toastPending; toastPending = null; deliverToast(m); } });
+    toastWindow.on('closed', ()=>{ toastWindow = null; toastReady = false; });
+    toastWindow.loadFile(path.join(__dirname, 'game-toast.html'));
+  } else {
+    toastWindow.setBounds(toastBounds());
+  }
+  if(toastReady) deliverToast(msg); else toastPending = msg;
+}
+function deliverToast(msg){
+  if(!toastWindow || toastWindow.isDestroyed()) return;
+  toastWindow.webContents.send('toast:show', msg);
+  toastWindow.showInactive();
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{ if(toastWindow && !toastWindow.isDestroyed()) toastWindow.hide(); }, Math.min(20000, Math.max(1500, msg.ms || 6000)));
+}
+
+function cycleMarkTarget(){
+  const open = MARK_LISTS.filter(markListWindow);
+  if(open.length < 2) return;
+  settings.markTarget = open[(open.indexOf(markTargetState().target) + 1) % open.length];
+  persistSettingsNow();
+  broadcastMarkTarget();
 }
 
 /* ---------------- IPC ---------------- */
@@ -1659,29 +1805,50 @@ function wireIpc(){
   // starting bounds are kept here so the window tracks the pointer exactly.
   // `send`, not `invoke`: pointermove fires fast and needs no reply. See
   // OVERLAY_WINDOWS for why overlays never use Windows' own drag.
-  const dragStart = new Map(); // webContents id -> bounds when the drag began
+  // v1.11.1: the other visible overlays are read once when a drag/resize
+  // begins (they can't move meanwhile), so each pointermove is only the snap
+  // math. See overlay-snap.js.
+  function otherOverlays(win){
+    return Object.values(OVERLAY_WINDOWS)
+      .map(o => ({ w: o.win(), resizable: !!o.sizeKey }))
+      .filter(({ w }) => w && w !== win && !w.isDestroyed() && w.isVisible())
+      .map(({ w, resizable }) => ({ ...w.getBounds(), resizable }));
+  }
+  const dragStart = new Map(); // webContents id -> { bounds, others } when the drag began
   ipcMain.on('overlay:drag', (evt, data)=>{
     const o = overlayWindowFor(evt.sender);
     if(!o || !data) return;
     const win = o.win();
-    if(data.phase === 'start'){ dragStart.set(evt.sender.id, win.getBounds()); return; }
-    const start = dragStart.get(evt.sender.id);
-    if(!start || !Number.isFinite(data.dx) || !Number.isFinite(data.dy)) return;
-    win.setBounds(onOneDisplay({ ...start, x: start.x + data.dx, y: start.y + data.dy }));
+    if(data.phase === 'start'){ dragStart.set(evt.sender.id, { bounds: win.getBounds(), others: otherOverlays(win) }); return; }
+    const d = dragStart.get(evt.sender.id);
+    if(!d || !Number.isFinite(data.dx) || !Number.isFinite(data.dy)) return;
+    let b = { ...d.bounds, x: d.bounds.x + data.dx, y: d.bounds.y + data.dy };
+    if(settings.overlaySnap !== false){
+      const wa = screen.getDisplayNearestPoint({ x: Math.round(b.x + b.width / 2), y: Math.round(b.y + b.height / 2) }).workArea;
+      b = snapMove(b, d.others, wa);
+    }
+    win.setBounds(onOneDisplay(b));
     if(data.phase === 'end') dragStart.delete(evt.sender.id);
   });
 
-  const resizeStart = new Map(); // webContents id -> bounds when the resize began
+  const resizeStart = new Map(); // webContents id -> { bounds, others } when the resize began
   ipcMain.on('overlay:resize', (evt, data)=>{
     const o = overlayWindowFor(evt.sender);
     if(!o || !o.sizeKey || !data) return;
     const win = o.win();
-    if(data.phase === 'start'){ resizeStart.set(evt.sender.id, win.getBounds()); return; }
-    const start = resizeStart.get(evt.sender.id);
-    if(!start || !Number.isFinite(data.dx) || !Number.isFinite(data.dy)) return;
+    if(data.phase === 'start'){ resizeStart.set(evt.sender.id, { bounds: win.getBounds(), others: otherOverlays(win) }); return; }
+    const r = resizeStart.get(evt.sender.id);
+    if(!r || !Number.isFinite(data.dx) || !Number.isFinite(data.dy)) return;
+    const start = r.bounds;
     const wa = (screen.getDisplayMatching(start) || screen.getPrimaryDisplay()).workArea;
-    const width = Math.round(Math.max(OVERLAY_MIN_SIZE.width, Math.min(start.width + data.dx, wa.x + wa.width - start.x)));
-    const height = Math.round(Math.max(OVERLAY_MIN_SIZE.height, Math.min(start.height + data.dy, wa.y + wa.height - start.y)));
+    let size = { x: start.x, y: start.y, width: start.width + data.dx, height: start.height + data.dy };
+    if(settings.overlaySnap !== false || settings.overlaySnapSize !== false){
+      const edges = settings.overlaySnap !== false ? r.others : [];
+      const sizes = settings.overlaySnapSize !== false ? r.others.filter(b => b.resizable) : [];
+      size = snapResize(size, edges, sizes, wa);
+    }
+    const width = Math.round(Math.max(OVERLAY_MIN_SIZE.width, Math.min(size.width, wa.x + wa.width - start.x)));
+    const height = Math.round(Math.max(OVERLAY_MIN_SIZE.height, Math.min(size.height, wa.y + wa.height - start.y)));
     win.setBounds({ x: start.x, y: start.y, width, height });
     if(data.phase === 'end'){
       resizeStart.delete(evt.sender.id);
@@ -1712,9 +1879,86 @@ function wireIpc(){
     return { ...settings };
   });
 
+  // v1.11.1: the banner window is sized by timers:fit (below), so a reset only
+  // moves it back; the default bounds' own width/height are just a first guess.
+  ipcMain.on('timers:fit', (evt, size)=>{
+    if(!timersWindow || timersWindow.isDestroyed() || evt.sender !== timersWindow.webContents || !size) return;
+    const width = Math.ceil(size.width), height = Math.ceil(size.height);
+    if(!(width > 0 && height > 0)) return;
+    const b = timersWindow.getBounds();
+    if(b.width === width && b.height === height) return;
+    timersWindow.setBounds(clampToDisplay({ x: b.x, y: b.y, width, height }));
+  });
+  ipcMain.handle('markTarget:get', ()=> markTargetState());
+  // v1.11.1 Read Rebirth Screen: show the picker on the next capture, and the
+  // in-game notice (both sent by the tracker window only).
+  ipcMain.handle('capture:changeScreen', (evt)=>{
+    if(!mainWindow || evt.sender !== mainWindow.webContents) return false;
+    forceScreenPicker = true;
+    return true;
+  });
+  ipcMain.on('toast:show', (evt, msg)=>{
+    if(mainWindow && evt.sender === mainWindow.webContents) showGameToast(msg);
+  });
+
+  // v1.13.0: the player's own alert sounds. The picked file is COPIED into the
+  // app's own folder, so moving or deleting the original can't break an alert.
+  // Only ids from settings.customSounds are ever turned into paths.
+  const SOUND_DIR = path.join(app.getPath('userData'), 'custom-sounds');
+  const SOUND_EXTS = ['.mp3', '.wav', '.ogg', '.m4a'];
+  const MAX_SOUND_BYTES = 5 * 1024 * 1024, MAX_SOUNDS = 20;
+  const soundEntry = (id) => (typeof id === 'string' && /^[a-z0-9]{4,24}$/.test(id))
+    ? (settings.customSounds || []).find(s => s.id === id) : null;
+  const soundPath = (s) => path.join(SOUND_DIR, s.id + (SOUND_EXTS.includes(s.ext) ? s.ext : '.mp3'));
+  ipcMain.handle('sound:add', async (evt)=>{
+    if(!mainWindow || evt.sender !== mainWindow.webContents) return { ok: false, reason: 'cancelled' };
+    if((settings.customSounds || []).length >= MAX_SOUNDS) return { ok: false, reason: 'You already have ' + MAX_SOUNDS + ' sounds — remove one first.' };
+    const r = await dialog.showOpenDialog(mainWindow, {
+      title: 'Pick a sound for the timer alerts', properties: ['openFile'],
+      filters: [{ name: 'Audio (mp3, wav, ogg, m4a)', extensions: ['mp3', 'wav', 'ogg', 'm4a'] }]
+    });
+    if(r.canceled || !r.filePaths.length) return { ok: false, reason: 'cancelled' };
+    const src = r.filePaths[0], ext = path.extname(src).toLowerCase();
+    if(!SOUND_EXTS.includes(ext)) return { ok: false, reason: 'That file type isn\'t supported — use mp3, wav, ogg or m4a.' };
+    try{
+      if(fs.statSync(src).size > MAX_SOUND_BYTES) return { ok: false, reason: 'That file is over 5 MB — pick a shorter clip.' };
+      fs.mkdirSync(SOUND_DIR, { recursive: true });
+      const id = (Date.now().toString(36) + Math.random().toString(36).slice(2, 6)).slice(0, 24);
+      const entry = { id, name: path.basename(src, path.extname(src)).slice(0, 40), ext };
+      fs.copyFileSync(src, soundPath(entry));
+      settings.customSounds = [...(settings.customSounds || []), entry];
+      persistSettingsNow();
+      broadcast('settings:changed', { ...settings });
+      return { ok: true, sound: { id: entry.id, name: entry.name } };
+    }catch(e){
+      return { ok: false, reason: 'Couldn\'t copy that file (' + e.message + ').' };
+    }
+  });
+  ipcMain.handle('sound:remove', (evt, id)=>{
+    if(!mainWindow || evt.sender !== mainWindow.webContents) return false;
+    const entry = soundEntry(id);
+    if(!entry) return false;
+    try{ fs.rmSync(soundPath(entry), { force: true }); }catch(e){ /* the app's own copy; nothing else to do */ }
+    settings.customSounds = settings.customSounds.filter(s => s.id !== id);
+    ['missionSoundChoice', 'blueprintSoundChoice'].forEach(k => { if(settings[k] === 'custom:' + id) settings[k] = 'goodnews'; });
+    ['stellarSoundChoice', 'mythicSoundChoice', 'kyberSoundChoice'].forEach(k => { if(settings[k] === 'custom:' + id) settings[k] = null; });
+    persistSettingsNow();
+    broadcast('settings:changed', { ...settings });
+    return true;
+  });
+  // base64 of one own sound, for alert-sound.js to decode; null if it's gone.
+  ipcMain.handle('sound:read', (evt, id)=>{
+    const entry = soundEntry(id);
+    if(!entry) return null;
+    try{ return fs.readFileSync(soundPath(entry)).toString('base64'); }catch(e){ return null; }
+  });
+
   ipcMain.handle('timers:resetPosition', ()=>{
     settings.timersPosition = null;
-    if(timersWindow) timersWindow.setBounds(computeDefaultTimersBounds());
+    if(timersWindow){
+      const d = computeDefaultTimersBounds(), b = timersWindow.getBounds();
+      timersWindow.setBounds(clampToDisplay({ x: d.x, y: d.y, width: b.width, height: b.height }));
+    }
     persistSettingsNow();
     broadcast('settings:changed', { ...settings });
     return { ...settings };
@@ -1922,6 +2166,7 @@ if(singleInstanceLock){
     storeData = loadJson(STORE_PATH, {});
     settings = loadJson(SETTINGS_PATH, DEFAULT_SETTINGS);
     migrateHotkeyLayout();
+    migrateSoundDefault();
 
   wireIpc();
   setupDisplayMediaHandler();

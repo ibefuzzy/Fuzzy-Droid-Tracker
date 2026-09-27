@@ -17,12 +17,36 @@
     margin:0; padding:0; background:transparent; overflow:hidden;
     font-family:-apple-system,'Segoe UI',system-ui,sans-serif;
     -webkit-user-select:none; user-select:none;
-    width:100%; height:100%;
   }
+  /* v1.11.1: compact. The panel is only as big as its banners, and the window
+     is fitted to it (fitWindow() -> main.js 'timers:fit'), so no empty box ever
+     sits over the game. timersScale is a transform, so the layout size (what
+     the ResizeObserver watches) stays put and fitWindow() multiplies it in. */
   .panel{
-    display:flex; flex-direction:column; gap:5px;
-    width:100%; height:100%; box-sizing:border-box;
+    position:relative;
+    display:inline-flex; flex-direction:column; gap:4px;
+    box-sizing:border-box;
     padding:5px;
+    transform-origin:0 0;
+  }
+  /* v1.13.0: a border skin (settings.timersBorder) tints the outlines and puts its
+     emblem on top; each banner's own top colour (which timer it is) stays. */
+  body.skinned .panel{ padding-top:14px; }
+  .t-badge{
+    display:none; position:absolute; top:1px; left:50%; transform:translateX(-50%); z-index:2;
+    width:20px; height:20px; border-radius:50%; box-sizing:border-box;
+    align-items:center; justify-content:center;
+    background:#0c1210; border:1.5px solid rgb(var(--t-skin-rgb)); color:rgb(var(--t-skin-rgb));
+    box-shadow:0 0 6px -1px rgb(var(--t-skin-rgb));
+  }
+  body.skinned .t-badge{ display:flex; }
+  body.skinned .banner{
+    border-left-color:rgba(var(--t-skin-rgb),0.6); border-right-color:rgba(var(--t-skin-rgb),0.6); border-bottom-color:rgba(var(--t-skin-rgb),0.6);
+    box-shadow:0 0 10px -4px rgb(var(--t-skin-rgb)), 0 2px 10px -2px rgba(0,0,0,0.5);
+  }
+  body.skinned .banner.mission{ border-left-color:var(--accent-color); border-top-color:rgba(var(--t-skin-rgb),0.6); }
+  body.skinned .banner.imminent{
+    box-shadow:0 0 0 1px var(--accent-color), 0 0 14px 1px var(--accent-color), inset 0 0 0 1px rgba(255,255,255,0.05);
   }
   .drag-handle{
     display:none;
@@ -41,24 +65,21 @@
     background:#5ef2a6; color:#08130d; border:none; border-radius:4px;
     font-size:11px; font-weight:700; padding:3px 9px; cursor:pointer;
   }
-  .banners{
-    display:flex; flex-direction:row; gap:5px; flex:1; min-height:0;
-  }
+  /* Equal-width banners: 1fr columns in a shrink-to-fit grid all take the
+     widest banner's width. Layout from settings.timersLayout (body[data-layout]). */
+  .banners{ display:grid; gap:4px; grid-template-columns:repeat(4, 1fr); }
+  body[data-layout="grid"] .banners{ grid-template-columns:repeat(2, 1fr); }
+  body[data-layout="column"] .banners{ grid-template-columns:1fr; }
   .banner{
-    /* Padding/gap trimmed a little 2026-09-19 (all four share this one rule,
-       so they always shrink together and stay matched to each other —
-       Mythic's own colors are untouched, just its box size along with the
-       rest). */
-    flex:1; min-width:0;
-    display:flex; flex-direction:row; align-items:center; justify-content:center;
+    display:flex; flex-direction:row; align-items:center; justify-content:flex-start;
     gap:6px;
     background:
       radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--accent-color, #9aa39d) 22%, transparent), transparent 60%),
-      rgba(10,14,12,0.68);
+      rgba(var(--t-backdrop-rgb, 10,14,12), var(--t-backdrop-alpha, 0.68)); /* the Appearance backdrop, v1.13.0 */
     border:1px solid color-mix(in srgb, var(--accent-color, #9aa39d) 45%, rgba(255,255,255,0.14));
-    border-top:3px solid var(--accent-color, #9aa39d);
-    border-radius:9px;
-    padding:4px 7px;
+    border-top:2px solid var(--accent-color, #9aa39d);
+    border-radius:8px;
+    padding:3px 10px 3px 5px;
     box-sizing:border-box;
     box-shadow:0 2px 10px -2px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.03);
     transition:box-shadow 0.3s ease;
@@ -81,27 +102,27 @@
   }
   .b-icon{
     flex:0 0 auto;
-    width:23px; height:23px;
+    width:20px; height:20px;
     border-radius:50%;
     display:flex; align-items:center; justify-content:center;
     background:radial-gradient(circle at 32% 28%, color-mix(in srgb, var(--accent-color) 85%, white 15%), var(--accent-color) 70%);
     box-shadow:0 0 6px -1px var(--accent-color), inset 0 -2px 3px rgba(0,0,0,0.25);
     color:#0b0f0d;
   }
-  .b-icon svg{ width:14px; height:14px; }
-  .b-icon img{ width:16px; height:16px; object-fit:contain; }
+  .b-icon svg{ width:12px; height:12px; }
+  .b-icon img{ width:14px; height:14px; object-fit:contain; }
   .b-body{
     display:flex; flex-direction:column; align-items:flex-start; justify-content:center;
-    gap:0; min-width:0;
+    gap:0; min-width:0; line-height:1.1;
   }
   .banner .b-label{
-    font-size:9.5px; font-weight:700; letter-spacing:.06em;
+    font-size:8.5px; font-weight:700; letter-spacing:.06em;
     color:#f2f6f4; text-transform:uppercase;
     text-shadow:0 1px 2px rgba(0,0,0,0.9);
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;
+    white-space:nowrap;
   }
   .banner .b-time{
-    font-size:17px; font-weight:800; font-variant-numeric:tabular-nums;
+    font-size:15px; font-weight:800; font-variant-numeric:tabular-nums;
     color:#ffffff;
     text-shadow:0 1px 3px rgba(0,0,0,0.95), 0 0 6px rgba(0,0,0,0.5);
   }
@@ -111,10 +132,11 @@
   .banner.mission{ --accent-color: var(--mission); }
 </style>
 </head>
-<body>
+<body data-layout="row">
   <div class="panel">
+    <div class="t-badge" id="timersBadge"></div>
     <div class="drag-handle" id="dragHandle">
-      <span>Drag to position, then Lock</span>
+      <span>Drag, then Lock</span>
       <button id="lockBtn">Lock</button>
     </div>
     <div class="banners" id="banners">
@@ -157,6 +179,10 @@
     </div>
   </div>
 
+<script src="droid-data.js"></script>
+<script src="requirements.js"></script>
+<script src="sounds/good-news-data.js"></script>
+<script src="alert-sound.js"></script>
 <script>
 (function(){
   if(!window.overlayAPI){
@@ -164,47 +190,8 @@
     return;
   }
 
-  /* Sound notifications (v1.10.2) — plays a short notification when timer expires.
-     Generates sine waves on-demand via Web Audio API. */
-  const AudioNotifications = {
-    audioContext: null,
-    getContext() {
-      if (!this.audioContext) {
-        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      }
-      return this.audioContext;
-    },
-    playTone(frequency, duration, volume) {
-      try {
-        const ctx = this.getContext();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.frequency.value = frequency;
-        gain.gain.value = volume;
-        osc.start(ctx.currentTime);
-        osc.stop(ctx.currentTime + duration);
-      } catch(e) {
-        // Audio context unavailable, silently fail
-      }
-    },
-    playSound(choice, volume) {
-      if (!choice || choice === 'off' || !volume) return;
-      const sounds = {
-        beep: { freq: 800, duration: 0.3 },
-        boop: { freq: 400, duration: 0.3 },
-        chime: { freq: 900, duration: 0.4 }
-      };
-      const sound = sounds[choice] || sounds.beep;
-      // Play 3x with 0.5s delay
-      for (let i = 0; i < 3; i++) {
-        setTimeout(() => {
-          this.playTone(sound.freq, sound.duration, Math.min(0.8, volume || 0.35));
-        }, i * 500);
-      }
-    }
-  };
+  /* Sound notifications: every sound (tones, Good news, the player's own files)
+     is played by alert-sound.js's playAlert(), shared with the tracker's ▶ previews. */
 
   /* ---------------- timer math ----------------
      All four timers are pure wall-clock arithmetic against the system clock —
@@ -371,10 +358,10 @@
   function playTimerSound(timerType, settings) {
     if (!settings.timerSoundEnabled) return;
 
-    // Map Stellar/Mythic/Kyber timers to the shared 'blueprint' sound settings
-    // (Settings → Timers only has Mission and Blueprint sound groups)
-    const soundKey = timerType === 'mission' ? 'missionSoundChoice' : 'blueprintSoundChoice';
-    const choice = settings[soundKey];
+    // v1.13.0: Stellar/Mythic/Kyber each have their own pick; none set = the
+    // Blueprints pick (the only choice they had before).
+    const choice = timerType === 'mission' ? settings.missionSoundChoice
+      : (settings[timerType + 'SoundChoice'] || settings.blueprintSoundChoice);
     if (!choice || choice === 'off') return;
 
     // Determine volume: use override if enabled, otherwise use master
@@ -385,7 +372,9 @@
       volume = settings[volumeKey] || 0.35;
     }
 
-    AudioNotifications.playSound(choice, volume);
+    playAlert(choice, volume, (id) => window.overlayAPI.readCustomSound(id)).catch(() => {
+      if (choice !== 'goodnews') playAlert('goodnews', volume).catch(() => {}); // a broken own file still alerts
+    });
   }
 
   // Each next___() function above always returns the NEXT future occurrence,
@@ -449,10 +438,58 @@
     }
   }
 
+  const panel = document.querySelector('.panel');
+  let scale = 1;
+  // The window is exactly the (scaled) panel. Sent on every panel size change
+  // (layout, unlock bar, a longer mission name) and scale change; main.js
+  // ignores a size it already has.
+  function fitWindow(){
+    const r = panel.getBoundingClientRect();
+    window.overlayAPI.fitTimers({ width: r.width, height: r.height });
+  }
+  new ResizeObserver(fitWindow).observe(panel);
+
   function applySettings(settings){
     currentSettings = settings; // Keep settings available for render()
-    document.body.classList.toggle('unlocked', !settings.timersLocked);
     missionSyncEpochMs = (settings.missionSyncEpochMs != null) ? settings.missionSyncEpochMs : null;
+    // Refit right away on a shape change: a hidden window's ResizeObserver
+    // doesn't run until it's shown again.
+    let refit = false;
+    const unlocked = !settings.timersLocked;
+    if(document.body.classList.contains('unlocked') !== unlocked){ document.body.classList.toggle('unlocked', unlocked); refit = true; }
+    const layout = ['row', 'grid', 'column'].includes(settings.timersLayout) ? settings.timersLayout : 'row';
+    if(document.body.dataset.layout !== layout){ document.body.dataset.layout = layout; refit = true; }
+    const s = Math.min(1.5, Math.max(0.8, Number(settings.timersScale) || 1));
+    if(s !== scale){
+      scale = s;
+      panel.style.transform = s === 1 ? '' : 'scale(' + s + ')';
+      refit = true;
+    }
+    // v1.13.0: the Appearance backdrop (all-overlays values + the timers' own) and
+    // an optional border skin (timersBorder; none = the classic look).
+    const t = effectiveTheme(settings, 'timers');
+    setVar('--t-backdrop-rgb', rgbOf(t.themeBackdrop));
+    setVar('--t-backdrop-alpha', typeof t.themeBackdropAlpha === 'number' ? t.themeBackdropAlpha : null);
+    const skinKey = settings.timersBorder;
+    const skin = skinKey && BORDER_SKINS[skinKey];
+    if(document.body.classList.contains('skinned') !== !!skin){ document.body.classList.toggle('skinned', !!skin); refit = true; }
+    if(skin && skinKey !== shownSkin){
+      setVar('--t-skin-rgb', skin.rgb);
+      document.getElementById('timersBadge').innerHTML = borderIconSvg(skinKey, 12);
+    }
+    shownSkin = skin ? skinKey : null;
+    if(refit) fitWindow();
+  }
+  let shownSkin = null;
+  function rgbOf(hex){
+    const m = /^#([0-9a-f]{6})$/i.exec(hex || '');
+    if(!m) return null;
+    const n = parseInt(m[1], 16);
+    return ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255);
+  }
+  function setVar(name, value){
+    if(value == null) document.documentElement.style.removeProperty(name);
+    else document.documentElement.style.setProperty(name, String(value));
   }
   window.overlayAPI.onSettingsChanged(applySettings);
 
@@ -464,6 +501,7 @@
     const settings = await window.overlayAPI.getSettings();
     applySettings(settings);
     render();
+    fitWindow();
     setInterval(render, 1000);
   })();
 })();

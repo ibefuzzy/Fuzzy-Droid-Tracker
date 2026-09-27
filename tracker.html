@@ -759,7 +759,7 @@
   .color-row-label{display:flex;flex-direction:column;gap:1px;min-width:0;}
   .color-row-label b{font-size:14px;color:var(--text);font-weight:600;}
   .color-row-label small{font-size:11.5px;color:var(--text-dim);}
-  .color-swatches{display:flex;gap:9px;flex:0 0 auto;}
+  .color-swatches{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;flex:0 1 auto;max-width:310px;} /* 15 skins since v1.12.0: two rows */
   .swatch{
     width:30px;height:30px;border-radius:50%;padding:0;cursor:pointer;
     background:#0c1210;border:2px solid var(--sw);color:var(--sw);
@@ -784,6 +784,46 @@
   .sched-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;}
   .sched-list li{display:grid;grid-template-columns:auto 190px minmax(0,1fr);align-items:center;gap:10px;font-size:13px;padding:6px 8px;border-radius:6px;background:rgba(143,214,255,.035);}
   .sched-list li span:last-child{color:var(--text-dim);font-family:'IBM Plex Mono',monospace;font-size:12px;}
+
+  /* ---- Appearance tab colours, snap checkboxes, timer layout (v1.11.1) ---- */
+  .theme-ctrls{display:flex;align-items:center;gap:10px;flex:0 0 auto;flex-wrap:wrap;justify-content:flex-end;}
+  .theme-ctrls input[type="color"]{width:40px;height:28px;padding:0 2px;border:1px solid var(--holo-line);border-radius:6px;background:rgba(0,0,0,.3);cursor:pointer;}
+  .theme-ctrls input[type="range"]{width:110px;accent-color:var(--accent);}
+  .theme-alpha{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-dim);min-width:34px;text-align:right;}
+  .theme-ctrls .btn{font-size:12px;padding:5px 9px;}
+  .color-row.is-default .theme-default-btn{opacity:.45;}
+  .check-row{display:flex;align-items:flex-start;gap:9px;font-size:13.5px;color:var(--text);padding:4px 2px;cursor:pointer;}
+  .check-row input{margin-top:3px;accent-color:var(--accent);}
+  .check-row small{display:block;color:var(--text-dim);font-size:11.5px;line-height:1.4;}
+  /* ---- Appearance presets (v1.12.0): one button per THEME_PRESETS entry ---- */
+  .preset-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin:0 0 16px;}
+  .preset-btn{display:flex;align-items:center;gap:9px;padding:6px 10px;border-radius:8px;border:1px solid var(--holo-line);background:rgba(0,0,0,.25);color:var(--text);cursor:pointer;font:inherit;font-size:13px;text-align:left;transition:border-color .12s,box-shadow .12s;}
+  .preset-btn:hover{border-color:var(--sw);}
+  .preset-btn.active{border-color:var(--sw);box-shadow:0 0 0 1px var(--sw) inset,0 0 10px -3px var(--sw);}
+  .preset-badge{flex:0 0 auto;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#0c1210;border:2px solid var(--sw);color:var(--sw);font-size:14px;font-weight:700;}
+  /* v1.13.0: saved looks (a preset button + share/delete), the per-overlay target, card options */
+  .preset-item{display:flex;gap:4px;min-width:0;grid-column:span 2;} /* room for the name next to ⧉ / ✕ */
+  .preset-item .preset-btn{flex:1;min-width:0;}
+  .preset-item .preset-btn span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .preset-act{flex:0 0 auto;padding:0 8px;border-radius:8px;border:1px solid var(--holo-line);background:rgba(0,0,0,.25);color:var(--text-dim);cursor:pointer;font:inherit;}
+  .preset-act:hover{color:var(--text);border-color:var(--sw, var(--accent));}
+  .preset-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 4px;}
+  .look-input{flex:1 1 150px;min-width:0;padding:6px 9px;border-radius:6px;border:1px solid var(--holo-line);background:rgba(0,0,0,.3);color:var(--text);font:inherit;font-size:12.5px;}
+  .theme-target-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0 0 8px;padding:0 12px;}
+  .theme-target-row select{padding:5px 8px;border-radius:6px;border:1px solid var(--holo-line);background:rgba(0,0,0,.35);color:var(--text);font:inherit;font-size:12.5px;}
+  .theme-target-hint{font-size:11.5px;color:var(--text-dim);}
+  .compact-check{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;color:var(--text);cursor:pointer;}
+  .compact-check input{accent-color:var(--accent);}
+  .color-row.is-hidden{display:none;}
+  .swatch.none-swatch{font-size:15px;font-weight:700;}
+  .sound-grid{display:grid;grid-template-columns:max-content minmax(0,260px) max-content;gap:6px 10px;align-items:center;max-width:460px;}
+  .sound-grid label{font-size:13px;color:var(--text);}
+  .sound-select{padding:5px 8px;border-radius:6px;border:1px solid var(--holo-line);background:rgba(0,0,0,.35);color:var(--text);font:inherit;font-size:12.5px;}
+  .sound-play{padding:4px 10px;font-size:12px;}
+  .custom-sound-list{display:flex;flex-direction:column;gap:4px;}
+  .custom-sound-row{display:flex;align-items:center;gap:8px;padding:4px 8px;border-radius:6px;background:rgba(143,214,255,.04);font-size:12.5px;}
+  .custom-sound-row span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .custom-sound-row .btn{padding:3px 9px;font-size:12px;}
   .sched-dot{width:9px;height:9px;border-radius:50%;background:var(--c);box-shadow:0 0 8px var(--c);}
 
   @media (max-width:760px){
@@ -926,8 +966,8 @@
           <span class="holo-tab-text"><b>Layout</b><small>Nav computer</small></span>
         </button>
         <button class="holo-tab" type="button" role="tab" id="setTab-borders" data-tab="borders" aria-controls="setPane-borders" aria-selected="false" tabindex="-1" style="--saber:#ff4d6d">
-          <span class="holo-tab-icon" aria-hidden="true">🛡</span>
-          <span class="holo-tab-text"><b>Borders</b><small>Skin select</small></span>
+          <span class="holo-tab-icon" aria-hidden="true">🎨</span>
+          <span class="holo-tab-text"><b>Appearance</b><small>Colors &amp; skins</small></span>
         </button>
         <button class="holo-tab" type="button" role="tab" id="setTab-filters" data-tab="filters" aria-controls="setPane-filters" aria-selected="false" tabindex="-1" style="--saber:#b06cf2">
           <span class="holo-tab-icon" aria-hidden="true">🔎</span>
@@ -965,8 +1005,16 @@
               <button class="btn kb-key" id="keybindsLockHotkeyBtn">(none set)</button>
             </div>
             <div class="kb-row">
-              <div class="kb-label"><b>📸 Read Rebirth Screen</b><small>Fires the Read Rebirth Screen button without alt-tabbing out of the game.</small></div>
+              <div class="kb-label"><b>📸 Read Rebirth Screen</b><small>Fires the Read Rebirth Screen button without alt-tabbing out of the game. The rank it read pops up over the game.</small></div>
               <button class="btn kb-key" id="rebirthScreenHotkeyBtn">Control+Shift+6</button>
+            </div>
+            <div class="kb-row">
+              <div class="kb-label"><b>📸 Apply the reading</b><small>Accepts the rank Read Rebirth Screen just read, same as its Apply button.</small></div>
+              <button class="btn kb-key" id="rebirthScreenApplyHotkeyBtn">(none set)</button>
+            </div>
+            <div class="kb-row">
+              <div class="kb-label"><b>📸 Cancel the reading</b><small>Rejects the reading and closes the reader in the app, changing nothing.</small></div>
+              <button class="btn kb-key" id="rebirthScreenCancelHotkeyBtn">(none set)</button>
             </div>
             <div class="kb-row">
               <div class="kb-label"><b>⌨ Hotkey list</b><small>Shows/hides the on-screen reference card. It also appears on every launch.</small></div>
@@ -1063,7 +1111,7 @@
           <div class="kb-group">
             <div class="kb-group-title">🧬🔮♻ Mark droids (Rebirth Requirements / Sneak Preview / Safe to Retire)</div>
             <div class="kb-row">
-              <div class="kb-label"><b>Mark selected droid</b><small>Marks the highlighted droid in whichever list is open (more than one open: the one opened last). Sneak Preview marks are held for the next cycle and applied when you switch to it. Safe to Retire marks it retired (press again to undo) without changing your logged droids.</small></div>
+              <div class="kb-label"><b>Mark selected droid</b><small>Marks the highlighted droid in whichever list is open. With more than one open, the keys go to the one showing the glow and the ⌨ KEYS tag (Rebirth Requirements unless you switch, below). Sneak Preview marks are held for the next cycle and applied when you switch to it. Safe to Retire marks it retired (press again to undo) without changing your logged droids.</small></div>
               <button class="btn kb-key" id="rebirthMarkDroidBtn">(none set)</button>
             </div>
             <div class="kb-row">
@@ -1081,6 +1129,10 @@
             <div class="kb-row">
               <div class="kb-label"><b>Navigate down</b><small>Move selection down in the grid.</small></div>
               <button class="btn kb-key" id="rebirthMarkDownBtn">(none set)</button>
+            </div>
+            <div class="kb-row">
+              <div class="kb-label"><b>⇄ Switch lists</b><small>With more than one of these lists open, moves the mark and navigate keys to the next one, so they never hit two lists at once. Your choice is remembered.</small></div>
+              <button class="btn kb-key" id="markTargetHotkeyBtn">(none set)</button>
             </div>
           </div>
 
@@ -1126,6 +1178,10 @@
               <p class="overlay-panel-hint"><b>🎯 Drag into place</b> unlocks an overlay so you can drag it, and drag its bottom-right corner to resize it (droid overlays only: icons and text scale up to full image sharpness, then the lists fit more columns). Then click <b>Lock</b> on the overlay itself. <b>↺ Reset</b> snaps it back to its default spot and size.</p>
             </div>
           </div>
+          <div class="sync-box">
+            <label class="check-row"><input type="checkbox" id="overlaySnapCheckbox"><span><b>🧲 Snap overlays together</b><small>While dragging, an overlay snaps flush against another one (side by side or stacked, edges lined up) and to the screen edge.</small></span></label>
+            <label class="check-row"><input type="checkbox" id="overlaySnapSizeCheckbox"><span><b>📐 Match sizes</b><small>While resizing, a droid overlay snaps to another one's width and height, so two lists can be exactly the same size.</small></span></label>
+          </div>
           <div class="pos-grid">
             <div class="pos-card">
               <div class="pos-title">🎯 Current Rebirth Requirements</div>
@@ -1138,7 +1194,7 @@
             </div>
             <div class="pos-card">
               <div class="pos-title">⏱ Timers</div>
-              <div class="pos-hint">The countdown banner strip near the top of the screen.</div>
+              <div class="pos-hint">The countdown banners. Their shape and size are under ⚙ Timers.</div>
               <div class="pos-actions">
                 <button class="btn" id="timersRepositionBtn">🎯 Drag into place</button>
                 <button class="btn" id="timersResetPosBtn" title="Snap the timer banners back to their default position">↺ Reset</button>
@@ -1179,14 +1235,74 @@
           </div>
         </section>
 
-        <!-- ============ BORDERS ============ -->
+        <!-- ============ APPEARANCE (v1.11.1; was Borders — ids kept) ============ -->
         <section class="holo-pane" id="setPane-borders" role="tabpanel" aria-labelledby="setTab-borders" hidden>
           <div class="holo-pane-head">
             <div>
-              <h4>Borders</h4>
-              <p class="overlay-panel-hint">Each in-game overlay has its own illustrated border skin — glow outline, corner brackets, count badge, scrollbar, and a small emblem. Pick one per overlay below; the change applies live.</p>
+              <h4>Appearance</h4>
+              <p class="overlay-panel-hint">A <b>preset</b> dresses every overlay at once: border skin and colors together. Fine-tune anything below afterwards; colors apply to all five droid overlays and change live, and <b>Default</b> puts one back to each overlay's own look.</p>
             </div>
           </div>
+          <div class="kb-group-title">Presets</div>
+          <div class="preset-grid" id="themePresetGrid"></div>
+          <div class="preset-tools">
+            <input type="text" class="look-input" id="lookNameInput" maxlength="40" placeholder="Name this look…" aria-label="Name for the saved look">
+            <button class="btn" type="button" id="lookSaveBtn" title="Save every skin and color on screen now as your own preset">💾 Save current look</button>
+            <input type="text" class="look-input" id="lookCodeInput" placeholder="Paste a look code from a friend…" aria-label="Look code to import" spellcheck="false">
+            <button class="btn" type="button" id="lookImportBtn">⬇ Import</button>
+          </div>
+          <p class="overlay-panel-hint">Your saved looks join the presets above. <b>⧉</b> copies a share code a friend can import; <b>✕</b> deletes it.</p>
+          <div class="kb-group-title">Colors</div>
+          <div class="theme-target-row">
+            <label for="themeTargetSel"><b>Edit colors for</b></label>
+            <select id="themeTargetSel">
+              <option value="">All overlays</option>
+              <option value="overlay">🎯 Upcoming RB Req's (HUD)</option>
+              <option value="rebirthReq">🧬 Rebirth Requirements</option>
+              <option value="declutter">♻ Safe to Retire</option>
+              <option value="sneak">🔮 Sneak Preview</option>
+              <option value="critGuide">⚡ Optimal Crit Guide</option>
+              <option value="timers">⏱ Timers</option>
+            </select>
+            <span class="theme-target-hint" id="themeTargetHint"></span>
+          </div>
+          <div class="color-row" id="themeBackdropRow">
+            <div class="color-row-label"><b>Backdrop</b><small>The dark panel behind the droids. The HUD keeps its own opacity slider under Layout.</small></div>
+            <div class="theme-ctrls">
+              <input type="color" id="themeBackdropColor" value="#0a0e0c" aria-label="Backdrop color">
+              <input type="range" id="themeBackdropAlpha" min="0.2" max="0.95" step="0.01" value="0.62" aria-label="Backdrop opacity">
+              <span class="theme-alpha" id="themeBackdropAlphaVal">62%</span>
+              <button class="btn theme-default-btn" type="button" id="themeBackdropDefaultBtn">Default</button>
+            </div>
+          </div>
+          <div class="color-row" id="themeBoxRow">
+            <div class="color-row-label"><b>Droid boxes</b><small>The tile behind each droid icon (each row, in the Crit Guide).</small></div>
+            <div class="theme-ctrls">
+              <input type="color" id="themeBoxColor" value="#ffffff" aria-label="Droid box color">
+              <input type="range" id="themeBoxAlpha" min="0" max="0.5" step="0.01" value="0.06" aria-label="Droid box opacity">
+              <span class="theme-alpha" id="themeBoxAlphaVal">6%</span>
+              <button class="btn theme-default-btn" type="button" id="themeBoxDefaultBtn">Default</button>
+            </div>
+          </div>
+          <div class="color-row" id="themeHighlightRow">
+            <div class="color-row-label"><b>Highlighter</b><small>The glow around the droid your mark keys have selected, and the ⌨ KEYS tag.</small></div>
+            <div class="theme-ctrls">
+              <input type="color" id="themeHighlightColor" value="#5ef2a6" aria-label="Highlighter color">
+              <button class="btn" type="button" id="themeHighlightBorderBtn" title="Each overlay glows in its own border color">Match border</button>
+              <button class="btn theme-default-btn" type="button" id="themeHighlightDefaultBtn">Default</button>
+            </div>
+          </div>
+          <div class="color-row" id="themeCardRow">
+            <div class="color-row-label"><b>Droid cards</b><small>Size of the name and status text, or Compact: icons only, so the lists fit more droids.</small></div>
+            <div class="theme-ctrls">
+              <input type="range" id="themeTextScale" min="0.8" max="1.4" step="0.05" value="1" aria-label="Card text size">
+              <span class="theme-alpha" id="themeTextScaleVal">100%</span>
+              <label class="compact-check"><input type="checkbox" id="themeCompactCheck"> Compact</label>
+              <button class="btn theme-default-btn" type="button" id="themeCardDefaultBtn">Default</button>
+            </div>
+          </div>
+          <div class="pos-actions" style="margin:6px 0 16px"><button class="btn" type="button" id="themeResetBtn">↺ Reset all colors</button></div>
+          <div class="kb-group-title">Border skins</div>
           <div class="color-row" data-color-key="border">
             <div class="color-row-label"><b>🎯 Current Rebirth Requirements</b><small>The HUD</small></div>
             <div class="color-swatches"></div>
@@ -1205,6 +1321,10 @@
           </div>
           <div class="color-row" data-color-key="critGuideBorder">
             <div class="color-row-label"><b>⚡ Optimal Crit Guide</b><small>Crystal-spend order + hit formula</small></div>
+            <div class="color-swatches"></div>
+          </div>
+          <div class="color-row" data-color-key="timersBorder">
+            <div class="color-row-label"><b>⏱ Timers</b><small>Tints the banner outlines and adds the emblem. ⊘ keeps the classic look.</small></div>
             <div class="color-swatches"></div>
           </div>
         </section>
@@ -1237,6 +1357,16 @@
             </div>
           </div>
           <div class="sync-box">
+            <div class="pos-title">📐 Banner layout</div>
+            <div class="pos-hint">The banners are only as big as their text. Pick the shape that fits a clear spot on your screen, then move them with Layout → ⏱ Timers.</div>
+            <div class="sync-row">
+              <button class="btn" type="button" data-timers-layout="row">▭▭▭▭ Row</button>
+              <button class="btn" type="button" data-timers-layout="grid">⊞ 2 × 2</button>
+              <button class="btn" type="button" data-timers-layout="column">☰ Column</button>
+            </div>
+            <label class="pos-slider"><span>Size: <b id="timersScaleVal">100%</b></span><input type="range" id="timersScaleRange" min="0.8" max="1.5" step="0.05" value="1"></label>
+          </div>
+          <div class="sync-box">
             <div class="pos-title">🔄 Sync mission timer</div>
             <div class="pos-hint">Type the mm:ss shown right now on the game's own "NEXT MISSION" banner, then click Sync. The correction is remembered between launches.</div>
             <div class="sync-row">
@@ -1246,7 +1376,7 @@
               <button class="btn" id="missionSyncBtn">🔄 Sync</button>
             </div>
           </div>
-          <div class="kb-group-title">Sound notifications (v1.10.2)</div>
+          <div class="kb-group-title">Sound notifications</div>
           <label style="display: block; padding: 8px 0;">
             <input type="checkbox" id="timerSoundEnabledCheckbox">
             Enable sound notifications when timers expire
@@ -1256,6 +1386,22 @@
               <span>Master Volume</span>
               <input type="range" id="timerSoundVolumeSlider" min="0.1" max="0.8" step="0.05" value="0.35">
               <span id="volumeDisplay" style="display: inline;">35%</span>
+            </div>
+            <!-- v1.13.0: one pick per timer (Stellar/Mythic/Kyber default to the Blueprints pick) + your own files -->
+            <div class="sound-grid">
+              <label for="missionSoundChoice">🎯 Mission</label><select class="sound-select" id="missionSoundChoice"></select><button class="btn sound-play" type="button" data-sound-for="missionSoundChoice" title="Preview">▶</button>
+              <label for="blueprintSoundChoice">✨ Blueprints</label><select class="sound-select" id="blueprintSoundChoice"></select><button class="btn sound-play" type="button" data-sound-for="blueprintSoundChoice" title="Preview">▶</button>
+              <label for="stellarSoundChoice">⭐ Stellar</label><select class="sound-select" id="stellarSoundChoice"></select><button class="btn sound-play" type="button" data-sound-for="stellarSoundChoice" title="Preview">▶</button>
+              <label for="mythicSoundChoice">🌌 Mythic</label><select class="sound-select" id="mythicSoundChoice"></select><button class="btn sound-play" type="button" data-sound-for="mythicSoundChoice" title="Preview">▶</button>
+              <label for="kyberSoundChoice">💎 Kyber</label><select class="sound-select" id="kyberSoundChoice"></select><button class="btn sound-play" type="button" data-sound-for="kyberSoundChoice" title="Preview">▶</button>
+            </div>
+            <p class="pos-hint" style="margin:6px 0 12px">Stellar, Mythic and Kyber use the Blueprints sound unless you give them their own.</p>
+            <div class="sync-box">
+              <div class="pos-title">🎵 Your sounds</div>
+              <div class="pos-hint">Any mp3, wav, ogg or m4a up to 5 MB. The app keeps its own copy and matches its loudness to the other alerts. Once added, pick it for any timer above.</div>
+              <div class="pos-hint"><b>Best length: about 1–5 seconds.</b> Longer clips are faded out at 8 seconds, and short ones don't pile up when two timers go off close together (Kyber on the hour and a Mission can land within seconds). A 5-second mp3 is usually well under 1 MB; if your file is bigger than 5 MB, trim it to the part you want first.</div>
+              <div class="custom-sound-list" id="customSoundList"></div>
+              <div class="sync-row"><button class="btn" type="button" id="customSoundAddBtn">＋ Add a sound file…</button></div>
             </div>
             <label style="display: block; cursor: pointer; font-weight: 600; padding: 8px 0;">
               <input type="checkbox" id="advancedSoundToggle">
@@ -1271,14 +1417,6 @@
                   <input type="range" id="missionSoundVolumeSlider" min="0.1" max="0.8" step="0.05" value="0.35">
                   <span id="missionVolumeDisplay" style="display: inline;">35%</span>
                 </div>
-                <label style="display: block; font-size: 12px; margin: 8px 0 0;">Sound:
-                  <select id="missionSoundChoice" style="margin-left: 4px;">
-                    <option value="off">Off</option>
-                    <option value="beep">Beep (800Hz)</option>
-                    <option value="boop">Boop (400Hz)</option>
-                    <option value="chime">Chime (900Hz)</option>
-                  </select>
-                </label>
               </div>
               <div style="margin: 10px 0;">
                 <label style="display: block; font-size: 11px; color: var(--text-dim); margin-bottom: 4px;">
@@ -1289,14 +1427,6 @@
                   <input type="range" id="blueprintSoundVolumeSlider" min="0.1" max="0.8" step="0.05" value="0.35">
                   <span id="blueprintVolumeDisplay" style="display: inline;">35%</span>
                 </div>
-                <label style="display: block; font-size: 12px; margin: 8px 0 0;">Sound:
-                  <select id="blueprintSoundChoice" style="margin-left: 4px;">
-                    <option value="off">Off</option>
-                    <option value="beep">Beep (800Hz)</option>
-                    <option value="boop">Boop (400Hz)</option>
-                    <option value="chime">Chime (900Hz)</option>
-                  </select>
-                </label>
               </div>
             </div>
           </div>
@@ -1305,8 +1435,8 @@
           <ul class="sched-list">
             <li><span class="sched-dot" style="--c:#e08a3c"></span><b>✨ Stellar Blueprint</b><span>every 30 min: 5min and 35min after hour</span></li>
             <li><span class="sched-dot" style="--c:#ff4d6d"></span><b>🌌 Mythic Blueprint</b><span>every hour at :55</span></li>
-            <li><span class="sched-dot" style="--c:#d0a0ff"></span><b>💎 Kyber Blueprint</b><span>[Schedule TBD — coming with game update]</span></li>
-            <li><span class="sched-dot" style="--c:#5ef2a6"></span><b>🎯 Mission</b><span>every 50 minutes: Stormtrooper → Fishing → D-0 → Mining</span></li>
+            <li><span class="sched-dot" style="--c:#50c878"></span><b>💎 Kyber Blueprint</b><span>every hour on the hour (every 5 min during launch events)</span></li>
+            <li><span class="sched-dot" style="--c:#5ef2a6"></span><b>🎯 Mission</b><span>every 35 minutes: Stormtrooper → Fishing → D-0 → Mining</span></li>
           </ul>
         </section>
 
@@ -1494,11 +1624,12 @@
         <span id="rsCalibRegionInfo" class="calib-region-info"></span>
         <button class="btn" id="rsCalibRedo">Redraw</button>
         <button class="btn on" id="rsCalibConfirm" disabled>Read it</button>
+        <button class="btn" id="rsCalibChangeScreen" hidden>🖥 Change screen</button>
         <button class="btn" id="rsCalibCancel">Cancel</button>
       </div>
     </div>
     <div class="rs-confirm" id="rsConfirmStep" style="display:none;">
-      <p>Detected <b>Rank <span id="rsDetectedRank"></span></b> for <b id="rsConfirmCycleLabel"></b>.</p>
+      <p>Detected <b>Rank <span id="rsDetectedRank"></span></b> for <b id="rsConfirmCycleLabel"></b><span id="rsScreenName"></span>.</p>
       <img id="rsReadPreview" class="rs-read-preview" alt="What the reader saw inside the box" style="display:none">
       <p id="rsReadText" class="rebirth-sub rs-read-text"></p>
       <p class="rebirth-sub">That means rebirths 1 through <span id="rsThroughLevel">?</span> are complete — every droid at those levels gets marked owned, and the current level is set to <span id="rsThroughLevel2">?</span>. Fix the number below first if it looks wrong.</p>
@@ -1507,6 +1638,7 @@
         <input type="number" id="rsManualRank" min="1" max="40">
         <button class="btn on" id="rsApply">Apply</button>
         <button class="btn" id="rsRecalib">Box was wrong — redraw</button>
+        <button class="btn" id="rsChangeScreen" hidden>🖥 Change screen</button>
         <button class="btn" id="rsCancelApply">Cancel</button>
       </div>
     </div>
@@ -2738,6 +2870,8 @@ document.getElementById('bgDimRange').addEventListener('change', async (e)=>{
 <script src="node_modules/tesseract.js/dist/tesseract.min.js"></script>
 <script src="rebirth-level-detect.js"></script>
 <script src="rebirth-screen-read.js"></script>
+<script src="sounds/good-news-data.js"></script>
+<script src="alert-sound.js"></script>
 <script src="overlay-controls.js"></script>
 <script src="settings-tabs.js"></script>
 <script src="guide.js"></script>

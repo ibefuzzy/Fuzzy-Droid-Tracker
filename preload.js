@@ -35,6 +35,24 @@ contextBridge.exposeInMainWorld('overlayAPI', {
   resizeOverlay: (phase, dx, dy) => ipcRenderer.send('overlay:resize', { phase, dx, dy }),
   getOverlayBaseSize: () => ipcRenderer.invoke('overlay:baseSize'), // -> {width, height} default size, or null
 
+  // v1.11.1: which list the rebirthMark* keys drive -> {target: 'rebirthReq'|'declutter'|'sneak'|null, contested}
+  getMarkTarget: () => ipcRenderer.invoke('markTarget:get'),
+  onMarkTargetChanged: (cb) => subscribe('markTarget:changed', cb),
+  // v1.11.1: timers.html sizes its window to the banners ({width, height} in px)
+  fitTimers: (size) => ipcRenderer.send('timers:fit', size),
+  // v1.11.1 Read Rebirth Screen: show the screen picker on the next capture
+  // (the choice is then saved again), and the in-game notice card
+  // (game-toast.html) — msg: {title, sub?, tone?: 'ok'|'warn'|'info', ms?}
+  changeCaptureScreen: () => ipcRenderer.invoke('capture:changeScreen'),
+  showGameToast: (msg) => ipcRenderer.send('toast:show', msg),
+  onGameToast: (cb) => subscribe('toast:show', cb),
+
+  // v1.13.0 own alert sounds: add (file dialog -> {ok, sound?, reason?}), remove
+  // (by id), read (-> base64 or null; alert-sound.js decodes it)
+  addCustomSound: () => ipcRenderer.invoke('sound:add'),
+  removeCustomSound: (id) => ipcRenderer.invoke('sound:remove', id),
+  readCustomSound: (id) => ipcRenderer.invoke('sound:read', id),
+
   // overlay settings (hotkey, opacity, position, visible, locked)
   getSettings: () => ipcRenderer.invoke('settings:get'),
   setSettings: (partial) => ipcRenderer.invoke('settings:set', partial),

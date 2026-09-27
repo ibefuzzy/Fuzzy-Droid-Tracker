@@ -12,8 +12,8 @@ short on purpose so a fresh session can read it in one pass.
   buildIndex, cycleCeilings, cycleLastNeededLevel, getUpcomingLevels,
   getDeclutterList, getSneakPreview, the ownership helpers (cycleCoveredCount,
   cycleDroidKeys, removeCycleMarks, decideOwnedUpdate, isValidImportPayload), and
-  (v1.10.0) BORDER_SKINS/BORDER_SKIN_ORDER/borderIconSvg (the per-overlay border
-  picker's 7 skins + emblem-icon renderer — replaces the old flat SABER_COLORS).
+  BORDER_SKINS/BORDER_SKIN_ORDER/BORDER_EMBLEMS/borderIconSvg (the 15 border
+  skins + emblem renderer) and THEME_PRESETS (v1.12.0 one-click themes).
   Loaded by tracker.html and every overlay (overlay.html, declutter.html,
   rebirth-requirements-overlay.html, sneak-preview.html, crit-guide-overlay.html).
 - `crit-guide-overlay.html` (v1.10.0) — the 5th overlay, ⚡ Optimal Crit Guide: a
@@ -54,6 +54,19 @@ short on purpose so a fresh session can read it in one pass.
 - `overlay-theme.css` / `overlay-theme.js` (v1.11.0) — the 5 droid overlays' shared
   look variables (`--ov-*`), corner resize grip and size-driven zoom. `overlay-drag.js`
   (v1.11.0) — every overlay window's drag bar (see the no-`-webkit-app-region` Rule).
+- `overlay-snap.js` (v1.11.1) — pure snap math (snapMove/snapResize) that main.js's
+  `overlay:drag`/`overlay:resize` handlers run; unit-tested in test/overlay-snap.test.js.
+  overlay-theme.js (v1.11.1) also applies the `theme*` colour settings and the mark-key
+  target (`<html data-mark-list>` pages; `data-ov-own-alpha` on the HUD).
+- `alert-sound.js` + `sounds/good-news-data.js` (v1.11.1) — `playGoodNews(volume)`, the
+  default timer sound ('goodnews'), used by timers.html and tracker.html's ▶ Play button.
+  The data file is base64 generated from `sounds/good-news-everyone.mp3` by
+  `node build-sound-data.js` (the mp3 and the script stay out of the exe). It's a
+  Futurama clip the user supplied; see the v1.11.1 status.
+- `game-toast.html` (v1.11.1) — the in-game notice card (main.js `showGameToast`, created
+  on first use; click-through, never focused, top-centre of the capture screen). Only
+  the tracker sends it (`toast:show`); rebirth-screen-read.js uses it while the tracker
+  isn't focused. Not an OVERLAY_WINDOWS entry: it never moves.
 - `build-kyber-card-icons.js` (v1.11.0, not in the exe) — regenerates card-icons-data.js's
   75 Kyber slots as transparent cut-outs from the local Droidex screenshots.
 - `release/` keeps only the current build's exe. No `src/` snapshot anymore.
@@ -86,17 +99,17 @@ short on purpose so a fresh session can read it in one pass.
   ownedRank and must listen. When adding a new store key that overlays can modify,
   add the listener to EVERY window that reads it. (No test guards this yet — an
   earlier note claimed a `STORE_LISTENER_REQUIRED_PAGES` check existed; it never did.)
-- The border picker (⚙ Overlay Settings → Borders, v1.10.0) is a curated
-  7-skin set (BORDER_SKINS in requirements.js: rebel/empire/jedi/mando/hunter/
-  tatooine/grogu), each hand-drawn CSS/SVG (glow outline + corner brackets +
-  emblem badge) rather than sourced art — deliberately, so it scales to every
-  overlay's own shape (wide HUD vs. narrow tall lists) with no distortion. This
-  replaced the old flat SABER_COLORS 6-swatch picker at the user's request
-  (they tried sourcing real image-frame assets first, decided this app's own
-  vector look was better). Still scoped to the 5 overlay windows only — the
-  toolbar, settings panel, Rebirth Reqs side panel and droid list stay a fixed
-  blue, not user-borderable. Don't expand past 7 or add sourced-image skins
-  without the user raising it again.
+- Border skins (⚙ Overlay Settings → Appearance; BORDER_SKINS/BORDER_SKIN_ORDER in
+  requirements.js) are 15 since v1.12.0: glow outline + corner brackets + emblem badge,
+  always VECTOR (never bitmaps) so they fit every overlay's shape. Faction emblems are
+  the real insignia as SVG paths in `BORDER_EMBLEMS` (Font Awesome Free CC BY 4.0 +
+  MDI Apache 2.0, credited in README → Credits; user-approved 2026-09-27 after
+  comparing them in the Preview Lab). hunter/tatooine/grogu stay hand-drawn in
+  borderIconSvg(). **Skin keys never change** (saved settings hold them).
+  `THEME_PRESETS` (same file) = one-click skin + theme* colours for all five
+  overlays. Try new skins/presets in `dev/skin-candidates.js` via the lab first.
+  Still scoped to the 5 overlay windows: the toolbar, settings panel, Rebirth Reqs
+  side panel and droid list stay a fixed blue.
 - **Never open/save any project file (JS/HTML, this repo's or the sibling
   web tracker's) without pinning `encoding='utf-8'` explicitly, especially
   from a Windows-side script.** Windows' default `open()` locale encoding is
@@ -144,7 +157,9 @@ short on purpose so a fresh session can read it in one pass.
   user closes the running app before launching a new build.
 
 ## Tests
-`npm test` runs Node's built-in test runner over `test/**/*.test.js` (67 tests).
+`npm test` runs Node's built-in test runner over `test/**/*.test.js` (89 tests;
+test/skins.test.js checks every skin/preset, test/appearance.test.js the looks and
+share codes).
 `test/helpers/load-shared.js` loads droid-data.js + requirements.js into an isolated vm
 context the same way a browser window does. Top-level let/const must be read with
 `run('NAME')`; functions are exposed directly (e.g. `s.cycleCoveredCount(...)`) — see
@@ -153,6 +168,39 @@ one to requirements.js, or tests can't reach it.
 `test/pages.test.js` guards: redeclaration (SyntaxError and silent shadowing), every
 element id a script looks up exists exactly once, and — as of v1.9.1 — every call
 site of a shared requirements.js function passes the right number of arguments.
+
+## Tools (added v1.10.13–v1.11.1): what to reach for
+
+- **Overlay Preview Lab** (`dev/overlay-lab.html`, dev-only, `!dev/**` keeps it out of the
+  exe): all five REAL overlay pages side by side in frames (srcdoc + `<base href="/">` +
+  a mock overlayAPI), fed fake progress (cycle 1, rebirth 22). Controls: theme presets,
+  border skin, Appearance colours, size 100–150%, game-like backdrops, and the KEYS tag.
+  Candidate skins/presets live in `dev/skin-candidates.js` and are patched into each
+  frame's BORDER_SKINS/borderIconSvg, so skins can be judged before they're in the app.
+  Real Star Wars insignia (Font Awesome Free brands CC BY 4.0, MDI Apache 2.0) are
+  cached in `dev/emblems-data.js` by `node dev/fetch-emblems.js` (Iconify API). Open:
+  `node test/helpers/static-server.js 5179` -> http://localhost:5179/dev/overlay-lab.html
+  (launch.json "tracker-static-alt"). Use it for any look change instead of hand-mocking.
+  Gotcha: a literal `</script>` inside an inline script's string ends the block; write `<\/script>`.
+
+- **Rebuild the Kyber card icons:** `node build-kyber-card-icons.js`. Use it when Kyber
+  art changes or the game adds a droid. It needs the LOCAL-ONLY folders
+  `droidex-card-screenshots/KYBER/` (6 in-game Droidex screenshots) and
+  `droid-cards/rebirth/<VARIANT>/` (from `extract-droid-cards.js`), and rewrites ONLY the
+  75 Kyber slots of `card-icons-data.js`. Back that file up first, then eyeball a
+  contact sheet (recipe in COMMON_TASKS.md → "Regenerating Kyber card icons").
+- **Prove a CSS refactor changes nothing:** snapshot every element's computed style
+  before, edit, snapshot after, diff (recipe in TEST_WITHOUT_ELECTRON.md → "Computed-style
+  parity"). Used to prove v1.11.0's theme refactor was pixel-identical (853 elements).
+- **Before any release, diff local vs GitHub `main`** by git blob SHA and upload only the
+  mismatches, one upload page per folder (recipe + script in COMMON_TASKS.md → Building &
+  Releasing). v1.10.10–v1.10.12 shipped without their source reaching `main`.
+- **Drive an overlay in the browser:** mock `window.overlayAPI` (a Proxy that no-ops
+  anything unmocked), capture the `on*` callbacks, and call them to fake hotkeys, store
+  and settings broadcasts (TEST_WITHOUT_ELECTRON.md → "Driving an Overlay's Hotkeys").
+- **Moving/resizing overlays:** only through `overlay-drag.js` / overlay-theme.js's grip,
+  never `-webkit-app-region` (see Rules). Real window moves can't be tested in the
+  browser, so the user tests those on their 2-monitor setup.
 
 ## Smoke-testing a page without Electron
 `node test/helpers/static-server.js 5178` serves the project root; open
@@ -169,7 +217,130 @@ plumbing, since it reads no droid/cycle data at all). The tracker itself still
 works normally outside Electron via a localStorage fallback (real progress in
 userData is never touched).
 
-## Current status (2026-09-27): v1.11.0 — overlay rehaul part 1 (resize + zoom), released
+## Current status (2026-09-27): v1.13.0 — own looks, per-overlay colours, compact cards, own sounds; awaiting user test
+
+v1.12.0 was user-approved (snapshot `_backup_v1.12.0_approved/`; its exe stays in release\).
+The user asked for ideas 1, 2, 4, 5 and 6 (not the preset-cycling hotkey), with the rule
+"don't lose progress or hurt stability". Everything is settings-only and defaults to
+today's look.
+- **Looks** (requirements.js "APPEARANCE"): THEME_KEYS (+themeCompact, themeTextScale),
+  DEFAULT_BORDERS (+timersBorder null), `overlayThemes` per-overlay overrides,
+  sanitizeLook (every untrusted look goes through it), lookFromSettings/lookToSettings,
+  presetToLook, looksEqual, effectiveTheme(settings, overlayName), and share codes
+  encodeLookCode/decodeLookCode ("FDT1." + base64 JSON, UTF-8 safe, never throws).
+  Each overlay page has `<html data-ov-name>`; overlay-theme.js applies its effective
+  theme (`html.ov-compact`, `--ov-text-scale`, used by each page's .d-name/.d-owned).
+- **Tracker** (overlay-controls.js): "Edit colors for" target (setTheme writes the
+  global keys or overlayThemes[target]); saved looks = settings.customPresets
+  [{name, look}] (save/⧉ share/✕/import); a Timers border-skin row with ⊘ none.
+  **Batching rule:** setSettingsNow() folds in any batched edit and flushes, and
+  applyLook/reset discard the batch. Otherwise a 120 ms-delayed save could land after
+  an immediate one and undo it (found in browser testing, fixed).
+- **Timers** load droid-data.js + requirements.js now: backdrop via
+  `--t-backdrop-*`, skin via `body.skinned` + `#timersBadge`. Each event colour stays.
+- **Sounds:** alert-sound.js `playAlert(choice, volume, readCustom)` does tones,
+  goodnews and 'custom:<id>'. Any clip is auto-levelled (loud-window RMS -> 0.245;
+  Good news comes out at the old x8), capped at 8 s with a fade, and measured on its
+  first 8 s only. main.js `sound:add/remove/read` copies files into
+  userData/custom-sounds (5 MB, 20 max, id-only paths). Stellar/Mythic/Kyber
+  choices are null = Blueprints. timers.html falls back to goodnews if a file fails.
+  The UI note recommends 1–5 s clips (user asked for guidance).
+- `.ignore` makes ripgrep skip `_backup*/` and `release/` (it's excluded from the exe).
+Verified: 89/89 tests (test/appearance.test.js covers hostile share codes); lab
+(6 frames incl. timers; presets, compact, text size); tracker mock (per-overlay
+edits, save/share/import, sounds add/pick/preview/remove, the race fixes).
+
+## Status (2026-09-27): v1.12.0 — Phase 4 (insignia skins + theme presets), user-approved
+
+package.json is 1.12.0; the approved 1.11.1 exe stays in `release\` and its source in
+`_backup_v1.11.1_approved/`, so either can be released. Built after the user compared
+the candidates in the new Overlay Preview Lab and said "do em all":
+- Rebel/Empire/Jedi/Mando emblems -> real insignia (same keys and colours). Eight new
+  skins: sith, firstorder, republic, oldrepublic, senate, tradefed, deathstar,
+  jedicrest. Ten THEME_PRESETS plus "Default look", shown as a Presets grid at the top
+  of the Appearance tab (overlay-controls.js; one setSettings call sets all five
+  border keys + theme*; the active preset = the one exactly matching the settings).
+- User follow-up ("we lost our grogu one"): Grogu's hand-drawn emblem was redrawn as
+  Baby Yoda (ears, eyes, robe collar; still key 'grogu'), and a Grogu preset was
+  added (11 presets + Default look). The Iconify cbi:grogu was rejected: CC BY-NC-SA,
+  and mush at badge size.
+- Swatch rows wrap to 2 rows (8+7). README gained a Credits section (Font Awesome
+  CC BY 4.0 attribution, MDI Apache 2.0, a Lucasfilm trademark/unofficial note) and
+  File map entries for the v1.11.x files.
+- Verified: 80/80 tests; lab (15 skins, presets dress all 5 frames); tracker
+  Appearance tab with mock (preset apply/active/tweak/default, swatch wrap).
+- Before a public release: the user decides on the Futurama clip AND the Star Wars
+  insignia (trademarks; artwork licence is fine).
+
+## Status (2026-09-27): v1.11.1 — user-approved, saved, awaiting release
+
+**User-tested and approved** (every feature below, incl. the in-game Read Rebirth Screen
+flow): "this will definitely be in the next release." Snapshot of the approved source:
+`_backup_v1.11.1_approved/` (root files + test/ + sounds/ + mission-icons/ + .claude/).
+Final exe SHA256 A16F9B9D324EDAA12FBD2F67F601BE6BF67E1BBC46B9B06B2DB647B56DD1D28D,
+66.66 MB. NOT pushed to GitHub yet. Still open before release: the mp3 copyright call,
+and the push-source-first flow.
+**Exe slimmed 94 → 67 MB:** package.json build.files now also excludes the 48 root
+`DROID IMAGES*.png` source screenshots (27.5 MB), `_backup*/**`, root `*.md`, and the
+build logs and old helpers. app.asar went 38.6 → 7.6 MB, with no runtime file removed
+(diffed the asar listings). The portable exe unpacks all of it on every launch, so this
+also speeds up startup. **Rule: any new non-runtime file in the project root needs a
+build.files exclusion.**
+
+Built unattended from the user's list (plan: `~/.claude/plans/wild-spinning-abelson.md`).
+- **Appearance tab** (Phase 3, was Borders; ids `setTab-borders`/`setPane-borders` kept):
+  `themeBackdrop/-Alpha`, `themeBox/-Alpha`, `themeHighlight` ('#rrggbb' | 'border' |
+  null). null = today's look everywhere. Decisions taken: the HUD keeps its own `opacity`
+  (so `themeBackdropAlpha` skips it); highlight defaults stay per overlay (HUD green, Reqs
+  purple, the rest border) until the user picks one; one global theme, no per-overlay yet.
+- **Mark-key switch:** `markTarget` ('rebirthReq' default, persisted) + `markTargetHotkey`
+  (unbound). Replaced most-recently-shown routing (`markListOrder` is gone). Channel
+  `markTarget:changed {target, contested}`; non-target lists hide their selection glow,
+  and the target shows a ⌨ KEYS chip while 2+ lists are open.
+- **Snapping:** drag snaps edges (12px) to visible overlays + work area; resize snaps
+  edges and droid-overlay sizes. `overlaySnap`/`overlaySnapSize` checkboxes in Layout.
+- **Compact timers:** banners sized to text, equal-width grid, `timersLayout`
+  row/grid/column, `timersScale` 0.8–1.5 (transform). timers.html sends `timers:fit`
+  and main.js sizes the window (top-left anchored); reset keeps the fitted size.
+- **Sound:** 'goodnews' clip, the new default; `migrateSoundDefault()` moves an old
+  default 'beep' once (`soundDefaultVersion`). Plays once. The user found it too quiet:
+  the clip is speech at about -30 dB vs the tones' -12 dB at 35%. So alert-sound.js
+  boosts ×8 into a compressor (-10 dB), scales by volume/0.35, then limits (-3 dB).
+  Measured offline: -22.5/-11.9/-9.9 dB at 10/35/80% vs tones -23/-12.1/-4.9, with
+  peaks ≤1.01. That's level with the tones up to the default and gentler above, as the
+  user asked ("not too crazy loud"). The clip is decoded from base64 because Web Audio
+  on a file:// `<audio>` may be treated as cross-origin and output silence.
+  **Copyright:** it's a Futurama clip. Ask the user before pushing it to the public
+  repo or attaching it to a public release exe.
+- Also fixed: the Timers tab's stale schedule readout (Kyber TBD, mission "50 min") and
+  the README's Galactic-era timer section.
+- **Read Rebirth Screen from in-game** (user request after testing the above; still
+  1.11.1): main.js's display-media handler reuses `settings.captureDisplayId` (saved on
+  every picker choice) and shows the picker only when `forceScreenPicker` is set by
+  `capture:changeScreen` (the 🖥 Change screen buttons). New unbound hotkeys
+  `rebirthScreenApplyHotkey`/`rebirthScreenCancelHotkey` go to the tracker only. In
+  rebirth-screen-read.js, `session` (bumped by closeAll) drops any read cancelled
+  mid-flight, including while the capture is still starting. `applying` stops a double
+  Apply. getDisplayMedia errors are toasts now, not alert(): a blocked alert stalled
+  the hotkeys. Browser-verified with a fake "Rank 27" capture stream: OCR 96%,
+  apply-once, cancel mid-start, change screen, key hints. Real-app verified over CDP
+  (isolated profile, the user's 2 monitors): the picker appears once and the pick is
+  saved; the next capture skips it; change screen brings it back; cancelling keeps the
+  saved screen; the notice shows at 720,108 480x92 and hides on time.
+  **Smoke-test rule:** stop test instances by their `--user-data-dir` in the command
+  line (Win32_Process), never by exe path. The user may run the app from
+  `release\win-unpacked` too.
+Verified: 75/75 tests; browser (mock overlayAPI) for timers layouts/scale/fit, Safe to
+Retire mark chip + theme vars + reset, the tracker's Appearance/Layout/Timers controls,
+and mp3 decode. Also smoke-launched the built app with an isolated `--user-data-dir`
+(+ `--remote-debugging-port`, scratch `cdp-eval.js`): no startup errors, the sound
+migration ran, and the timers window really fits (row 559 wide, 2x2 283x84, 150% 838x68).
+**Windows keeps a frameless window at least 64px tall**, so the 1-row timers window is
+559x64 with the banners in the top 45px (transparent, click-through). Only effect: an
+overlay snapped right under it sits 19px lower. NOT verified: real drag snapping, the
+global switch hotkey, sound on expiry. Those need the user's test.
+
+## Status (2026-09-27): v1.11.0 — overlay rehaul part 1 (resize + zoom), released
 
 Built during development as "v1.10.14"; the user promoted it to **v1.11.0** for release
 (user-tested: resize, zoom, Kyber icons, monitor-edge fix all confirmed working).
@@ -215,7 +386,7 @@ User goal: overlays that look nicer and are customizable. Agreed plan, in phases
    (DEFAULT/GOLD/BESKAR/GALACTIC/STELLAR; DIAMOND/RAINBOW have sparkle backdrops) plus a
    per-rarity-class backdrop; only the Kyber slots are rewritten. KX (black droid on a black
    card) is the weakest result.
-3. **NEXT — v1.11.1 (bump package.json to 1.11.1 first):** Appearance tab in ⚙ Overlay
+3. **Done in v1.11.1 (see the status above):** Appearance tab in ⚙ Overlay
    Settings (the Borders tab grows into it) — backdrop / box / highlighter color pickers,
    each with opacity, ONE global theme (settings → the `--ov-*` variables via
    overlay-theme.js), per-overlay overrides later. "Backdrop" = the dark panel behind the
@@ -271,7 +442,8 @@ Setting `declutterShowRetired` (default true) hides them; flipped by the
 generic `toggleDeclutterTier()` flag flip. While hidden, `#retiredTag` shows
 "N retired hidden".
 
-**Key routing:** rebirthMark* hotkeys are no longer broadcast. main.js
+**Key routing** (the most-recently-shown rule below was replaced by `markTarget`
+in v1.11.1): rebirthMark* hotkeys are no longer broadcast. main.js
 `sendToMarkList()` sends them to ONE visible window among Rebirth Reqs /
 Sneak Preview / Safe to Retire, most-recently-shown wins (`markListOrder`,
 updated by `noteMarkListShown()` in each `setXVisible`; startup order puts

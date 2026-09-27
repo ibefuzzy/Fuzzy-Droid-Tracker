@@ -142,6 +142,21 @@ also ask you to redraw automatically if your screen resolution changes
 (a different monitor, a different in-game resolution) since the old box
 wouldn't line up with the new pixels anymore.
 
+**Never leave the game (v1.11.1).**
+- **Your screen is remembered.** With two or more monitors, the "Choose a screen"
+  picker only appears the first time. The screen you pick is reused by every read
+  after that (and by Live Detect / Rebirth Level Detect). The reader says which screen
+  it read ("… for Cycle 2 on Screen 1"). **🖥 Change screen** in the reader brings the
+  picker back and remembers the new choice. Cancelling the picker keeps the old one.
+- **Apply or cancel from the game.** Two new hotkeys under ⚙ Keybinds → Quick actions,
+  unbound until you set them: **📸 Apply the reading** (same as the Apply button) and
+  **📸 Cancel the reading** (closes the reader, changes nothing).
+- **See the result in-game.** While the app isn't the focused window, a small notice
+  pops up at the top of the game's screen with the rank it read, how sure it is, and
+  your Apply/Cancel keys. After Apply it confirms what was caught up, and it tells you
+  when a finished cycle is waiting for you in the app. The notice is click-through and
+  never takes focus from the game.
+
 ## Diagonal split colors — owned vs. required
 
 In the **Rebirth Reqs** panel and on the overlay's droid chips, each badge/
@@ -208,7 +223,7 @@ tracker; it doesn't touch the rebirth-level counter from **📸 Read Rebirth
 Screen** or **Manual** above, since that's reading the game's own
 on-screen counter and will pick up your actual in-game rebirth on its own.
 
-## ⏱ Timer banners (Stellar / Mythic / Galactic / Mission countdowns)
+## ⏱ Timer banners (Stellar / Mythic / Kyber / Mission countdowns)
 
 A separate always-on-top strip near the top of the screen showing a live
 countdown to each of the game's recurring events. This one **never reads
@@ -216,13 +231,13 @@ the screen at all** — it's pure system-clock math (today's date/time vs.
 each event's known schedule), so there's nothing here to calibrate or
 misread, ever:
 
-- **✨ Stellar Blueprint** — every hour, on the hour exactly (1:00, 2:00,
-  3:00, ...).
+- **✨ Stellar Blueprint** — every 30 minutes, at :05 and :35 past the hour.
 - **🌌 Mythic Blueprint** — every hour, at :55 (1:55, 2:55, 3:55, ...).
-- **🪐 Galactic Blueprint** — every 30 minutes, at :15 and :45 past the hour.
-- **🎯 Mission** — every 50 minutes (a 45-minute countdown plus a 5-minute
-  window where the mission stays active/live before the next countdown can
-  start), and also names which mission is coming up next: the four known
+- **💎 Kyber Blueprint** — every hour, on the hour (every 5 minutes during
+  launch events). The Galactic timer was retired in v1.10.5 with the game's
+  own change.
+- **🎯 Mission** — every 35 minutes, and also names which mission is coming
+  up next: the four known
   missions (**Stormtrooper → Fishing → D-0 → Mining**) repeat in that fixed
   order forever. This cycle is verified to never drift, no matter how long
   the app stays open, how many missions have passed, or what day it is —
@@ -239,7 +254,7 @@ locked, so it never steals a click meant for the game.
 
 ### 🔄 Sync mission timer — for exact precision
 
-The Mission countdown's 50-minute schedule above is a best-guess baseline,
+The Mission countdown's 35-minute schedule above is a best-guess baseline,
 and small real-world drift is still possible. Rather than chase ever-finer
 manual corrections, **⚙ Overlay
 Settings → Sync mission timer** lets you lock it to the real thing exactly:
@@ -257,11 +272,11 @@ schedule rather than to whatever moment you happened to sync at.
 ### Look & feel
 
 Each banner shows a small icon badge — a sparkle for Stellar, a faceted gem
-for Mythic, a ringed planet for Galactic, a radar sweep for Mission — in a
-colored circular badge with a soft tinted glow, using each event's own
-color from this game's own rarity palette (the same orange/red/purple
-family already used for the Stellar/Mythic/Galactic colorway tiers
-elsewhere in this app). **This sandbox has no network access to actually
+for Mythic, a crystal for Kyber, the upcoming mission's own icon for Mission —
+in a colored circular badge with a soft tinted glow, using each event's own
+color from this game's own rarity palette. Since v1.11.1 each banner is only
+as big as its text, and the shape (row, 2 × 2 or column) and size are set
+under ⚙ Overlay Settings → Timers. **This sandbox has no network access to actually
 download real extracted game art** (confirmed by testing — `npm install`
 of an image-processing package and direct image downloads both failed with
 403s — not just assumed), so these are original icons drawn to match the
@@ -392,7 +407,84 @@ it can be corrected.
 - **Kyber droid icons** are now clean transparent cut-outs like every other colorway.
   Leftovers of the in-game "PREVIEW" banner, the card frame and the colored card glow are
   gone.
-- Coming next (v1.11.1): pick your own backdrop, box and highlighter colors.
+## 🎛 Your own looks, per-overlay colors, compact cards & your own alert sounds (v1.13.0)
+
+Everything here starts switched off, so the app looks and sounds exactly as before
+until you change something. None of it touches your progress (only settings).
+
+- **Save your own looks.** Under ⚙ Overlay Settings → Appearance → Presets, name the
+  current look and hit **💾 Save current look**. It joins the presets and saves every
+  border skin and color, including per-overlay ones. **⧉** copies a share code
+  (it starts with `FDT1.`) that a friend pastes into **⬇ Import**. Imported codes can
+  only set real skins and valid colors; anything else in them is ignored.
+- **Per-overlay colors.** **Edit colors for** picks one overlay (or the timers) and
+  gives it its own colors on top of the all-overlays ones. **Default** on a row makes
+  it follow All overlays again, and **↺ Reset this overlay** clears all of its own.
+- **Droid cards.** A text-size slider for the droid names and status lines (80–140%),
+  and **Compact**: icons only, so the lists fit more droids per row. Set it for every
+  overlay, or for just one (Compact on Safe to Retire only, for example). Marked and
+  retired droids still show on the icon itself.
+- **The timers join the theme.** They take the backdrop color, and a border skin
+  (Appearance → Border skins → ⏱ Timers, or any preset) tints their outlines and puts
+  the emblem on top. Each timer's own color stays, so you can still tell them apart.
+  ⊘ keeps the classic look.
+- **Your own alert sounds.** Under ⚙ Timers → 🎵 Your sounds, **＋ Add a sound file…**
+  (mp3, wav, ogg or m4a, up to 5 MB). The app keeps its own copy, so moving the
+  original is fine, and it matches the loudness to the other alerts. **Best length:
+  about 1–5 seconds**, because anything longer fades out at 8 seconds. Then pick it
+  for any timer: Mission, Blueprints, or Stellar / Mythic / Kyber individually (they
+  follow Blueprints unless you choose), with ▶ to preview each. A file that won't play
+  falls back to Good news so you never miss an alert.
+
+## 🛡 Real Star Wars insignia & one-click themes (v1.12.0)
+
+- **Real insignia.** Rebel, Empire, Jedi and Mandalorian now wear the actual faction
+  insignia instead of hand-drawn stand-ins (your chosen skins carry over).
+- **Eight new border skins:** Sith, First Order, Galactic Republic, Old Republic,
+  Galactic Senate, Trade Federation, Death Star and Jedi Crest. That's 15 in all.
+- **Grogu got a proper Baby Yoda emblem** (wide ears, big eyes, robe collar) and a
+  Grogu theme of his own.
+- **Theme presets:** one click at the top of ⚙ Overlay Settings → Appearance dresses
+  every overlay in a matching skin and colors (Rebel Alliance, Galactic Empire, Jedi
+  Order, Sith, and more). See **🛡 Overlay Borders** below for the full list, and
+  **Credits** for where the insignia come from.
+- **Smaller download.** The exe dropped from about 94 MB to 67 MB, because unused
+  screenshots and backups no longer ship inside it, and it starts up faster too.
+
+## 🎨 Colors, snapping, mark-key switch & compact timers (v1.11.1)
+
+- **Pick your own overlay colors.** The Borders tab in ⚙ Overlay Settings is now
+  **🎨 Appearance**. Above the border skins you can set a **Backdrop** (the dark panel
+  behind the droids), **Droid boxes** (the tile behind each icon) and a **Highlighter**
+  (the glow around the droid your mark keys have selected). Backdrop and boxes each have
+  an opacity slider. One theme covers all five droid overlays and changes live.
+  **Default** puts one color back and **↺ Reset all colors** puts them all back. Until you
+  pick something, every overlay looks exactly as before. The Highlighter's **Match
+  border** makes each overlay glow in its own border color. The HUD keeps its own
+  opacity slider under Layout.
+- **Mark keys no longer fight when two lists are open.** With Rebirth Requirements and
+  Safe to Retire (or Sneak Preview) open together, the 🧬🔮♻ mark and navigate keys drive
+  **one** list: Rebirth Requirements by default. Only that list shows the selection glow,
+  and it wears a small **⌨ KEYS** tag. The new **⇄ Switch lists** hotkey (Keybinds → Mark
+  droids, unbound until you set it) moves the keys to the next open list. Your choice is
+  remembered. With only one list open, the keys simply go to it.
+- **Overlays snap together.** Drag one near another and it snaps flush against it (side
+  by side or stacked, with the edges lined up), or against the screen edge. Resizing snaps
+  to another droid overlay's width and height, so two lists can be exactly the same size.
+  Both can be turned off at the top of ⚙ Overlay Settings → Layout.
+- **Smaller timer banners.** Each banner is now only as big as its text, and the timers
+  window shrinks to fit, so it covers far less of the top of the screen. Under ⚙ Overlay
+  Settings → Timers, pick a **Row**, **2 × 2** or **Column** shape and a size from 80% to
+  150%, then move them to a clear spot.
+- **"Good news, everyone!"** is now a timer alert sound, and the new default. If you'd
+  left your sound on the old default (Beep), it switches over once. Any other choice you
+  made is kept. Pick a sound per timer group under ⚙ Timers → Per-timer custom volumes,
+  and hear it with **▶ Play** there. The clip is levelled to match the beep/boop/chime
+  tones at the same volume setting, and it's held a little gentler near the top of the
+  volume slider so it never gets harsh.
+- **📸 Read Rebirth Screen without alt-tabbing.** It remembers which screen to read
+  (**🖥 Change screen** picks again), has optional Apply / Cancel hotkeys, and shows the
+  rank it read in a notice over the game. See **📸 Read Rebirth Screen** above.
 
 ## 🧬 Rebirth Requirements overlay
 
@@ -523,31 +615,48 @@ that block on demand (remembered across restarts); purchase rows are also a
 little bigger and easier to read. Hiding the info box roughly a third more
 rows fit on screen at once.
 
-## 🛡 Overlay Borders (v1.10.0, replaces the per-overlay Colors tab)
+## 🛡 Overlay Borders (v1.10.0; real insignia + theme presets in v1.12.0)
 
-Each of the five in-game overlays now picks a full illustrated **border
+Each of the five in-game overlays picks a full illustrated **border
 skin** instead of a flat saber color — a glowing outline, corner brackets,
 and a small emblem badge straddling the top edge. Pick one per overlay in
-**⚙ Overlay Settings → Borders**, seven to choose from:
+**⚙ Overlay Settings → Appearance** (called Borders before v1.11.1). There are 15:
 
 | Skin | Color | Emblem |
 |---|---|---|
-| Rebel | red | starbird |
-| Empire | silver | imperial crest |
-| Jedi | blue | winged emblem |
-| Mandalorian | tan | Mythosaur skull |
+| Rebel | red | Rebel Alliance starbird (real insignia since v1.12.0) |
+| Empire | silver | Galactic Empire cog (real insignia since v1.12.0) |
+| Jedi | blue | Jedi Order symbol (real insignia since v1.12.0) |
+| Mandalorian | tan | Mythosaur skull (real insignia since v1.12.0) |
 | Bounty Hunter | crimson | T-visor helmet |
 | Tatooine | orange | twin suns |
-| Grogu | green | — the newest addition |
+| Grogu | green | Baby Yoda (redrawn in v1.12.0) |
+| Sith *(v1.12.0)* | blood red | Sith insignia |
+| First Order *(v1.12.0)* | white | First Order insignia |
+| Galactic Republic *(v1.12.0)* | red | Republic cog |
+| Old Republic *(v1.12.0)* | gold | Old Republic emblem |
+| Galactic Senate *(v1.12.0)* | violet | Senate emblem |
+| Trade Federation *(v1.12.0)* | bronze | Trade Federation emblem |
+| Death Star *(v1.12.0)* | steel | Death Star |
+| Jedi Crest *(v1.12.0)* | green | Jedi crest |
+
+**🎨 Theme presets (v1.12.0).** The top of the Appearance tab has one-click
+presets that dress every overlay at once, with the border skin and matching
+colors together: **Rebel Alliance, Galactic Empire, Jedi Order, Sith,
+Mandalorian, Grogu, First Order, Galactic Republic, Trade Federation, Death
+Star, Tatooine**, plus **Default look** to put everything back. Tweak any color
+afterwards, and the preset simply stops being highlighted. Your saved skins
+carry over from earlier versions.
 
 Defaults: Jedi for 🎯 Upcoming RB Req's (the HUD), Grogu for ♻ Safe to
 Retire, Mandalorian for 🧬 Rebirth Requirements, Rebel for 🔮 Sneak Preview,
 Tatooine for ⚡ Optimal Crit Guide. Applies live — no restart needed.
 
-Every emblem is hand-drawn CSS/SVG rather than sourced art, specifically so
-it scales cleanly to each overlay's own shape (the wide HUD, the narrow tall
-lists) with no distortion or 9-slicing needed — a fixed-aspect image would
-have squashed badly on the narrower overlays. The toolbar, settings panel,
+Every emblem is vector art (SVG), never a bitmap, specifically so it scales
+cleanly to each overlay's own shape (the wide HUD, the narrow tall lists)
+with no distortion or 9-slicing needed — a fixed-aspect image would have
+squashed badly on the narrower overlays. Bounty Hunter, Tatooine and Grogu
+are hand-drawn; the faction insignia come from Font Awesome (see Credits). The toolbar, settings panel,
 Rebirth Reqs side panel and droid list stay blue, unchanged; this is still a
 per-overlay-window thing, not a whole-app recolor.
 
@@ -610,7 +719,7 @@ changeable from **⚙ Overlay Settings**:
 |---|---|---|
 | Hide All Overlays | Turns every overlay off — one-way only, never toggles back on | `Ctrl+Shift+1` |
 | Toggle Current Rebirth Requirements | Show/hide the rebirth-requirements HUD | `Ctrl+Shift+3` |
-| Toggle Timers | Show/hide the Stellar/Mythic/Galactic/Mission banners | `Alt+Shift+T` |
+| Toggle Timers | Show/hide the Stellar/Mythic/Kyber/Mission banners | `Alt+Shift+T` |
 | Toggle Hotkey List | Show/hide this reference card | `Ctrl+Shift+2` |
 | Toggle Declutter List | Show/hide the ♻ safe-to-retire droid list | `Ctrl+Shift+4` |
 | Toggle Rebirth Requirements | Show/hide the 🧬 still-needed overlay | `Ctrl+Shift+5` |
@@ -622,8 +731,10 @@ changeable from **⚙ Overlay Settings**:
 | Scroll Crit Guide Up / Down | Same, for the Optimal Crit Guide overlay | *(unbound)* |
 | Tier Filter: Toggle All Tiers | Shows all five rarity tiers if any is hidden, otherwise hides all — in both Safe to Retire and Rebirth Requirements | *(unbound)* |
 | Tier Filter: Toggle Default / Rare / Epic / Legendary / Mythic | Show or hide that one tier in both the Safe to Retire and Rebirth Requirements overlays | *(unbound, one each)* |
+| Switch Mark Keys to the Next Open List | With two or more of 🧬 Rebirth Requirements / ♻ Safe to Retire / 🔮 Sneak Preview open, moves the mark & navigate keys to the next one (v1.11.1) | *(unbound)* |
+| Read Rebirth Screen: Apply / Cancel | Accept the rank it just read, or close the reader without changing anything (v1.11.1) | *(unbound, one each)* |
 
-The fourteen unbound hotkeys above ship with no key combo on purpose (see the convention note in `main.js`): they only appear on the on-screen hotkey list once you've set them.
+The seventeen unbound hotkeys above ship with no key combo on purpose (see the convention note in `main.js`): they only appear on the on-screen hotkey list once you've set them.
 
 The read-button hotkey doesn't do anything new under the hood — pressing it
 just clicks the real toolbar button for you, so the exact same
@@ -640,14 +751,16 @@ out of a small hilt, each tab with its own blade color:
   overlays, List scrolling and Tier filter. There's a search box that matches
   names, descriptions and current key combos. Unbound hotkeys show as dashed
   keys, and the tab shows how many are bound, like `7/21`.
-- **🧭 Layout** (green): one card per overlay with its 🎯 Drag into place and
-  ↺ Reset buttons. The HUD's card also holds its opacity slider.
-- **🛡 Borders** (red, was **🎨 Colors**): one row per overlay, seven
-  illustrated border skins to pick from — see **🛡 Overlay Borders** above.
+- **🧭 Layout** (green): the snap / match-size switches (v1.11.1), then one
+  card per overlay with its 🎯 Drag into place and ↺ Reset buttons. The HUD's
+  card also holds its opacity slider.
+- **🎨 Appearance** (red; **🛡 Borders** until v1.11.1): the overlay colors,
+  then one row per overlay with seven illustrated border skins — see
+  **🛡 Overlay Borders** above.
 - **🔎 Filters** (purple): the shared tier filter for Safe to Retire and
   Rebirth Requirements.
-- **⏱ Timers** (yellow): the mission-timer sync, plus a readout of every
-  banner's schedule.
+- **⏱ Timers** (yellow): banner shape and size (v1.11.1), the mission-timer
+  sync, sounds, plus a readout of every banner's schedule.
 
 The app remembers which tab you had open. The console is translucent, so a
 custom 🖼 Background still shows through it. Every control works exactly as
@@ -789,6 +902,17 @@ and testing everything above:
 - The overlay is click-through by default — your clicks always reach the
   game, never the HUD. Only reposition mode is briefly interactive.
 
+## Credits
+
+- Faction insignia on the border skins (Rebel, Empire, Jedi, Mandalorian, Sith,
+  First Order, Galactic Republic, Old Republic, Galactic Senate, Trade Federation,
+  Jedi Crest): [Font Awesome Free](https://fontawesome.com) by Fonticons, Inc.,
+  [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), used as SVG paths.
+- Death Star emblem: [Material Design Icons](https://pictogrammers.com/library/mdi/),
+  Apache License 2.0.
+- Star Wars and its insignia are trademarks of Lucasfilm Ltd. This is an unofficial
+  fan-made tool, not affiliated with or endorsed by Lucasfilm, Disney or Epic Games.
+
 ## File map
 
 - `main.js` — Electron main process: all eight windows (tracker, HUD,
@@ -819,6 +943,15 @@ and testing everything above:
   declutter.html, rebirth-requirements-overlay.html, sneak-preview.html and
   crit-guide-overlay.html.
 - `preload.js` — the only bridge between the pages and Node/IPC.
+- `overlay-theme.css` / `overlay-theme.js` — the droid overlays' shared look:
+  theme colors, the corner resize grip and zoom, and the ⌨ KEYS mark-key tag.
+- `overlay-drag.js` / `overlay-snap.js` — moving overlays (always wholly on one
+  monitor) and the snap / match-size math.
+- `game-toast.html` — the click-through in-game notice (Read Rebirth Screen results).
+- `alert-sound.js` + `sounds/good-news-data.js` — the levelled "Good news, everyone!"
+  timer alert.
+- `dev/overlay-lab.html` — dev-only Overlay Preview Lab (not in the exe): every
+  overlay side by side with fake progress, to try skins, presets and colors.
 - `tracker.html` — your original tracker, functionally unchanged, plus the
   Overlay toolbar controls, the always-visible Manual rebirth-level stepper,
   and Read Rebirth Screen. (Rebirth Level Detect's old button/strip markup
