@@ -60,7 +60,9 @@
     if(typeof Tesseract === 'undefined'){ workerFailed = true; return null; }
     try{
       worker = await Tesseract.createWorker('eng');
-      await worker.setParameters({ tessedit_char_whitelist: '0123456789', tessedit_pageseg_mode: '7' });
+      // No digit whitelist: a box that includes the word "Rank" would get its
+      // letters coerced into look-alike digits. parseRank() picks the number.
+      await worker.setParameters({ tessedit_pageseg_mode: '7' });
       return worker;
     }catch(e){
       workerFailed = true;
@@ -211,32 +213,55 @@
     const bctx = big.getContext('2d');
     bctx.imageSmoothingEnabled = true;
     bctx.drawImage(crop, 0, 0, big.width, big.height);
+    // Only near-white pixels count as text (the Rank label is white); the
+    // green glow/particles and Fortnite's faint stats overlay behind it fail
+    // min(r,g,b) and drop out. Drawn black-on-white, which Tesseract reads best.
     try{
       const img = bctx.getImageData(0,0,big.width,big.height);
       const d = img.data;
       for(let i=0;i<d.length;i+=4){
-        const lum = 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2];
-        const v = lum > 150 ? 255 : 0;
+        const v = Math.min(d[i], d[i+1], d[i+2]) > 170 ? 0 : 255;
         d[i]=d[i+1]=d[i+2]=v;
       }
       bctx.putImageData(img, 0, 0);
     }catch(e){ /* still fine without the threshold pass */ }
+    const readImage = big.toDataURL('image/png');
 
     stopSharing(); // one frame is all this needs — release the share right away
 
     const w2 = await ensureWorker();
-    let guess = null;
+    let guess = null, text = '', confidence = 0;
     if(w2){
       try{
-        const result = await w2.recognize(big.toDataURL('image/png'));
-        const match = ((result && result.data && result.data.text) || '').match(/\d+/);
-        if(match) guess = parseInt(match[0], 10);
+        const result = await w2.recognize(readImage);
+        text = ((result && result.data && result.data.text) || '').trim();
+        confidence = (result && result.data && result.data.confidence) || 0;
+        guess = parseRank(text);
       }catch(e){ /* falls through to manual entry below */ }
     }
-    showConfirm(guess);
+    showConfirm(guess, { image: readImage, text, confidence });
   }
 
-  function showConfirm(guess){
+  // "Rank 2" -> 2. Without the word, take the LAST 1-2 digit number (stray
+  // digits from other on-screen text tend to sit before/around the label).
+  function parseRank(text){
+    const m = text.match(/rank\D{0,3}(\d{1,2})\b/i);
+    if(m) return parseInt(m[1], 10);
+    const all = text.match(/\d{1,2}/g);
+    return all ? parseInt(all[all.length - 1], 10) : null;
+  }
+
+  const LOW_CONFIDENCE = 70;
+
+  function showConfirm(guess, read){
+    read = read || {};
+    const unsure = guess === null || read.confidence < LOW_CONFIDENCE;
+    const preview = getEl('rsReadPreview');
+    if(read.image){ preview.src = read.image; preview.style.display = ''; } else { preview.style.display = 'none'; }
+    getEl('rsReadText').textContent = read.text
+      ? 'Read "' + read.text + '" (' + Math.round(read.confidence) + '% sure)' + (unsure ? ' — not sure, check the number below.' : '')
+      : 'Couldn\'t read any text in the box — enter the rank below or redraw the box.';
+    getEl('rsReadText').classList.toggle('rs-unsure', unsure);
     getEl('rsCalibCanvasWrap').style.display = 'none';
     getEl('rsConfirmStep').style.display = 'block';
     const cycle = (typeof activeCycle !== 'undefined' && activeCycle) ? activeCycle : 1;

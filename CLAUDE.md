@@ -144,6 +144,32 @@ plumbing, since it reads no droid/cycle data at all). The tracker itself still
 works normally outside Electron via a localStorage fallback (real progress in
 userData is never touched).
 
+## Current status (2026-09-27): v1.10.11 — Read Rebirth Screen reliability
+
+User reported a live misread: the game showed "Rank 2", the reader said 4.
+The same pipeline run on their screenshot (tesseract.js + sharp in Node, see
+below) read 2 for every box around the label, so the live read almost
+certainly came from a **stale saved box**: `start()` reuses the saved region
+whenever the capture size matches and reads it with no preview, so a
+shifted UI means reading the wrong spot blind. Changes in
+`rebirth-screen-read.js` + the confirm dialog in `tracker.html`:
+- The confirm dialog now shows the exact processed image that was read
+  (`#rsReadPreview`) plus the raw text and confidence (`#rsReadText`),
+  amber + "not sure" under 70% confidence. The user can see a wrong box and
+  hit "Box was wrong — redraw".
+- Threshold is `min(r,g,b) > 170` (white text only), drawn black-on-white;
+  the old brightness>150 kept the green glow and made white-on-black.
+- No digit whitelist (it coerced "Rank" into digits); `parseRank()` takes
+  `Rank N`, else the LAST 1-2 digit number.
+Repro results on the screenshot: old pipeline returned nothing for a box
+that includes the REBIRTH logo; new one read "Rank 2" at 94-95% for every
+box tried. **To re-test OCR offline:** `npm install --no-save tesseract.js@5
+sharp @tesseract.js-data/eng` (the jsdelivr CDN is blocked in cloud
+sessions; the npm package is not) and pass
+`langPath: node_modules/@tesseract.js-data/eng/4.0.0_best_int` to
+`createWorker`. `rebirth-level-detect.js` (badge watcher) still uses the old
+threshold/whitelist, left alone until a badge misread is reported.
+
 ## Current status (2026-09-27): v1.10.10 — fixes the v1.10.9 upload missed
 
 **GitHub `main` is now the source of truth** (the user published v1.10.9 from
@@ -350,10 +376,10 @@ rebirth-requirements-overlay.html), not just bridging the missing IPC calls
 — treat as a real feature-scope conversation with the user before touching
 it, not something to guess-implement.
 
-Also flagged, not touched: crit-guide-overlay.html's hardcoded purchase-order
-"Eff" column isn't strictly monotonic at two points (rows 2-3, 35-36) —
-possibly a data slip in the reference table, needs the user's judgment on
-the actual correct order rather than a guess at hardcoded strategy content.
+Crit Guide "Eff" column non-monotonic at rows 2-3 and 35-36: **closed, not a
+bug** (user dropped it 2026-09-27). Crit chance and crit damage raise each
+other's value, and each row's Eff is measured after the purchase above it,
+so a later row can legitimately score higher. Don't re-flag it.
 
 ## Current status (2026-09-27): real level 36-40 / Kyber data ported in — patch is live
 The 2026-09-26 game patch shipped. The sibling web-tracker repo
