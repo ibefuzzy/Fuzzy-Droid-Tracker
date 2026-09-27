@@ -233,9 +233,8 @@ misread, ever:
 
 - **✨ Stellar Blueprint** — every 30 minutes, at :05 and :35 past the hour.
 - **🌌 Mythic Blueprint** — every hour, at :55 (1:55, 2:55, 3:55, ...).
-- **💎 Kyber Blueprint** — every hour, on the hour (every 5 minutes during
-  launch events). The Galactic timer was retired in v1.10.5 with the game's
-  own change.
+- **💎 Kyber Blueprint** — every hour, at :15 (1:15, 2:15, 3:15, ...). The
+  Galactic timer was retired in v1.10.5 with the game's own change.
 - **🎯 Mission** — every 35 minutes, and also names which mission is coming
   up next: the four known
   missions (**Stormtrooper → Fishing → D-0 → Mining**) repeat in that fixed
@@ -407,6 +406,14 @@ it can be corrected.
 - **Kyber droid icons** are now clean transparent cut-outs like every other colorway.
   Leftovers of the in-game "PREVIEW" banner, the card frame and the colored card glow are
   gone.
+
+## ⏱ Kyber timer back to normal (v1.13.1, hotfix)
+
+- The Kyber launch event (a Kyber Blueprint every 5 minutes) is over. The 💎 Kyber
+  banner now counts down to **:15 past every hour**, landing on :00 seconds like the
+  Stellar and Mythic banners. Before this fix it kept showing the 5-minute event
+  schedule until the old event window closed.
+
 ## 🎛 Your own looks, per-overlay colors, compact cards & your own alert sounds (v1.13.0)
 
 Everything here starts switched off, so the app looks and sounds exactly as before

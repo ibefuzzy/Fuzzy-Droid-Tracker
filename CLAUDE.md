@@ -25,8 +25,9 @@ short on purpose so a fresh session can read it in one pass.
   `.console-row` per function group, each a two-column layout (fixed-width label +
   a separate `.console-row-buttons` strip) so a wrapped row indents under the
   button column instead of falling back under the label. Settings panel is a
-  tabbed "holo-console" (Keybinds / Layout / Borders / Filters / Timers — Borders
-  was "Colors" pre-v1.10.0).
+  tabbed "holo-console" (Keybinds / Layout / Appearance / Filters / Timers / Droid Editor).
+  Appearance was "Borders" until v1.11.1 and "Colors" before v1.10.0; its element ids are
+  still `setTab-borders`/`setPane-borders`.
 - `main.js` — Electron main: windows, JSON store (via persistence.js), settings
   (DEFAULT_SETTINGS + the generic `settings:set` IPC handler — any new setting key
   that isn't a hotkey or a position just works, no special-casing needed), global
@@ -35,14 +36,15 @@ short on purpose so a fresh session can read it in one pass.
   rename, `.bak` of the last good save, recovery from `.bak` if the main file is
   ever unreadable).
 - `overlay-controls.js` — tracker-side wiring for every Electron-only control:
-  hotkey capture, tier filter buttons, position/lock, and the Borders tab's swatch
-  buttons (built from `BORDER_SKIN_ORDER`, not hand-written per skin).
+  hotkey capture, tier filter buttons, position/lock, the Appearance tab (skin swatches
+  built from `BORDER_SKIN_ORDER`, presets + saved looks, "Edit colors for", card options),
+  and the Timers tab (layout/size, per-timer sound pickers, 🎵 Your sounds).
 - `settings-tabs.js` — pure presentation: tab switching, keybind search, bound
   count. Every control keeps the id `overlay-controls.js` wires it by.
 - `sw-texture.css` — holo-console corner-bracket/scanline art for the 5 overlays.
   Reads `rgba(var(--sw-rgb, 150,215,255), a)` — each overlay sets its own
   `--sw-rgb`/`--accent` (from BORDER_SKINS, per the border skin picked in
-  ⚙ Overlay Settings → Borders), falling back to blue if unset. Each overlay also
+  ⚙ Overlay Settings → Appearance), falling back to blue if unset. Each overlay also
   has its own `.border-badge` div (top-center, straddling the panel's top edge)
   showing that skin's emblem via `borderIconSvg()` — see any overlay's
   `applySettings()` for the pattern.
@@ -58,18 +60,24 @@ short on purpose so a fresh session can read it in one pass.
   `overlay:drag`/`overlay:resize` handlers run; unit-tested in test/overlay-snap.test.js.
   overlay-theme.js (v1.11.1) also applies the `theme*` colour settings and the mark-key
   target (`<html data-mark-list>` pages; `data-ov-own-alpha` on the HUD).
-- `alert-sound.js` + `sounds/good-news-data.js` (v1.11.1) — `playGoodNews(volume)`, the
-  default timer sound ('goodnews'), used by timers.html and tracker.html's ▶ Play button.
-  The data file is base64 generated from `sounds/good-news-everyone.mp3` by
-  `node build-sound-data.js` (the mp3 and the script stay out of the exe). It's a
-  Futurama clip the user supplied; see the v1.11.1 status.
+- `alert-sound.js` + `sounds/good-news-data.js` — `playAlert(choice, volume, readCustom)`
+  (v1.13.0) plays every timer alert: tones, 'goodnews' (default since v1.11.1) and
+  'custom:<id>' files, auto-levelled and capped at 8 s. Used by timers.html and the
+  tracker's ▶ previews. The data file is base64 generated from
+  `sounds/good-news-everyone.mp3` by `node build-sound-data.js` (the mp3 and the script
+  stay out of the exe and the repo). It's a Futurama clip; the user chose to ship it.
 - `game-toast.html` (v1.11.1) — the in-game notice card (main.js `showGameToast`, created
   on first use; click-through, never focused, top-centre of the capture screen). Only
   the tracker sends it (`toast:show`); rebirth-screen-read.js uses it while the tracker
   isn't focused. Not an OVERLAY_WINDOWS entry: it never moves.
 - `build-kyber-card-icons.js` (v1.11.0, not in the exe) — regenerates card-icons-data.js's
   75 Kyber slots as transparent cut-outs from the local Droidex screenshots.
-- `release/` keeps only the current build's exe. No `src/` snapshot anymore.
+- `release/` keeps only the current build's exe (cleaned 2026-09-27: 16 old exes went to the
+  Recycle Bin, not deleted). Published exes live on GitHub Releases.
+- `_backup_v1.11.1_approved/`, `_backup_v1.12.0_approved/` (plus the older
+  `_backup_before_v1.10.11/`) — source snapshots taken before big changes. They're excluded
+  from the exe (`!_backup*/**`) and from searches (`.ignore`, which ripgrep reads).
+- `dev/` — the Overlay Preview Lab (see Tools). Not in the exe or the repo.
 
 ## Rules
 - Never change the persistence format without a migration. The store holds real progress.
@@ -217,7 +225,28 @@ plumbing, since it reads no droid/cycle data at all). The tracker itself still
 works normally outside Electron via a localStorage fallback (real progress in
 userData is never touched).
 
-## Current status (2026-09-27): v1.13.0 — own looks, per-overlay colours, compact cards, own sounds; awaiting user test
+## Current status (2026-09-27): v1.13.1 hotfix — Kyber timer back to hourly at :15
+
+The Kyber launch event ended, so the user asked for the normal schedule: every hour at
+:15, seconds :00 like Stellar/Mythic (Mission is the only :20 timer). timers.html
+`nextKyber()` is now a plain hourly :15:00 (the KYBER_EVENT_START/END window is gone;
+a future event would need a new window). Also updated: tracker.html schedule readout +
+sound-length note, README timer section + a v1.13.1 changelog entry, package.json.
+Checked nextKyber at edge times (16:14:59 -> 16:15, 16:15:00.5 -> 17:15, 23:20 -> 00:15
+next day); 89/89 tests. Files to push: timers.html, tracker.html, README.md,
+package.json, CLAUDE.md. Built `release\Fuzzy's Droid Tracker 1.13.1.exe` (66.68 MB,
+SHA256 70D49585372D7E9A5B780A5A80ACED52C16BD9E4995C802EA4AB3F878E396B0C); its asar's
+timers.html/tracker.html match local byte-for-byte (package.json differs only because
+electron-builder rewrites it; version 1.13.1). Awaiting the user's test, then push + release.
+
+## Status (2026-09-27): v1.13.0 — PUBLISHED (tag on main ff64cdc; asset digest matches the local exe)
+
+User-tested and approved. The user chose to ship the Futurama clip + insignia as-is.
+Source is pushed to `main` (4 web-upload commits); all 44 repo files match local by blob
+SHA. The release form (tag v1.13.0 from main) is open in the user's Chrome. They drag
+in the exe (SHA256 FF6F983A…B7A5) and publish. It's the first public release since
+v1.11.0, so it includes 1.11.1 + 1.12.0. The repo deliberately holds only runtime
+source, tests and README/CLAUDE.md (not dev/, the other *.md docs, build tools or the mp3).
 
 v1.12.0 was user-approved (snapshot `_backup_v1.12.0_approved/`; its exe stays in release\).
 The user asked for ideas 1, 2, 4, 5 and 6 (not the preset-cycling hotkey), with the rule
@@ -410,6 +439,14 @@ Timer banners: user wants to restyle them too, undecided how; not in scope yet.
   guarded, so it throws in browser/localStorage mode (harmless, runs last).
 - User idea, deferred: a manual "Sync Kyber timer" like the mission sync, if event
   timers drift again.
+- Customization ideas not taken yet (offered 2026-09-27): a hotkey to cycle presets
+  in-game (the user skipped it), and more skins/presets (try them in dev/ first).
+- The 1-row timers window is at least 64px tall (Windows' frameless minimum), so
+  there are 19px of transparent space under the banners. It only matters for snapping.
+- "Add a sound file" opens a native file dialog, so only the user can test that step.
+  Everything around it was browser- and CDP-verified.
+- This file keeps growing with status blocks. When it gets unwieldy, fold the old
+  per-version blocks into README's changelog and keep only the current state here.
 
 ## Current status (2026-09-27): v1.10.13 — mark droids from Sneak Preview + Safe to Retire (released)
 
