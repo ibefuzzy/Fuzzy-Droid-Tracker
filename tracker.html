@@ -584,6 +584,9 @@
   .rl-manual .btn{padding:4px 10px;}
 
   .rs-confirm-row{display:flex;align-items:center;gap:10px;margin-top:10px;}
+  .rs-read-preview{display:block;max-width:100%;max-height:60px;margin:4px 0 6px;border:1px solid rgba(255,255,255,0.18);border-radius:4px;background:#fff;image-rendering:pixelated;}
+  .rs-read-text{margin-bottom:8px;}
+  .rs-read-text.rs-unsure{color:var(--amber);}
   .rs-confirm-row label{font-size:12.5px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;}
   .rs-confirm-row input[type="number"]{
     width:70px;background:var(--panel2);border:1px solid var(--line);color:var(--text);
@@ -1056,11 +1059,11 @@
             </div>
           </div>
 
-          <!-- v1.10.3: hotkey-based marking in Rebirth Requirements overlay -->
+          <!-- v1.10.3: hotkey-based marking in Rebirth Requirements overlay; v1.10.13: also Sneak Preview -->
           <div class="kb-group">
-            <div class="kb-group-title">🧬 Mark droids (Rebirth Requirements overlay)</div>
+            <div class="kb-group-title">🧬🔮♻ Mark droids (Rebirth Requirements / Sneak Preview / Safe to Retire)</div>
             <div class="kb-row">
-              <div class="kb-label"><b>Mark selected droid</b><small>Marks the highlighted droid as obtained in the Rebirth Requirements overlay.</small></div>
+              <div class="kb-label"><b>Mark selected droid</b><small>Marks the highlighted droid in whichever list is open (more than one open: the one opened last). Sneak Preview marks are held for the next cycle and applied when you switch to it. Safe to Retire marks it retired (press again to undo) without changing your logged droids.</small></div>
               <button class="btn kb-key" id="rebirthMarkDroidBtn">(none set)</button>
             </div>
             <div class="kb-row">
@@ -1106,6 +1109,10 @@
             <div class="kb-row">
               <div class="kb-label"><b><span class="tier-dot" style="--c:#ff4d6d"></span>Mythic</b><small>Show/hide Mythic-tier droids in both lists.</small></div>
               <button class="btn kb-key" id="declutterTierMythicHotkeyBtn">(none set)</button>
+            </div>
+            <div class="kb-row">
+              <div class="kb-label"><b>♻ Retired droids</b><small>Show/hide the droids you've marked retired in Safe to Retire (that list only).</small></div>
+              <button class="btn kb-key" id="declutterRetiredHotkeyBtn">(none set)</button>
             </div>
           </div>
           <p class="holo-empty" id="keybindNoMatch" hidden>No keybinds match that search.</p>
@@ -1492,6 +1499,8 @@
     </div>
     <div class="rs-confirm" id="rsConfirmStep" style="display:none;">
       <p>Detected <b>Rank <span id="rsDetectedRank"></span></b> for <b id="rsConfirmCycleLabel"></b>.</p>
+      <img id="rsReadPreview" class="rs-read-preview" alt="What the reader saw inside the box" style="display:none">
+      <p id="rsReadText" class="rebirth-sub rs-read-text"></p>
       <p class="rebirth-sub">That means rebirths 1 through <span id="rsThroughLevel">?</span> are complete — every droid at those levels gets marked owned, and the current level is set to <span id="rsThroughLevel2">?</span>. Fix the number below first if it looks wrong.</p>
       <div class="rs-confirm-row">
         <label for="rsManualRank">Rank</label>
@@ -1680,14 +1689,17 @@ function cycleAfter(cycle){ return (cycle >= 5) ? 1 : cycle + 1; }
 async function clearCycleMarks(cycle){
   ownedRank = removeCycleMarks(cycle, ownedRank);
   await storeSet('rebirth-ownedRank-v2', ownedRank);
+  // That cycle's Safe to Retire marks go with it, so a replay starts clean.
+  const retired = (await storeGet('rebirth-retired')) || {};
+  if(retired[cycle]){ delete retired[cycle]; await storeSet('rebirth-retired', retired); }
 }
 
 async function resetCycleAndAdvance(cycle){
   await clearCycleMarks(cycle);
   const next = cycleAfter(cycle);
-  await setActiveCycle(next); // persists rebirth-activeCycle, syncs both selects, renderList()
+  const applied = await setActiveCycle(next); // persists rebirth-activeCycle, applies Sneak Preview marks, syncs both selects, renderList()
   renderStats();
-  showToast('Cycle ' + cycle + ' reset — now on Cycle ' + next);
+  showToast('Cycle ' + cycle + ' reset — now on Cycle ' + next + (applied ? (' (+' + applied + ' marked in Sneak Preview)') : ''));
 }
 
 // "Sneak Preview" choice: the same reset, but the tracker STAYS on the
@@ -1827,7 +1839,7 @@ async function handleRename(nk, newVal){
 
 /* ---------------- RENDER: LEGEND ---------------- */
 function renderLegend(){
-  const order = ["B","G","D","R","K","X","S"];
+  const order = RARITY_ORDER; // was hardcoded ["B",...,"S"], silently dropping Kyber ("Y")
   const legendEl = getEl('legend');
   legendEl.innerHTML = order.map(code=>{
     return '<span class="item"><span class="dot ' + RCLASS[code] + '"></span>' + RNAME[code] + '</span>';
@@ -2209,14 +2221,31 @@ qsa('.sort-toggle button').forEach(btn=>{
     renderList();
   });
 });
+// Droids marked in Sneak Preview are held for their cycle (see mergeHeldMarks
+// in requirements.js) and become real progress once that cycle is active.
+// Runs after clearCycleMarks() on "Next Cycle", so the finished cycle's wipe
+// never reaches them. Returns how many droids were applied.
+async function applyHeldMarks(c){
+  const held = (await storeGet('rebirth-heldMarks')) || {};
+  const marks = held[c];
+  if(!marks) return 0;
+  ownedRank = mergeHeldMarks(ownedRank, marks);
+  delete held[c];
+  await storeSet('rebirth-ownedRank-v2', ownedRank);
+  await storeSet('rebirth-heldMarks', held);
+  return Object.keys(marks).length;
+}
 async function setActiveCycle(c){
   activeCycle = c;
   await storeSet('rebirth-activeCycle', activeCycle);
+  const applied = await applyHeldMarks(c);
   const mainSel = getEl('cycleSelect');
   if(mainSel) mainSel.value = String(activeCycle);
   const reqSel = getEl('reqCycleSelect');
   if(reqSel) reqSel.value = String(activeCycle);
   renderList();
+  if(applied){ renderStats(); showToast('Cycle ' + c + ': applied ' + applied + ' droid' + (applied === 1 ? '' : 's') + ' marked in Sneak Preview'); }
+  return applied;
 }
 document.getElementById('cycleSelect').addEventListener('change', (e)=>{
   setActiveCycle(parseInt(e.target.value, 10));
@@ -2234,6 +2263,8 @@ document.getElementById('resetBtn').addEventListener('click', ()=>{
   if(!confirm('Clear ALL tracked droid progress? This cannot be undone.')) return;
   ownedRank = {};
   storeSet('rebirth-ownedRank-v2', ownedRank);
+  storeSet('rebirth-heldMarks', {});
+  storeSet('rebirth-retired', {});
   renderList(); renderStats();
 });
 document.getElementById('exportBtn').addEventListener('click', ()=>{

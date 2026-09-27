@@ -22,6 +22,12 @@ contextBridge.exposeInMainWorld('overlayAPI', {
   storeSet: (key, value) => ipcRenderer.invoke('store:set', key, value),
   onStoreChanged: (cb) => subscribe('store:changed', cb), // cb({key, value})
 
+  // overlay-initiated ownership marking (via click in overlay.html or rebirth-requirements-overlay.html)
+  markDroidFromOverlay: (data) => ipcRenderer.invoke('overlay:markDroid', data), // data: {cycle, level, slot}
+  markLevelFromOverlay: (data) => ipcRenderer.invoke('overlay:markLevel', data), // data: {cycle, level}
+  holdNextCycleMark: (data) => ipcRenderer.invoke('overlay:holdNextCycleMark', data), // data: {cycle, nk, rank} — Sneak Preview, held until that cycle is active
+  toggleRetired: (data) => ipcRenderer.invoke('overlay:toggleRetired', data), // data: {cycle, nk, rank} — Safe to Retire, never touches ownedRank
+
   // overlay settings (hotkey, opacity, position, visible, locked)
   getSettings: () => ipcRenderer.invoke('settings:get'),
   setSettings: (partial) => ipcRenderer.invoke('settings:set', partial),

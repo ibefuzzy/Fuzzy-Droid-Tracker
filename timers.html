@@ -234,19 +234,19 @@
 
   // Confirmed live 2026-09-26: a 24-hour launch event runs the Kyber
   // blueprint every 5 minutes instead of the normal once-an-hour schedule.
-  // Window is Saturday 2026-09-26 4:00pm through Sunday 2026-09-27 4:00pm,
-  // "local" time — same convention as MISSION_NAME_EPOCH_MS below. A future
+  // Window is Saturday 2026-09-26 7:30:20pm through Sunday 2026-09-27 7:30:20pm,
+  // "local" time (EST) — same convention as MISSION_NAME_EPOCH_MS below. A future
   // event would get its own window added the same way; this one isn't
   // meant to recur automatically.
-  const KYBER_EVENT_START_MS = new Date(2026, 8, 26, 16, 0, 0, 0).getTime();
-  const KYBER_EVENT_END_MS = new Date(2026, 8, 27, 16, 0, 0, 0).getTime();
+  const KYBER_EVENT_START_MS = new Date(2026, 8, 26, 19, 30, 20, 0).getTime();
+  const KYBER_EVENT_END_MS = new Date(2026, 8, 27, 19, 30, 20, 0).getTime();
 
   function nextKyber(now){
     const nowMs = now.getTime();
     if(nowMs >= KYBER_EVENT_START_MS && nowMs < KYBER_EVENT_END_MS){
-      // Event schedule: every 5 minutes on the clock (:00, :05, ..., :55).
+      // Event schedule: every 5 minutes on the clock (:00:20, :05:20, ..., :55:20).
       const next = new Date(now);
-      next.setSeconds(0, 0);
+      next.setSeconds(20, 0);
       const m = next.getMinutes();
       next.setMinutes(m - (m % 5) + 5);
       return next;

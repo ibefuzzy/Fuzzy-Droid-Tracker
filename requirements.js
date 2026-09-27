@@ -410,6 +410,30 @@ function removeCycleMarks(cycle, ownedRank){
   return next;
 }
 
+/* Sneak Preview marks (v1.10.13) are held per target cycle in their own store
+   key ('rebirth-heldMarks': {cycle -> {nk -> rank}}), NOT in ownedRank — so a
+   droid held for the next cycle can't count toward the current one, and the
+   current cycle's completion wipe (removeCycleMarks) can't erase it. When the
+   target cycle becomes active, tracker.html folds them in with this. */
+/** Merge held marks {nk -> rank} into ownedRank, raising (never lowering) each droid. Returns a NEW ownedRank; mutates neither input. */
+function mergeHeldMarks(ownedRank, held){
+  const next = Object.assign({}, ownedRank);
+  Object.keys(held).forEach(nk=>{
+    if(next[nk] === undefined || next[nk] < held[nk]) next[nk] = held[nk];
+  });
+  return next;
+}
+
+/* Safe to Retire marks (v1.10.13) live in 'rebirth-retired' ({cycle -> {nk ->
+   the owned rank that was retired}}), never in ownedRank: removing ownership
+   would un-cover that droid's past levels and the cycle could never reach
+   full coverage again. Retiring records the colorway you had; logging a
+   higher one afterwards is a new copy, so it shows as not retired. */
+/** True when a Safe to Retire droid was retired at (or above) the colorway currently logged for it. */
+function isRetired(retiredRank, ownedRank){
+  return retiredRank !== undefined && retiredRank >= ownedRank;
+}
+
 /* The three-way click semantics every "claim a rarity" control in the app
    shares (main grid, A-Z pips, Rebirth Reqs panel):
      - clicking your current best again undoes it            -> 'clear'

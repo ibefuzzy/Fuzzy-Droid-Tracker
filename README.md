@@ -337,6 +337,31 @@ It updates live — the moment you log a droid, apply a Rebirth Screen read,
 or change your current level or active cycle anywhere else in the app, this
 list recomputes. Switching cycles also scrolls it back to the top.
 
+**Marking droids retired (v1.10.13).** Once you've actually sold or
+dismantled a droid, mark it retired. Use the **same keys as the Rebirth
+Requirements overlay** (🧬🔮♻ Mark Selected Droid / Navigate Left, Right,
+Up, Down), or click a card while the list is unlocked. A retired droid drops
+to the bottom of the list, dimmed and struck through with **"✓ Retired"**,
+and the count in the title only counts what's left. The next droid slides up
+under the highlight, so you can retire several in a row. **To undo, mark it
+again.**
+- **Retiring never changes your logged droids.** Rebirth Requirements,
+  Upcoming RB Req's, By Rebirth Level and the covered count all stay exactly
+  as they were, so the cycle still completes normally.
+- A retire is tied to the colorway you had logged. If you later log a
+  **higher** colorway of that droid, that's a new copy, so it's back on the
+  list as active.
+- Retires are per cycle: finishing a cycle (either choice in the
+  cycle-complete prompt) clears that cycle's retires, and **Clear ALL**
+  clears them all.
+- **Show / hide retired droids** with its own hotkey (**♻ Retired droids**
+  under ⚙ Overlay Settings → Keybinds → Tier filter; unbound by default).
+  While they're hidden, the title shows **"N retired hidden"** so a short
+  list isn't a mystery. Hidden retired droids can't be selected; show them
+  again to undo one.
+- If more than one of Rebirth Requirements / Sneak Preview / Safe to Retire
+  is open, the keys drive the one you opened most recently.
+
 Toggle it with **♻ Declutter** in the toolbar or its hotkey, **Ctrl+Shift+4**
 by default. Reposition it the same way as the HUD and timers: **⚙ Overlay
 Settings → Reposition Declutter List → 🎯 Drag into place**, drag it under
@@ -421,6 +446,32 @@ default). Each card shows the droid's icon, name, and either **"Needs
 &lt;colorway&gt;"** or, in green, **"✓ Have &lt;colorway&gt;"** if what
 you've already logged for that droid (from anywhere) already covers what
 next cycle will need — nothing left to chase for that one.
+
+### Marking droids in the Sneak Preview (v1.10.13)
+
+You can mark droids off right in the Sneak Preview as you pick them up for
+the next cycle — with the **same keys as the Rebirth Requirements
+overlay** (🧬🔮 Mark Selected Droid / Navigate Left, Right, Up, Down in
+⚙ Overlay Settings → Keybinds), or by clicking a card while the overlay is
+unlocked. Mark a card again to undo it. The list scrolls to follow the
+highlighted card.
+
+- **Marks are held for the cycle the preview shows**, not added to your
+  current cycle. A marked card shows a ✓ badge and **"✓ Marked
+  &lt;colorway&gt;"**. They don't count toward your current cycle, and
+  finishing the current cycle doesn't erase them, even for a Mythic that
+  both cycles use.
+- **They're applied automatically** the moment the tracker switches to that
+  cycle — **Next Cycle** in the cycle-complete prompt, or picking it in the
+  cycle dropdown. A toast tells you how many were applied. Applying never
+  lowers a colorway you've already logged.
+- **Which list the keys drive:** whichever of Rebirth Requirements / Sneak
+  Preview / Safe to Retire is on screen. If more than one is open, the one
+  you opened most recently.
+  A hidden overlay never reacts to them. (Before v1.10.13 a hidden Rebirth
+  Requirements overlay still did, and could mark its selected droid
+  unseen.)
+- **Clear ALL** also clears held marks.
 
 ## ⚡ Optimal Crit Guide (v1.10.0)
 
@@ -525,6 +576,10 @@ timer banners, it isn't draggable — it's meant to be a brief reference, not
 a permanent fixture, so it always reopens centered. (**Ctrl+Shift+1**, Hide
 All Overlays, hides this card too, but doesn't have its own on/off state to
 toggle back — see above.)
+
+**v1.10.10:** the card now lists the 🎯/🧬 mark & navigate hotkeys and the
+🔒 Lock/unlock all keybinds hotkey when they're bound — before, the card
+was sized for them but left a blank gap where they should have been.
 
 It reads its rows live from **⚙ Overlay Settings**, so if you rebind any
 hotkey there, the list updates immediately without a restart. Only hotkeys

@@ -73,7 +73,15 @@ function createScrollViewport(viewport, scrollbarEl, thumbEl, itemSelector){
 
   function toTop(){ viewport.scrollTop = 0; update(); }
 
+  // Scrolls the least distance that brings `el` fully into view (keyboard selection).
+  function reveal(el){
+    const top = el.offsetTop, bottom = top + el.offsetHeight;
+    if(top < viewport.scrollTop) viewport.scrollTop = top;
+    else if(bottom > viewport.scrollTop + viewport.clientHeight) viewport.scrollTop = bottom - viewport.clientHeight;
+    update();
+  }
+
   viewport.addEventListener('scroll', update);
   window.addEventListener('resize', update);
-  return { update, page, toTop };
+  return { update, page, toTop, reveal };
 }

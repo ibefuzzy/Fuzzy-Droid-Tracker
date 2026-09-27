@@ -38,6 +38,7 @@
   const critGuideRepositionBtn = document.getElementById('critGuideRepositionBtn');
   const critGuideResetPosBtn = document.getElementById('critGuideResetPosBtn');
   const critGuideToggleBtn = document.getElementById('critGuideToggleBtn');
+  const keybindsLockToggleBtn = document.getElementById('keybindsLockToggleBtn'); // v1.10.8
 
   /* Every "press to rebind" hotkey button: [button id, settings key, label].
      One table instead of seventeen hand-copied const/label/wire lines
@@ -64,6 +65,7 @@
     ['declutterTierEpicHotkeyBtn', 'declutterTierEpicHotkey', 'Tier Filter: Toggle Epic'],
     ['declutterTierLegendaryHotkeyBtn', 'declutterTierLegendaryHotkey', 'Tier Filter: Toggle Legendary'],
     ['declutterTierMythicHotkeyBtn', 'declutterTierMythicHotkey', 'Tier Filter: Toggle Mythic'],
+    ['declutterRetiredHotkeyBtn', 'declutterRetiredHotkey', 'Safe to Retire: Show/Hide Retired'],
     ['rebirthReqHotkeyBtn', 'rebirthReqOverlayHotkey', 'Toggle Rebirth Requirements'],
     ['sneakHotkeyBtn', 'sneakHotkey', 'Toggle Sneak Preview'],
     ['sneakScrollUpHotkeyBtn', 'sneakScrollUpHotkey', 'Scroll Sneak Preview Up'],
@@ -79,11 +81,13 @@
     ['markUpBtn', 'markUp', 'Navigate Up'],
     ['markDownBtn', 'markDown', 'Navigate Down'],
     // v1.10.3: hotkey-based marking in Rebirth Requirements overlay
-    ['rebirthMarkDroidBtn', 'rebirthMarkDroid', 'Mark Selected Droid (Rebirth Requirements)'],
-    ['rebirthMarkLeftBtn', 'rebirthMarkLeft', 'Navigate Left (Rebirth Requirements)'],
-    ['rebirthMarkRightBtn', 'rebirthMarkRight', 'Navigate Right (Rebirth Requirements)'],
-    ['rebirthMarkUpBtn', 'rebirthMarkUp', 'Navigate Up (Rebirth Requirements)'],
-    ['rebirthMarkDownBtn', 'rebirthMarkDown', 'Navigate Down (Rebirth Requirements)']
+    ['rebirthMarkDroidBtn', 'rebirthMarkDroid', 'Mark Selected Droid (Rebirth Reqs / Sneak Preview / Safe to Retire)'],
+    ['rebirthMarkLeftBtn', 'rebirthMarkLeft', 'Navigate Left (Rebirth Reqs / Sneak Preview / Safe to Retire)'],
+    ['rebirthMarkRightBtn', 'rebirthMarkRight', 'Navigate Right (Rebirth Reqs / Sneak Preview / Safe to Retire)'],
+    ['rebirthMarkUpBtn', 'rebirthMarkUp', 'Navigate Up (Rebirth Reqs / Sneak Preview / Safe to Retire)'],
+    ['rebirthMarkDownBtn', 'rebirthMarkDown', 'Navigate Down (Rebirth Reqs / Sneak Preview / Safe to Retire)'],
+    // v1.10.8
+    ['keybindsLockHotkeyBtn', 'keybindsLockHotkey', 'Lock/Unlock All Keybinds']
   ].map(([id, settingsKey, label]) => ({ btn: document.getElementById(id), settingsKey, label }));
 
   /* Tier filter buttons (⚙ Overlay Settings → Filters tab) —
@@ -128,6 +132,7 @@
   if(rebirthReqToggleBtn) rebirthReqToggleBtn.hidden = false;
   if(sneakToggleBtn) sneakToggleBtn.hidden = false;
   if(critGuideToggleBtn) critGuideToggleBtn.hidden = false;
+  if(keybindsLockToggleBtn) keybindsLockToggleBtn.hidden = false;
 
   let opacityDebounce = null;
   const capturing = {}; // settingsKey -> bool, so two hotkey rows never step on each other
@@ -173,6 +178,14 @@
     critGuideToggleBtn.classList.toggle('on', visible);
   }
 
+  // v1.10.8: inverted sense vs. the toggles above — "on" (accent-highlighted)
+  // means LOCKED, since that's the state worth calling attention to.
+  function setKeybindsLockToggleLabel(locked){
+    if(!keybindsLockToggleBtn) return;
+    keybindsLockToggleBtn.textContent = locked ? '🔒 Keybinds: Locked' : '🔓 Keybinds: Unlocked';
+    keybindsLockToggleBtn.classList.toggle('on', !!locked);
+  }
+
   function applySettingsToUI(settings){
     HOTKEY_BUTTONS.forEach(({ btn, settingsKey })=>{
       if(btn && !capturing[settingsKey]) btn.textContent = settings[settingsKey] || '(none set)';
@@ -193,6 +206,7 @@
     setRebirthReqToggleLabel(settings.rebirthReqVisible);
     setSneakToggleLabel(settings.sneakVisible);
     setCritGuideToggleLabel(settings.critGuideVisible);
+    setKeybindsLockToggleLabel(settings.keybindsLocked);
     repositionBtn.textContent = settings.locked ? '🎯 Drag into place' : '🔓 Unlocked — drag the HUD, then use its Lock button';
     repositionBtn.classList.toggle('on', !settings.locked);
     if(timersRepositionBtn){
@@ -482,6 +496,16 @@
     declutterToggleBtn.addEventListener('click', async ()=>{
       const visible = await window.overlayAPI.toggleDeclutter();
       setDeclutterToggleLabel(visible);
+    });
+  }
+
+  if(keybindsLockToggleBtn){
+    keybindsLockToggleBtn.addEventListener('click', async ()=>{
+      const cur = await window.overlayAPI.getSettings();
+      const locked = !cur.keybindsLocked;
+      await window.overlayAPI.setSettings({ keybindsLocked: locked });
+      setKeybindsLockToggleLabel(locked);
+      showToast(locked ? '🔒 Keybinds locked — every hotkey is off until you unlock' : '🔓 Keybinds unlocked');
     });
   }
 

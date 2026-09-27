@@ -125,6 +125,26 @@
     animation:fdt-in .22s ease-out both;
     display:flex; flex-direction:column; align-items:center; gap:2px;
     min-width:0; padding:2px 1px;
+    pointer-events:auto; cursor:pointer;
+  }
+  /* v1.10.13: hotkey selection, same look as Rebirth Requirements but in this overlay's own border color */
+  .d-cell.selected{
+    border-radius:8px;
+    box-shadow:0 0 12px 0 rgba(var(--sw-rgb), 1), inset 0 0 8px -2px rgba(var(--sw-rgb), 0.3);
+  }
+  .d-cell.selected .d-icon-wrap{
+    box-shadow:0 0 12px -1px var(--accent);
+    transform:scale(1.05);
+    transition:transform 0.1s ease;
+  }
+  /* Held for the next cycle (marked here, not yet applied) */
+  .d-held{
+    position:absolute; top:1px; right:1px;
+    width:13px; height:13px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:9px; font-weight:800; line-height:1;
+    color:#08130d; background:var(--accent);
+    box-shadow:0 0 4px -1px var(--accent);
   }
   .d-icon-wrap{
     position:relative; width:40px; height:40px; flex:0 0 auto; box-sizing:border-box;
@@ -204,12 +224,22 @@
      (that cycle is reset first, so "✓ Have" only reflects what's still
      logged), and by its own (unbound-by-default) hotkey / toolbar button
      otherwise.
+
+     Marking (v1.10.13): same rebirthMark* keys and click-to-mark as the
+     Rebirth Requirements overlay (main.js routes the keys to whichever of
+     the two is on screen). A mark here is HELD for the previewed cycle in
+     'rebirth-heldMarks', not written to ownedRank — see mergeHeldMarks() in
+     requirements.js for why — and tracker.html applies it when that cycle
+     becomes active. Marking a held droid again un-holds it.
   --------------------------------------------------------------------------- */
 
   const DOT_COLOR = { B:'var(--r-base)', G:'var(--r-gold)', D:'var(--r-diamond)', R:'var(--r-rainbow2)', K:'var(--r-beskar)', X:'var(--r-galactic)', S:'var(--r-stellar)', Y:'var(--r-kyber)' };
 
   let currentCycle = 1;
   let ownedRankLocal = {};
+  let heldLocal = {};      // 'rebirth-heldMarks': {cycle -> {nk -> rank}}
+  let shown = { nextCycle: 2, items: [] }; // what render() last drew, in cell order
+  let selectedIndex = 0;
 
   async function loadIndexData(){
     nameMerges = (await window.overlayAPI.storeGet('rebirth-nameMerges')) || {};
@@ -220,23 +250,28 @@
   async function loadProgress(){
     currentCycle = (await window.overlayAPI.storeGet('rebirth-activeCycle')) || 1;
     ownedRankLocal = (await window.overlayAPI.storeGet('rebirth-ownedRank-v2')) || {};
+    heldLocal = (await window.overlayAPI.storeGet('rebirth-heldMarks')) || {};
   }
 
-  function cellHtml(it){
+  function cellHtml(it, i, nextCycle){
     const reqColor = DOT_COLOR[it.code] || 'var(--r-base)';
+    const heldRank = (heldLocal[nextCycle] || {})[it.nk];
+    const held = heldRank !== undefined && heldRank >= it.rank;
     // "covered" = the variety already logged for this droid (any cycle) is
     // at or above what next cycle will ask for — you don't need to hunt for
     // it, just hang onto what you've got. Compared by rank (not code
     // string) since ownedCode/code are letters, not numbers.
     const covered = it.ownedCode != null && rankOf(it.ownedCode) >= it.rank;
-    const ownedColor = covered ? 'var(--accent)' : (it.ownedCode ? (DOT_COLOR[it.ownedCode] || 'var(--r-base)') : 'rgba(255,255,255,0.5)');
-    const statusText = covered ? ('✓ Have ' + RNAME[it.ownedCode]) : ('Needs ' + RNAME[it.code]);
+    const ownedColor = (held || covered) ? 'var(--accent)' : (it.ownedCode ? (DOT_COLOR[it.ownedCode] || 'var(--r-base)') : 'rgba(255,255,255,0.5)');
+    const statusText = held ? ('✓ Marked ' + RNAME[it.code]) : covered ? ('✓ Have ' + RNAME[it.ownedCode]) : ('Needs ' + RNAME[it.code]);
     const b64 = (typeof CARD_ICONS !== 'undefined' && CARD_ICONS[it.iconKey]) || (typeof ICONS !== 'undefined' && ICONS[it.iconKey]);
     const src = b64 ? 'data:image/webp;base64,' + b64 : '';
     const imgTag = src ? ('<img src="' + src + '" alt="' + it.display + '" loading="lazy">') : '';
-    const title = it.display + ' — next cycle needs ' + RNAME[it.code] + ' — ' + (it.ownedCode ? ('you have ' + RNAME[it.ownedCode]) : 'not logged yet') + (covered ? ' (already covered)' : '');
-    return '<div class="d-cell" title="' + title + '">' +
-      '<div class="d-icon-wrap" style="--rc:' + reqColor + ';">' + imgTag + '</div>' +
+    const title = it.display + ' — next cycle needs ' + RNAME[it.code] + ' — ' +
+      (held ? ('marked for Cycle ' + nextCycle + ', applied when you switch to it')
+            : ((it.ownedCode ? ('you have ' + RNAME[it.ownedCode]) : 'not logged yet') + (covered ? ' (already covered)' : '')));
+    return '<div class="d-cell" data-index="' + i + '" title="' + title + '">' +
+      '<div class="d-icon-wrap" style="--rc:' + reqColor + ';">' + imgTag + (held ? '<span class="d-held">✓</span>' : '') + '</div>' +
       '<div class="d-name">' + it.display + '</div>' +
       '<div class="d-owned" style="color:' + ownedColor + '">' + statusText + '</div>' +
     '</div>';
@@ -252,6 +287,50 @@
   window.overlayAPI.onHotkeyTriggered((name)=>{
     if(name === 'sneakScrollUp') scroller.page(-1);
     else if(name === 'sneakScrollDown') scroller.page(1);
+    else if(name === 'rebirthMarkLeft') moveSelection(-1);
+    else if(name === 'rebirthMarkRight') moveSelection(1);
+    else if(name === 'rebirthMarkUp') moveSelection(-columnCount());
+    else if(name === 'rebirthMarkDown') moveSelection(columnCount());
+    else if(name === 'rebirthMarkDroid') markItem(selectedIndex);
+  });
+
+  const gridEl = document.getElementById('grid');
+
+  // Cells in one grid row share an offsetTop, so count the first row's.
+  function columnCount(){
+    const cells = gridEl.querySelectorAll('.d-cell');
+    let cols = 1;
+    while(cols < cells.length && cells[cols].offsetTop === cells[0].offsetTop) cols++;
+    return cols;
+  }
+
+  function applySelection(){
+    const cells = gridEl.querySelectorAll('.d-cell');
+    cells.forEach(c => c.classList.remove('selected'));
+    if(cells[selectedIndex]) cells[selectedIndex].classList.add('selected');
+  }
+
+  function moveSelection(delta){
+    if(!shown.items.length) return;
+    selectedIndex = Math.max(0, Math.min(shown.items.length - 1, selectedIndex + delta));
+    applySelection();
+    const cell = gridEl.querySelectorAll('.d-cell')[selectedIndex];
+    if(cell) scroller.reveal(cell);
+  }
+
+  function markItem(i){
+    const it = shown.items[i];
+    if(!it) return;
+    window.overlayAPI.holdNextCycleMark({ cycle: shown.nextCycle, nk: it.nk, rank: it.rank });
+  }
+
+  // Clicks only reach the cells while the overlay is unlocked (locked = click-through).
+  gridEl.addEventListener('click', (e)=>{
+    const cell = e.target.closest('.d-cell');
+    if(!cell) return;
+    selectedIndex = parseInt(cell.dataset.index, 10);
+    applySelection();
+    markItem(selectedIndex);
   });
 
   // Same guard as declutter.html: nothing renders until the first
@@ -261,13 +340,15 @@
 
   function render(){
     if(!loaded) return;
-    const gridEl = document.getElementById('grid');
-    const { nextCycle, items } = getSneakPreview(currentCycle, ownedRankLocal);
+    shown = getSneakPreview(currentCycle, ownedRankLocal);
+    const { nextCycle, items } = shown;
     document.getElementById('cycleTag').textContent = 'Next: Cycle ' + nextCycle;
     document.getElementById('countTag').textContent = String(items.length);
     gridEl.innerHTML = items.length
-      ? items.map(cellHtml).join('')
+      ? items.map((it, i) => cellHtml(it, i, nextCycle)).join('')
       : '<div class="empty-msg">No Mythic droids in Cycle ' + nextCycle + "'s requirements</div>";
+    selectedIndex = Math.min(selectedIndex, Math.max(0, items.length - 1));
+    applySelection();
     updateScrollbar();
   }
 
@@ -280,7 +361,8 @@
 
   window.overlayAPI.onStoreChanged(({ key, value })=>{
     if(key === 'rebirth-ownedRank-v2'){ ownedRankLocal = value || {}; render(); }
-    else if(key === 'rebirth-activeCycle'){ currentCycle = value || 1; scroller.toTop(); render(); } // new cycle = new list, start at the top
+    else if(key === 'rebirth-heldMarks'){ heldLocal = value || {}; render(); }
+    else if(key === 'rebirth-activeCycle'){ currentCycle = value || 1; selectedIndex = 0; scroller.toTop(); render(); } // new cycle = new list, start at the top
     else if(key === 'rebirth-nameMerges' || key === 'rebirth-displayOverrides'){ fullReload(); }
   });
 

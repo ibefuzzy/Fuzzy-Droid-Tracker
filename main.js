@@ -41,10 +41,12 @@ function loadSharedFunctions(){
   const run = (code) => vm.runInContext(code, ctx, { filename: '<ipc>' });
   return {
     CYCLES: run('CYCLES'),
+    RARITY_ORDER: run('RARITY_ORDER'),
     normKey: run('normKey'),
     canonicalName: run('canonicalName'),
     rankOf: run('rankOf'),
     decideOwnedUpdate: run('decideOwnedUpdate'),
+    isRetired: run('isRetired'),
   };
 }
 const shared = loadSharedFunctions();
@@ -137,6 +139,8 @@ const DEFAULT_SETTINGS = {
   declutterTierEpicHotkey: '',
   declutterTierLegendaryHotkey: '',
   declutterTierMythicHotkey: '',
+  declutterShowRetired: true,       // v1.10.13: retired droids shown dimmed at the bottom of Safe to Retire
+  declutterRetiredHotkey: '',
   rebirthReqOverlayHotkey: 'Control+Shift+5', // toggles the standalone Rebirth Requirements overlay, same deal (moved from Ctrl+Shift+4 on 2026-09-23 — see hotkey above)
   rebirthReqVisible: true,
   rebirthReqLocked: true,
@@ -363,6 +367,11 @@ let rebirthReqWindow = null;
 let sneakWindow = null;
 let critGuideWindow = null;
 let hotkeyListWindow = null;
+// The list overlays the rebirthMark* keys can drive, most recently shown LAST.
+// Starts with Rebirth Requirements on top — it owned these keys before v1.10.13.
+// See sendToMarkList().
+let markListOrder = ['declutter', 'sneak', 'rebirthReq'];
+function noteMarkListShown(name){ markListOrder = markListOrder.filter(n => n !== name).concat(name); }
 let hotkeyListVisible = true; // runtime-only — always shown fresh each launch, not persisted
 let storeData = {};
 let settings = { ...DEFAULT_SETTINGS };
@@ -809,6 +818,7 @@ function toggleDeclutterVisible(){
 function setDeclutterVisible(visible){
   settings.declutterVisible = !!visible;
   persistSettingsNow();
+  if(settings.declutterVisible) noteMarkListShown('declutter');
   if(!declutterWindow) return;
   if(settings.declutterVisible) declutterWindow.showInactive();
   else declutterWindow.hide();
@@ -822,6 +832,7 @@ function toggleRebirthReqVisible(){
 function setRebirthReqVisible(visible){
   settings.rebirthReqVisible = !!visible;
   persistSettingsNow();
+  if(settings.rebirthReqVisible) noteMarkListShown('rebirthReq');
   if(!rebirthReqWindow) return;
   if(settings.rebirthReqVisible) rebirthReqWindow.showInactive();
   else rebirthReqWindow.hide();
@@ -972,6 +983,7 @@ function toggleSneakVisible(){ setSneakVisible(!settings.sneakVisible); }
 function setSneakVisible(visible){
   settings.sneakVisible = !!visible;
   persistSettingsNow();
+  if(settings.sneakVisible) noteMarkListShown('sneak');
   if(!sneakWindow) return;
   if(settings.sneakVisible) sneakWindow.showInactive();
   else sneakWindow.hide();
@@ -1080,6 +1092,7 @@ const HOTKEY_HANDLERS = {
   declutterTierEpic: () => toggleDeclutterTier('declutterShowEpic'),
   declutterTierLegendary: () => toggleDeclutterTier('declutterShowLegendary'),
   declutterTierMythic: () => toggleDeclutterTier('declutterShowMythic'),
+  declutterRetired: () => toggleDeclutterTier('declutterShowRetired'), // same default-true flag flip as the tiers
   // v1.10.3: hotkey-based marking in Upcoming RB Req's overlay (broadcast to overlay.html)
   markDroid: () => broadcast('hotkey:triggered', 'markDroid'),
   markLevel: () => broadcast('hotkey:triggered', 'markLevel'),
@@ -1087,12 +1100,13 @@ const HOTKEY_HANDLERS = {
   markRight: () => broadcast('hotkey:triggered', 'markRight'),
   markUp: () => broadcast('hotkey:triggered', 'markUp'),
   markDown: () => broadcast('hotkey:triggered', 'markDown'),
-  // v1.10.3: hotkey-based marking in Rebirth Requirements overlay (broadcast to rebirth-requirements-overlay.html)
-  rebirthMarkDroid: () => broadcast('hotkey:triggered', 'rebirthMarkDroid'),
-  rebirthMarkLeft: () => broadcast('hotkey:triggered', 'rebirthMarkLeft'),
-  rebirthMarkRight: () => broadcast('hotkey:triggered', 'rebirthMarkRight'),
-  rebirthMarkUp: () => broadcast('hotkey:triggered', 'rebirthMarkUp'),
-  rebirthMarkDown: () => broadcast('hotkey:triggered', 'rebirthMarkDown'),
+  // v1.10.3: hotkey-based marking in the Rebirth Requirements overlay; since
+  // v1.10.13 the same keys also drive Sneak Preview — see sendToMarkList().
+  rebirthMarkDroid: () => sendToMarkList('rebirthMarkDroid'),
+  rebirthMarkLeft: () => sendToMarkList('rebirthMarkLeft'),
+  rebirthMarkRight: () => sendToMarkList('rebirthMarkRight'),
+  rebirthMarkUp: () => sendToMarkList('rebirthMarkUp'),
+  rebirthMarkDown: () => sendToMarkList('rebirthMarkDown'),
   // v1.10.8: master lock — see toggleKeybindsLock()/applyKeybindsLock() above
   keybindsLock: () => toggleKeybindsLock()
 };
@@ -1153,6 +1167,7 @@ const HOTKEY_LABELS = {
   declutterTierEpic: 'Tier Filter: Toggle Epic',
   declutterTierLegendary: 'Tier Filter: Toggle Legendary',
   declutterTierMythic: 'Tier Filter: Toggle Mythic',
+  declutterRetired: 'Safe to Retire: Show/Hide Retired',
   sneak: 'Toggle Sneak Preview',
   sneakScrollUp: 'Scroll Sneak Preview Up',
   sneakScrollDown: 'Scroll Sneak Preview Down',
@@ -1165,11 +1180,11 @@ const HOTKEY_LABELS = {
   markRight: 'Navigate Right',
   markUp: 'Navigate Up',
   markDown: 'Navigate Down',
-  rebirthMarkDroid: 'Mark Selected Droid (Rebirth Requirements)',
-  rebirthMarkLeft: 'Navigate Left (Rebirth Requirements)',
-  rebirthMarkRight: 'Navigate Right (Rebirth Requirements)',
-  rebirthMarkUp: 'Navigate Up (Rebirth Requirements)',
-  rebirthMarkDown: 'Navigate Down (Rebirth Requirements)',
+  rebirthMarkDroid: 'Mark Selected Droid (Rebirth Reqs / Sneak Preview / Safe to Retire)',
+  rebirthMarkLeft: 'Navigate Left (Rebirth Reqs / Sneak Preview / Safe to Retire)',
+  rebirthMarkRight: 'Navigate Right (Rebirth Reqs / Sneak Preview / Safe to Retire)',
+  rebirthMarkUp: 'Navigate Up (Rebirth Reqs / Sneak Preview / Safe to Retire)',
+  rebirthMarkDown: 'Navigate Down (Rebirth Reqs / Sneak Preview / Safe to Retire)',
   keybindsLock: 'Lock/Unlock All Keybinds'
 };
 const HOTKEY_SETTINGS_KEY = {
@@ -1188,6 +1203,7 @@ const HOTKEY_SETTINGS_KEY = {
   declutterTierEpic: 'declutterTierEpicHotkey',
   declutterTierLegendary: 'declutterTierLegendaryHotkey',
   declutterTierMythic: 'declutterTierMythicHotkey',
+  declutterRetired: 'declutterRetiredHotkey',
   sneak: 'sneakHotkey',
   sneakScrollUp: 'sneakScrollUpHotkey',
   sneakScrollDown: 'sneakScrollDownHotkey',
@@ -1317,6 +1333,18 @@ function broadcast(channel, payload){
 function notify(message){
   broadcast('app:notify', message);
 }
+// Sent to ONE visible list window (the most recently shown), never broadcast:
+// a hidden window keeps its DOM and selection, so a broadcast would mark
+// whatever it had selected, unseen.
+function sendToMarkList(name){
+  const wins = {
+    rebirthReq: settings.rebirthReqVisible && rebirthReqWindow,
+    sneak: settings.sneakVisible && sneakWindow,
+    declutter: settings.declutterVisible && declutterWindow
+  };
+  const target = markListOrder.slice().reverse().find(n => wins[n] && !wins[n].isDestroyed());
+  if(target) wins[target].webContents.send('hotkey:triggered', name);
+}
 
 /* ---------------- IPC ---------------- */
 function wireIpc(){
@@ -1380,6 +1408,47 @@ function wireIpc(){
     storeData['rebirth-ownedRank-v2'] = ownedRank;
     persistStoreDebounced();
     broadcast('store:changed', { key: 'rebirth-ownedRank-v2', value: ownedRank });
+    return true;
+  });
+
+  // overlay:holdNextCycleMark (v1.10.13) — Sneak Preview marks a droid for the
+  // cycle it previews. Held in 'rebirth-heldMarks' ({cycle -> {nk -> rank}}),
+  // apart from ownedRank, until that cycle becomes active (tracker.html's
+  // setActiveCycle → mergeHeldMarks). The renderer sends nk itself because it
+  // has the player's name merges loaded and this process doesn't.
+  ipcMain.handle('overlay:holdNextCycleMark', (evt, data)=>{
+    const { cycle, nk, rank } = data;
+    if(!(cycle >= 1 && cycle <= 5) || typeof nk !== 'string' || !nk || !Number.isInteger(rank) || rank < 0 || rank >= shared.RARITY_ORDER.length) return false;
+    const held = storeData['rebirth-heldMarks'] || {};
+    const marks = held[cycle] || {};
+    const decision = shared.decideOwnedUpdate(marks[nk], rank);
+    if(decision.action === 'blocked') return false;
+    if(decision.action === 'clear') delete marks[nk];
+    else marks[nk] = rank;
+    if(Object.keys(marks).length) held[cycle] = marks;
+    else delete held[cycle];
+    storeData['rebirth-heldMarks'] = held;
+    persistStoreDebounced();
+    broadcast('store:changed', { key: 'rebirth-heldMarks', value: held });
+    return true;
+  });
+
+  // overlay:toggleRetired (v1.10.13) — Safe to Retire marks a droid retired
+  // (or un-retires it) for one cycle, in 'rebirth-retired' ({cycle -> {nk ->
+  // owned rank retired}}). Never touches ownedRank; see isRetired() in
+  // requirements.js. `rank` is the droid's currently logged rank.
+  ipcMain.handle('overlay:toggleRetired', (evt, data)=>{
+    const { cycle, nk, rank } = data;
+    if(!(cycle >= 1 && cycle <= 5) || typeof nk !== 'string' || !nk || !Number.isInteger(rank) || rank < 0 || rank >= shared.RARITY_ORDER.length) return false;
+    const retired = storeData['rebirth-retired'] || {};
+    const marks = retired[cycle] || {};
+    if(shared.isRetired(marks[nk], rank)) delete marks[nk];
+    else marks[nk] = rank;
+    if(Object.keys(marks).length) retired[cycle] = marks;
+    else delete retired[cycle];
+    storeData['rebirth-retired'] = retired;
+    persistStoreDebounced();
+    broadcast('store:changed', { key: 'rebirth-retired', value: retired });
     return true;
   });
 
