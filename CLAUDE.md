@@ -178,7 +178,7 @@ short on purpose so a fresh session can read it in one pass.
   user closes the running app before launching a new build.
 
 ## Tests
-`npm test` runs Node's built-in test runner over `test/**/*.test.js` (97 tests;
+`npm test` runs Node's built-in test runner over `test/**/*.test.js` (103 tests;
 test/skins.test.js checks every skin/preset, test/appearance.test.js the looks and
 share codes, test/spawn-parse.test.js replays real feed OCR from test/fixtures/).
 `test/helpers/load-shared.js` loads droid-data.js + requirements.js into an isolated vm
@@ -251,21 +251,40 @@ Stop test copies ONLY by that `--user-data-dir` in the process command line (Win
 never by exe path: the user may be running the app from `release\win-unpacked` too. Tell the
 user before launching; they may be in-game and close stray windows.
 
-## Current state (2026-09-27): v1.14.0 (📡 Spawn Alert) shipped
+## Current state (2026-09-27): v1.14.1 (⚠ Mission warning) shipped
 
-- **Latest release: v1.14.0** = 📡 Spawn Alert (see Layout) + its Filters-tab grid and
-  alert sound. User-tested in-game and approved. Exe SHA256
-  E9354C01900F93EFC51FD3CFD91343ED4432E88CA128520791192FC424B5B3B8. Source (16 changed/new
-  files) pushed to `main` before the release was published. Tests 98/98; browser replay of
-  real frames = 6/6 alerts.
-- **Next work starts from v1.14.0: bump package.json FIRST.** It's CRLF with
-  PowerShell-style double-space formatting; edit the version in place, don't reformat.
-- `release\` holds the 1.13.0, 1.13.1 and 1.14.0 exes. Snapshots of approved source:
+- **Latest: v1.14.1**, user-tested and approved. Source pushed to `main`, then the release
+  form was pre-filled for the user to publish (they drag the exe + click Publish). Next
+  session: confirm on GitHub Releases that v1.14.1 is published and its asset digest equals
+  the exe's SHA256 71FFC5702A307C70C3579D4DEF3E0A0DE60CBE2C1163CBA6E836D95DFD788EC2.
+- v1.14.1 = ⚠ Mission warning: Timers tab
+  chips 30 s / 1 min / 2 min + up to 3 own times → `settings.missionWarnTimes` (seconds),
+  `missionWarnSound` (default 'chime'), `missionWarnVolume` (own slider, 0.35). Logic =
+  `cleanMissionWarnTimes()` / `missionWarningsDue()` in requirements.js
+  (test/mission-warn.test.js); timers.html plays it via
+  `playTimerSound(..., warnChoice, warnVolume)`. Also: the timers window now has
+  `backgroundThrottling:false` (hidden banners slowed the 1 s tick to 1/min, so sounds
+  could be late). Browser-checked: warning 30 s before, mission sound at start. The user
+  asked for its own volume slider after testing the first build; added.
+- **Next work starts from v1.14.1: bump package.json FIRST.**
+- **Previous release: v1.14.0** = 📡 Spawn Alert (see Layout) + its Filters-tab grid and
+  alert sound. User-tested in-game and approved; published 2026-09-27 23:29 UTC. GitHub
+  `main` = commit 67c339e; all 16 changed/new files matched local by blob SHA before
+  publishing, and the release asset's digest equals the local exe's SHA256 (E9354C01…B3B8).
+  Tests 98/98; browser replay of real frames = 6/6 alerts.
+- package.json is CRLF with PowerShell-style double-space formatting; edit the version in
+  place, don't reformat.
+- `release\` holds only the 1.14.1 exe (+ win-unpacked): on 2026-09-27 the user asked to
+  remove older versions, so 1.13.0–1.14.0 and the first 1.14.1 build went to the Recycle Bin
+  (all published ones are on GitHub Releases). Snapshots of approved source:
   `_backup_v1.11.1_approved/`, `_backup_v1.12.0_approved/`, `_backup_v1.13.1_approved/`,
-  `_backup_v1.14.0_approved/`. Take a new `_backup_vX_approved/` before a big change (the user likes these).
+  `_backup_v1.14.0_approved/`, `_backup_v1.14.1_approved/`. Take a new `_backup_vX_approved/`
+  before a big change (the user likes these).
 - Don't run `npm run dist` while the user runs the exe it would replace: it hangs with no
   error. Build with `--config.directories.output=release/next` and move it over afterwards.
 - Recent versions in one line each (details: README changelog + CLAUDE_HISTORY.md):
+  - v1.14.1: ⚠ Mission warning (30 s / 1 min / 2 min + own times, own sound + volume);
+    timer sounds no longer late while the banners are hidden.
   - v1.14.0: 📡 Spawn Alert (OCR of the game's spawn feed → big placeable alert), per
     type × tier Off/Show/Show+sound grid in Filters, one alert sound.
   - v1.13.1: Kyber banner every hour at :15:00 (the launch-event window code is gone).
@@ -279,6 +298,11 @@ user before launching; they may be in-game and close stray windows.
   (local-only, like the other root .md docs). Read it only when a task touches that history.
 
 ## Lessons worth keeping (distilled from CLAUDE_HISTORY.md)
+- **Screen-reading (OCR) changes: test through the replay harness, not just offline PNGs.**
+  A real capture arrives as video with softened colour edges; a v1.14.0 method that read
+  10/10 offline caught 4/6 through the video path. `dev/spawn-alert-harness.html` +
+  test/spawn-parse.test.js are the checks. New real samples: a read-only PowerShell
+  CopyFromScreen loop (computer-use can't see Fortnite by name).
 - **Timers are pure clock maths** in timers.html's `next*()` functions: Stellar :05/:35,
   Mythic :55, Kyber :15 (all on :00 seconds), Mission every 35 min on :20 seconds from the
   fixed `MISSION_NAME_EPOCH_MS` (+ the player's "Sync mission timer"). A limited-time event

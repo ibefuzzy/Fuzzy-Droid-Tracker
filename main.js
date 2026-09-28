@@ -98,6 +98,11 @@ const DEFAULT_SETTINGS = {
   timersLocked: true,
   timersPosition: null,
   missionSyncEpochMs: null, // exact timestamp (ms) of a confirmed live mission moment, set via "Sync mission timer"; null = use the built-in best-guess schedule
+  // v1.14.1: seconds BEFORE the next mission to play missionWarnSound (none by
+  // default); see cleanMissionWarnTimes()/missionWarningsDue() in requirements.js.
+  missionWarnTimes: [],
+  missionWarnSound: 'chime',
+  missionWarnVolume: 0.35, // its own slider, like spawnAlertVolume
   timerSoundEnabled: false, // v1.10.2: sound notifications for timer expiry (default off for fresh installs)
   timerSoundVolume: 0.35,   // master volume, 0.1–0.8 range
   missionSoundVolumeOverride: false, // use per-timer override instead of master
@@ -733,7 +738,11 @@ function createTimersWindow(){
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
-      nodeIntegration: false
+      nodeIntegration: false,
+      // v1.14.1: the alert sounds and mission warnings run off this page's 1 s
+      // tick, which Chromium slows to once a minute in a window hidden for ~5
+      // minutes (banners toggled off), so a sound could come up to a minute late.
+      backgroundThrottling: false
     }
   });
 
@@ -2044,6 +2053,7 @@ function wireIpc(){
     try{ fs.rmSync(soundPath(entry), { force: true }); }catch(e){ /* the app's own copy; nothing else to do */ }
     settings.customSounds = settings.customSounds.filter(s => s.id !== id);
     ['missionSoundChoice', 'blueprintSoundChoice', 'spawnAlertSound'].forEach(k => { if(settings[k] === 'custom:' + id) settings[k] = 'goodnews'; });
+    if(settings.missionWarnSound === 'custom:' + id) settings.missionWarnSound = 'chime';
     ['stellarSoundChoice', 'mythicSoundChoice', 'kyberSoundChoice'].forEach(k => { if(settings[k] === 'custom:' + id) settings[k] = null; });
     persistSettingsNow();
     broadcast('settings:changed', { ...settings });

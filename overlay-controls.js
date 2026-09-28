@@ -288,6 +288,7 @@
     }
     renderSounds(settings); // v1.13.0: the per-timer pickers + your own sounds
     renderSpawnRules(settings); // v1.14.0: Filters → 📡 Spawn Alert grid + sound
+    renderMissionWarn(settings); // v1.14.1: Timers → ⚠ Mission warning
   }
 
   function acceleratorFromEvent(e){
@@ -860,6 +861,105 @@
   spawnSoundSel.addEventListener('change', ()=> window.overlayAPI.setSettings({ spawnAlertSound: spawnSoundSel.value }));
   spawnVolume.addEventListener('input', ()=>{ spawnVolumeVal.textContent = Math.round(spawnVolume.value * 100) + '%'; });
   spawnVolume.addEventListener('change', ()=> window.overlayAPI.setSettings({ spawnAlertVolume: parseFloat(spawnVolume.value) }));
+  /* ⚠ Mission warning (v1.14.1, Timers tab): a chip per MISSION_WARN_PRESETS time
+     to toggle, plus up to MISSION_WARN_MAX_CUSTOM of the player's own (chips with ✕),
+     all saved as settings.missionWarnTimes through cleanMissionWarnTimes()
+     (requirements.js). timers.html plays settings.missionWarnSound at each one. */
+  const warnChips = document.getElementById('missionWarnChips');
+  const warnInput = document.getElementById('missionWarnInput');
+  const warnMsg = document.getElementById('missionWarnMsg');
+  const warnSoundSel = document.getElementById('missionWarnSound');
+  const warnLine = document.getElementById('missionWarnLine');
+  const warnVolume = document.getElementById('missionWarnVolume');
+  const warnVolumeVal = document.getElementById('missionWarnVolumeVal');
+  let warnTimes = [], pendingWarnTimes = null, warnSoundKey = null;
+  const fmtWarn = (sec) => sec < 60 ? sec + ' s' : (sec % 60 ? Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0') : (sec / 60) + ' min');
+  function setWarnTimes(list){
+    warnTimes = cleanMissionWarnTimes(list);
+    pendingWarnTimes = warnTimes;
+    paintWarn();
+    window.overlayAPI.setSettings({ missionWarnTimes: warnTimes });
+  }
+  function warnChip(sec, on, own){
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'warn-chip' + (on ? ' on' : '');
+    b.textContent = fmtWarn(sec);
+    if(own){
+      const x = document.createElement('span');
+      x.className = 'x';
+      x.textContent = '✕';
+      b.appendChild(x);
+      b.title = 'Your own time: click to remove it';
+      b.addEventListener('click', ()=> setWarnTimes(warnTimes.filter(v => v !== sec)));
+    } else {
+      b.title = on ? 'Click to stop this warning' : 'Click to warn ' + fmtWarn(sec) + ' before each mission';
+      b.addEventListener('click', ()=> setWarnTimes(on ? warnTimes.filter(v => v !== sec) : warnTimes.concat(sec)));
+    }
+    return b;
+  }
+  function paintWarn(){
+    warnChips.textContent = '';
+    MISSION_WARN_PRESETS.forEach(sec => warnChips.appendChild(warnChip(sec, warnTimes.includes(sec), false)));
+    warnTimes.filter(sec => !MISSION_WARN_PRESETS.includes(sec)).forEach(sec => warnChips.appendChild(warnChip(sec, true, true)));
+    warnLine.textContent = '';
+    if(warnTimes.length){
+      const span = Math.max(150, ...warnTimes) * 1.08;
+      warnTimes.concat(0).forEach(sec => {
+        const t = document.createElement('div');
+        t.className = 'warn-tick' + (sec ? '' : ' start');
+        t.style.left = (100 - sec / span * 100) + '%';
+        t.appendChild(document.createElement('i'));
+        t.appendChild(document.createTextNode(sec ? fmtWarn(sec) : 'Mission'));
+        warnLine.appendChild(t);
+      });
+    }
+    document.getElementById('missionWarnSummary').textContent = warnTimes.length
+      ? 'Warns ' + warnTimes.length + (warnTimes.length === 1 ? ' time' : ' times') + ' before each mission: ' + warnTimes.map(fmtWarn).join(', ') + ' before.'
+      : 'No warnings: pick a time above.';
+  }
+  function renderMissionWarn(s){
+    const saved = cleanMissionWarnTimes(s.missionWarnTimes);
+    if(pendingWarnTimes && JSON.stringify(saved) === JSON.stringify(pendingWarnTimes)) pendingWarnTimes = null;
+    if(!pendingWarnTimes) warnTimes = saved;
+    paintWarn();
+    const customs = Array.isArray(s.customSounds) ? s.customSounds : [];
+    const key = JSON.stringify(customs);
+    if(key !== warnSoundKey){
+      warnSoundKey = key;
+      warnSoundSel.textContent = '';
+      BUILTIN_SOUNDS.filter(([v]) => v !== 'off').forEach(([v, t]) => warnSoundSel.appendChild(option(v, t)));
+      customs.forEach(c => warnSoundSel.appendChild(option('custom:' + c.id, '🎵 ' + c.name)));
+    }
+    warnSoundSel.value = s.missionWarnSound || 'chime';
+    if(warnSoundSel.selectedIndex < 0) warnSoundSel.value = 'chime'; // e.g. a removed file
+    const vol = typeof s.missionWarnVolume === 'number' ? s.missionWarnVolume : 0.35;
+    if(document.activeElement !== warnVolume){ warnVolume.value = vol; warnVolumeVal.textContent = Math.round(vol * 100) + '%'; }
+  }
+  function addOwnWarnTime(){
+    const v = warnInput.value.trim();
+    const m = /^(\d{1,2}):([0-5]\d)$/.exec(v); // m:ss, so 2:99 isn't a time
+    const sec = m ? (+m[1]) * 60 + (+m[2]) : (/^\d{1,4}$/.test(v) ? +v : NaN);
+    const [lo, hi] = MISSION_WARN_RANGE;
+    let msg = '';
+    if(!(sec >= lo && sec <= hi)) msg = 'Use ' + lo + ' s to ' + (hi / 60) + ' min, like 1:30 or 90.';
+    else if(warnTimes.includes(sec)) msg = 'Already on.';
+    else if(!MISSION_WARN_PRESETS.includes(sec) && warnTimes.filter(t => !MISSION_WARN_PRESETS.includes(t)).length >= MISSION_WARN_MAX_CUSTOM) msg = 'Up to ' + MISSION_WARN_MAX_CUSTOM + ' of your own: remove one first.';
+    warnMsg.textContent = msg;
+    if(msg) return;
+    warnInput.value = '';
+    setWarnTimes(warnTimes.concat(sec));
+  }
+  document.getElementById('missionWarnAddBtn').addEventListener('click', addOwnWarnTime);
+  warnInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ e.preventDefault(); addOwnWarnTime(); } });
+  warnSoundSel.addEventListener('change', ()=> window.overlayAPI.setSettings({ missionWarnSound: warnSoundSel.value }));
+  warnVolume.addEventListener('input', ()=>{ warnVolumeVal.textContent = Math.round(warnVolume.value * 100) + '%'; });
+  warnVolume.addEventListener('change', ()=> window.overlayAPI.setSettings({ missionWarnVolume: parseFloat(warnVolume.value) }));
+  document.getElementById('missionWarnPlayBtn').addEventListener('click', ()=>{
+    playAlert(warnSoundSel.value || 'chime', parseFloat(warnVolume.value) || 0.35, readCustomSound)
+      .catch(()=> showToast("Couldn't play that sound — the file may be damaged or in a format this app can't read"));
+  });
+
   document.getElementById('spawnAlertSoundPlayBtn').addEventListener('click', ()=>{
     playAlert(spawnSoundSel.value || 'goodnews', parseFloat(spawnVolume.value) || 0.35, readCustomSound)
       .catch(()=> showToast("Couldn't play that sound — the file may be damaged or in a format this app can't read"));

@@ -774,6 +774,18 @@
   .spawn-rule-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:6px 0;font-size:12.5px;color:var(--text);}
   .spawn-rule-vol{display:inline-flex;align-items:center;gap:6px;color:var(--text-dim);font-size:12px;}
   .spawn-rule-vol input{accent-color:var(--accent);}
+  /* v1.14.1 mission warning chips + timeline (overlay-controls.js) */
+  .warn-chips{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;}
+  .warn-chip{background:rgba(0,0,0,.3);color:var(--text);border:1px solid var(--holo-line);border-radius:999px;padding:5px 12px;cursor:pointer;font:inherit;font-size:12.5px;}
+  .warn-chip.on{background:var(--accent);border-color:var(--accent);color:#08130d;font-weight:700;}
+  .warn-chip .x{margin-left:6px;opacity:.7;}
+  .warn-label{font-size:13px;color:var(--text);}
+  .warn-input{width:64px;padding:5px 8px;border-radius:6px;border:1px solid var(--holo-line);background:rgba(0,0,0,.35);color:var(--text);font:inherit;font-size:12.5px;}
+  .warn-line{position:relative;height:40px;margin:12px 18px 2px;border-top:2px solid var(--holo-line);}
+  .warn-line:empty{display:none;}
+  .warn-tick{position:absolute;top:-8px;transform:translateX(-50%);text-align:center;font-size:11px;color:var(--text-dim);white-space:nowrap;}
+  .warn-tick i{display:block;width:2px;height:14px;margin:0 auto 3px;background:var(--accent);}
+  .warn-tick.start i{background:#ffc83d;height:18px;}
 
   /* ---- Borders tab (v1.10.0, was Colors): one row per overlay, a swatch
      button per border skin. Swatches are generated in JS from
@@ -1461,6 +1473,26 @@
               <label for="kyberSoundChoice">💎 Kyber</label><select class="sound-select" id="kyberSoundChoice"></select><button class="btn sound-play" type="button" data-sound-for="kyberSoundChoice" title="Preview">▶</button>
             </div>
             <p class="pos-hint" style="margin:6px 0 12px">Stellar, Mythic and Kyber use the Blueprints sound unless you give them their own.</p>
+            <!-- v1.14.1: warnings BEFORE the next mission (overlay-controls.js; played by timers.html) -->
+            <div class="sync-box">
+              <div class="pos-title">⚠ Mission warning</div>
+              <div class="pos-hint">Warns you <b>before</b> the next mission. Click any times (several is fine), or add up to 3 of your own. It follows the 🎯 Next Mission banner, sync included, with its own sound and volume.</div>
+              <div class="warn-chips" id="missionWarnChips"></div>
+              <div class="sync-row">
+                <span class="pos-hint">Your own (m:ss or seconds):</span>
+                <input type="text" class="warn-input" id="missionWarnInput" placeholder="1:30" maxlength="6">
+                <button class="btn" type="button" id="missionWarnAddBtn">＋ Add</button>
+                <span class="pos-hint" id="missionWarnMsg"></span>
+              </div>
+              <div class="sync-row">
+                <label class="warn-label" for="missionWarnSound">Warning sound</label>
+                <select class="sound-select" id="missionWarnSound"></select>
+                <button class="btn sound-play" type="button" id="missionWarnPlayBtn" title="Preview">▶</button>
+                <label class="spawn-rule-vol">Volume <input type="range" id="missionWarnVolume" min="0.05" max="0.8" step="0.05" value="0.35"> <b id="missionWarnVolumeVal">35%</b></label>
+              </div>
+              <div class="warn-line" id="missionWarnLine"></div>
+              <div class="pos-hint" id="missionWarnSummary"></div>
+            </div>
             <div class="sync-box">
               <div class="pos-title">🎵 Your sounds</div>
               <div class="pos-hint">Any mp3, wav, ogg or m4a up to 5 MB. The app keeps its own copy and matches its loudness to the other alerts. Once added, pick it for any timer above.</div>

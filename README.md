@@ -407,6 +407,22 @@ it can be corrected.
   Leftovers of the in-game "PREVIEW" banner, the card frame and the colored card glow are
   gone.
 
+## ⚠ Mission warning (v1.14.1)
+
+A heads-up sound **before** the next mission, in ⚙ Overlay Settings → Timers → Sound
+notifications → ⚠ Mission warning:
+
+- Click **30 s**, **1 min** and/or **2 min** (any combination), and add up to 3 times of
+  your own (type `1:30` or `90`, then ＋ Add; ✕ removes one). A little timeline shows when
+  each warning fires before the mission.
+- **Warning sound:** its own pick from the same list as the timers (Chime by default, so
+  "mission soon" sounds different from "mission now") and its own volume slider, with a ▶
+  preview at that volume. It needs "Enable sound notifications" on, like every timer sound.
+- It follows the 🎯 Next Mission banner, including your 🔄 Sync. A warning the PC slept
+  through is skipped rather than played late.
+- Fix: timer sounds (and now the warnings) no longer come up to a minute late after the
+  banners have been hidden for a while. Windows was slowing the hidden banner window's clock.
+
 ## 📡 Spawn Alert (v1.14.0)
 
 The game announces world droid spawns in small text at the left of the screen

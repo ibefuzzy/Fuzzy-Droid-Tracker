@@ -630,3 +630,40 @@ function cycleRealLevelCount(cycle){
 function cycleRealSlotCount(cycle){
   return cycleRealLevelCount(cycle) * 3;
 }
+
+/* ---------------- MISSION WARNINGS (v1.14.1) ----------------
+   settings.missionWarnTimes = seconds BEFORE the next mission to play
+   settings.missionWarnSound (⚙ Overlay Settings → Timers). The presets are chips
+   the player toggles; any other value is one of their own (at most
+   MISSION_WARN_MAX_CUSTOM). timers.html plays them, the tracker edits them. */
+const MISSION_WARN_PRESETS = [30, 60, 120];
+const MISSION_WARN_MAX_CUSTOM = 3;
+const MISSION_WARN_RANGE = [5, 1800]; // 5 s to 30 min (a mission is every 35 min)
+
+/** A clean warning list from any input: whole seconds in range, no repeats, longest first, own times capped. Never throws. */
+function cleanMissionWarnTimes(list){
+  const seen = new Set();
+  let own = 0;
+  (Array.isArray(list) ? list : []).forEach(v => {
+    const s = Math.round(Number(v));
+    if(!(s >= MISSION_WARN_RANGE[0] && s <= MISSION_WARN_RANGE[1]) || seen.has(s)) return;
+    if(!MISSION_WARN_PRESETS.includes(s)){
+      if(own >= MISSION_WARN_MAX_CUSTOM) return;
+      own++;
+    }
+    seen.add(s);
+  });
+  return [...seen].sort((a, b) => b - a);
+}
+
+/** Which warnings fire between two countdown readings (ms left to the mission, previous
+    then current): each time the countdown crossed. None on the first reading, when the
+    countdown wrapped to the next mission, or when the moment passed more than 3 s ago
+    (e.g. the PC slept through it), so a warning is never played late. */
+function missionWarningsDue(prevMs, nowMs, warnTimes){
+  if(prevMs == null || !(nowMs < prevMs)) return [];
+  return cleanMissionWarnTimes(warnTimes).filter(s => {
+    const at = s * 1000;
+    return prevMs > at && nowMs <= at && nowMs > at - 3000;
+  });
+}
