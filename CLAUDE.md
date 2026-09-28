@@ -251,22 +251,29 @@ Stop test copies ONLY by that `--user-data-dir` in the process command line (Win
 never by exe path: the user may be running the app from `release\win-unpacked` too. Tell the
 user before launching; they may be in-game and close stray windows.
 
-## Current state (2026-09-27): v1.14.1 (⚠ Mission warning) shipped
+## Current state (2026-09-27): v1.14.2 (mission-warning hotfix) shipped
 
-- **Latest: v1.14.1**, user-tested and approved. Source pushed to `main`, then the release
+- **Latest: v1.14.2**, user-tested and approved. Source pushed to `main`, then the release
   form was pre-filled for the user to publish (they drag the exe + click Publish). Next
-  session: confirm on GitHub Releases that v1.14.1 is published and its asset digest equals
-  the exe's SHA256 71FFC5702A307C70C3579D4DEF3E0A0DE60CBE2C1163CBA6E836D95DFD788EC2.
+  session: confirm on GitHub Releases that v1.14.2 is published and its asset digest equals
+  the exe's SHA256 8AB481982C7CBF15E7FBD4D254C7EF437B83BC8C04F7117B3B02EE0F3407B9E7.
+- v1.14.2 = warnings play whenever a time is picked (they were muted by the timer-expiry
+  switch), and the warning and Spawn Alert volume sliders sit on their own line with a
+  fixed-width % (they jumped rows as the % text changed width).
 - v1.14.1 = ⚠ Mission warning: Timers tab
   chips 30 s / 1 min / 2 min + up to 3 own times → `settings.missionWarnTimes` (seconds),
   `missionWarnSound` (default 'chime'), `missionWarnVolume` (own slider, 0.35). Logic =
   `cleanMissionWarnTimes()` / `missionWarningsDue()` in requirements.js
-  (test/mission-warn.test.js); timers.html plays it via
-  `playTimerSound(..., warnChoice, warnVolume)`. Also: the timers window now has
+  (test/mission-warn.test.js); timers.html plays it via `playMissionWarning()`, which
+  ignores `timerSoundEnabled` since v1.14.2 (picking a time is the opt-in; in v1.14.1 the
+  switch silently muted warnings for a user who had it off). Also: the timers window now has
   `backgroundThrottling:false` (hidden banners slowed the 1 s tick to 1/min, so sounds
   could be late). Browser-checked: warning 30 s before, mission sound at start. The user
   asked for its own volume slider after testing the first build; added.
-- **Next work starts from v1.14.1: bump package.json FIRST.**
+- **Next work starts from v1.14.2: bump package.json FIRST.**
+- When the user says a sound or feature "doesn't work", read their
+  `%APPDATA%\fuzzys-droid-tracker\overlay-settings.json` first (read-only): in v1.14.2 it
+  showed at once that an off switch, not the timing, was the cause.
 - **Previous release: v1.14.0** = 📡 Spawn Alert (see Layout) + its Filters-tab grid and
   alert sound. User-tested in-game and approved; published 2026-09-27 23:29 UTC. GitHub
   `main` = commit 67c339e; all 16 changed/new files matched local by blob SHA before
@@ -274,15 +281,15 @@ user before launching; they may be in-game and close stray windows.
   Tests 98/98; browser replay of real frames = 6/6 alerts.
 - package.json is CRLF with PowerShell-style double-space formatting; edit the version in
   place, don't reformat.
-- `release\` holds only the 1.14.1 exe (+ win-unpacked): on 2026-09-27 the user asked to
-  remove older versions, so 1.13.0–1.14.0 and the first 1.14.1 build went to the Recycle Bin
-  (all published ones are on GitHub Releases). Snapshots of approved source:
+- `release\` holds only the latest exe (+ win-unpacked): the user asked to keep just the
+  newest build, so older ones go to the Recycle Bin (published ones are on GitHub Releases). Snapshots of approved source:
   `_backup_v1.11.1_approved/`, `_backup_v1.12.0_approved/`, `_backup_v1.13.1_approved/`,
   `_backup_v1.14.0_approved/`, `_backup_v1.14.1_approved/`. Take a new `_backup_vX_approved/`
   before a big change (the user likes these).
 - Don't run `npm run dist` while the user runs the exe it would replace: it hangs with no
   error. Build with `--config.directories.output=release/next` and move it over afterwards.
 - Recent versions in one line each (details: README changelog + CLAUDE_HISTORY.md):
+  - v1.14.2: mission warnings play even with timer-expiry sounds off; volume sliders don't jump.
   - v1.14.1: ⚠ Mission warning (30 s / 1 min / 2 min + own times, own sound + volume);
     timer sounds no longer late while the banners are hidden.
   - v1.14.0: 📡 Spawn Alert (OCR of the game's spawn feed → big placeable alert), per

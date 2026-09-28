@@ -407,6 +407,16 @@ it can be corrected.
   Leftovers of the in-game "PREVIEW" banner, the card frame and the colored card glow are
   gone.
 
+## 🔧 Mission warnings actually sound (v1.14.2, hotfix)
+
+- In v1.14.1 a mission warning only played while "Enable sound notifications when timers
+  expire" was on, and nothing in the ⚠ Mission warning box said so, so with that switch off
+  the warnings stayed silent. Now a warning plays whenever you've picked a time for it, with
+  its own sound and volume; the switch still controls the sounds when timers expire.
+- The volume sliders for the mission warning (Timers) and the Spawn Alert (Filters) sit on
+  their own line now. Before, they jumped between rows while you slid them, as the
+  percentage next to them changed width.
+
 ## ⚠ Mission warning (v1.14.1)
 
 A heads-up sound **before** the next mission, in ⚙ Overlay Settings → Timers → Sound
@@ -417,7 +427,8 @@ notifications → ⚠ Mission warning:
   each warning fires before the mission.
 - **Warning sound:** its own pick from the same list as the timers (Chime by default, so
   "mission soon" sounds different from "mission now") and its own volume slider, with a ▶
-  preview at that volume. It needs "Enable sound notifications" on, like every timer sound.
+  preview at that volume. Picking a time is what turns warnings on: they play even with
+  "Enable sound notifications when timers expire" off (that switch is for the expiry sounds).
 - It follows the 🎯 Next Mission banner, including your 🔄 Sync. A warning the PC slept
   through is skipped rather than played late.
 - Fix: timer sounds (and now the warnings) no longer come up to a minute late after the

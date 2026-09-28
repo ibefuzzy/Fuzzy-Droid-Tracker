@@ -337,14 +337,13 @@
     bannerEl.classList.toggle('imminent', remainingMs >= 0 && remainingMs < IMMINENT_THRESHOLD_MS);
   }
 
-  function playTimerSound(timerType, settings, warnChoice, warnVolume) {
+  function playTimerSound(timerType, settings) {
     if (!settings.timerSoundEnabled) return;
 
     // v1.13.0: Stellar/Mythic/Kyber each have their own pick; none set = the
-    // Blueprints pick (the only choice they had before). v1.14.1: a mission
-    // warning passes its own pick (warnChoice) and its own volume (warnVolume).
-    const choice = warnChoice || (timerType === 'mission' ? settings.missionSoundChoice
-      : (settings[timerType + 'SoundChoice'] || settings.blueprintSoundChoice));
+    // Blueprints pick (the only choice they had before).
+    const choice = timerType === 'mission' ? settings.missionSoundChoice
+      : (settings[timerType + 'SoundChoice'] || settings.blueprintSoundChoice);
     if (!choice || choice === 'off') return;
 
     // Determine volume: use override if enabled, otherwise use master
@@ -354,16 +353,23 @@
     if (settings[overrideKey]) {
       volume = settings[volumeKey] || 0.35;
     }
-    if (warnVolume != null) volume = warnVolume;
 
     playAlert(choice, volume, (id) => window.overlayAPI.readCustomSound(id)).catch(() => {
       if (choice !== 'goodnews') playAlert('goodnews', volume).catch(() => {}); // a broken own file still alerts
     });
   }
 
+  // v1.14.2: a mission warning is its own opt-in (a time picked in Timers → ⚠ Mission
+  // warning), so it plays with its own sound and volume even when "Enable sound
+  // notifications when timers expire" is off, like the Spawn Alert's sound. In v1.14.1
+  // it went through playTimerSound() and that switch silently muted it.
   function playMissionWarning(settings){
+    const choice = settings.missionWarnSound || 'chime';
     const v = Number(settings.missionWarnVolume);
-    playTimerSound('mission', settings, settings.missionWarnSound || 'chime', Number.isFinite(v) && v > 0 ? v : 0.35);
+    const volume = Number.isFinite(v) && v > 0 ? v : 0.35;
+    playAlert(choice, volume, (id) => window.overlayAPI.readCustomSound(id)).catch(() => {
+      if (choice !== 'chime') playAlert('chime', volume).catch(() => {}); // a broken own file still warns
+    });
   }
 
   // Each next___() function above always returns the NEXT future occurrence,
