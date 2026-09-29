@@ -1,6 +1,6 @@
 {
     "name":  "fuzzys-droid-tracker",
-    "version":  "1.15.0",
+    "version":  "1.15.1",
     "description":  "Fuzzy\u0027s Droid Tracker — a Droid Tycoon rebirth tracker with an always-on-top requirements HUD",
     "main":  "main.js",
     "author":  "Fuzzy",

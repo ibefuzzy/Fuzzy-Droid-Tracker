@@ -221,9 +221,23 @@ const CYCLES = {
 // low -> high
 const RARITY_ORDER = ["B","G","D","R","K","X","S","Y"]; // low -> high (Y=Kyber is highest)
 function rankOf(code){ return RARITY_ORDER.indexOf(code); }
+/* ---------------- rebirth CREDIT COST (v1.15.1) ----------------
+   The credits the game asks for to go through with each rebirth. Index =
+   rebirth level - 1, so REBIRTH_CREDITS[0] is Rebirth 1. Levels 1-35 come from
+   the community "Super Rebirth" chart (Update v1.26, 2026-08-16); 36-40 the
+   user gave separately. Treated as the same in every cycle; rebirthCreditsFor()
+   in requirements.js is the only lookup, so a per-cycle table can slot in there
+   later. The 🎯 Upcoming RB Req's HUD shows each level's cost the way the game
+   writes it (formatCredits(): 10K, 1.36B, 1.19QA). */
+const REBIRTH_CREDITS = [
+  10e3, 150e3, 975e3, 2.95e6, 5.35e6, 9.85e6, 14.5e6, 36e6, 89e6, 220e6,          // 1-10
+  550e6, 1.36e9, 3.4e9, 8.45e9, 21e9, 52e9, 130e9, 325e9, 810e9, 2e12,            // 11-20
+  3e12, 4.5e12, 6e12, 9e12, 13.5e12, 21e12, 32e12, 45e12, 68e12, 100e12,          // 21-30
+  150e12, 230e12, 345e12, 520e12, 778e12, 1.19e15, 2.5e15, 4.5e15, 8e15, 15e15    // 31-40
+];
 
 /* ---------------- droid RARITY CLASS (Common/Rare/Epic/Legendary/Mythic/Iconic) ----------------
-   A second, separate axis from the Base->Stellar variant ladder above â€” this
+   A second, separate axis from the Base->Stellar variant ladder above — this
    is the droid's fixed "class" (independent of which colorway you own), used
    only by the Safe to Retire / Declutter list: originally (2026-09-19) to
    filter down to Legendary/Mythic, and since v1.6.0 (2026-09-24) to group
@@ -232,20 +246,20 @@ function rankOf(code){ return RARITY_ORDER.indexOf(code); }
    provenance notes that follow describe the original Legendary/Mythic pass.
 
    Sourced from community guides, not the game's own files (this sandbox has
-   no way to read those), so treat it as best-effort â€” cross-checked across
+   no way to read those), so treat it as best-effort — cross-checked across
    five independent sources for exactly the two tiers that matter here:
      - igeeksblog.com and fandomscoop.com's droid-by-rarity lists (near-
        identical data, likely shared upstream source)
      - insider-gaming.com's Droidex writeup
-     - droidex.nackz.dev/value-list/ â€” a comprehensive, independently-built
+     - droidex.nackz.dev/value-list/ — a comprehensive, independently-built
        community tracker with FULL Legendary/Mythic rosters including droids
        that don't even appear in this app's CYCLES table
-     - droidex.nackz.dev/faq/ â€” same site, different page, independently
+     - droidex.nackz.dev/faq/ — same site, different page, independently
        lists a Droid Fusion example set that exactly matches its own
        value-list's Legendary/Mythic assignments (internal consistency check)
    Every Legendary/Mythic name below appears in at least 2 of these sources
    with zero disagreement. (Common/Rare/Epic were left out at first since
-   nothing distinguished them yet â€” added in v1.6.0, see below.) Iconic droids
+   nothing distinguished them yet — added in v1.6.0, see below.) Iconic droids
    (event-exclusive characters like BB-8, DJ-R3X) never appear in CYCLES at
    all, so they're absent from this table by construction, not by oversight.
    Both raw spellings of names CYCLES itself is inconsistent about (e.g.
@@ -258,7 +272,7 @@ const RARITY_CLASS_ORDER = ['Default', 'Rare', 'Epic', 'Legendary', 'Mythic'];
 const DROID_RARITY_CLASS = {
   // Default/Common, Rare and Epic added 2026-09-24 (source: droidex.nackz.dev
   // value list, cross-checked name-by-name against every unique droid in
-  // CYCLES â€” all 62 covered, and its Legendary/Mythic entries agreed with
+  // CYCLES — all 62 covered, and its Legendary/Mythic entries agreed with
   // the ones below that were already here). Needed once the Safe to Retire
   // list started showing every tier, not just Legendary/Mythic.
   "Gonk": "Default", "Mouse": "Default", "Pit": "Default", "R8": "Default",

@@ -273,6 +273,23 @@ function getDeclutterList(cycle, currentLevel, ownedRank){
    variety first, then name. `cycle` is the CURRENT cycle; 5 wraps to 1. */
 /** Wrap cycle number: cycle 5 to 1, all others increment by 1. */
 function nextCycleOf(cycle){ return cycle >= 5 ? 1 : cycle + 1; }
+
+/* Rebirth credit cost (v1.15.1): REBIRTH_CREDITS in droid-data.js, the same in
+   every cycle as far as known. Take the cycle anyway, so a per-cycle table only
+   changes this function. */
+/** Credits needed to go through with rebirth `level` of `cycle`; null when unknown. */
+function rebirthCreditsFor(cycle, level){
+  const n = REBIRTH_CREDITS[level - 1];
+  return typeof n === 'number' ? n : null;
+}
+const CREDIT_SUFFIXES = ['', 'K', 'M', 'B', 'T', 'QA', 'QI'];
+/** A credit amount the way the game writes it: 10K, 2.95M, 1.36B, 13.5T, 1.19QA. */
+function formatCredits(n){
+  if(!(n >= 0)) return '';
+  let i = 0;
+  while(i < CREDIT_SUFFIXES.length - 1 && n >= 1000){ n /= 1000; i++; }
+  return String(Number(n.toFixed(2))) + CREDIT_SUFFIXES[i];
+}
 /** Get all Mythic droids in the next cycle at their ceiling rarity. Returns {nextCycle, items: [{nk, display, rank, code, ownedCode, iconKey}]} sorted highest-needed first. */
 function getSneakPreview(cycle, ownedRank){
   const next = nextCycleOf(cycle);

@@ -106,6 +106,29 @@
   }
   .block.current .tag{ background:var(--accent); color:#08130d; box-shadow:0 0 6px -1px var(--accent); }
   .tag{ pointer-events: auto; cursor: pointer; }
+  /* v1.15.1: the level's rebirth credit cost, right of its tag: the game's credit
+     coin + bold italic green with a black outline (like the in-game CREDITS card)
+     on a dark chip, so it reads over any scene (the user's pick of 4 mockups) */
+  .block-head{ display:flex; align-items:center; justify-content:space-between; gap:6px; min-width:0; }
+  .credits{
+    font-family:'Rajdhani',sans-serif; font-style:italic; font-weight:700;
+    font-size:calc(16px * var(--ov-text-scale, 1)); letter-spacing:.01em; line-height:1.25;
+    color:#5dff6e;
+    text-shadow:-1px -1px 0 #031a06, 1px -1px 0 #031a06, -1px 1px 0 #031a06, 1px 1px 0 #031a06, 0 2px 3px rgba(0,0,0,0.9);
+    display:inline-flex; align-items:center; gap:4px; white-space:nowrap;
+    background:rgba(4,12,6,0.72); border:1px solid rgba(93,255,110,0.55); border-radius:999px;
+    padding:0 9px 0 3px; box-shadow:0 0 6px -2px rgba(93,255,110,0.6);
+    /* the chip is ~5px taller than the tag; let it spill into the block's 4px top
+       padding and the 2px gap below, so the header row (and the cards) keep their room */
+    margin:-3px 0 -2px;
+  }
+  /* the game's credit coin (--credit-coin, set in the script below), drawn as a vector */
+  .credits::before{
+    content:''; flex:none; width:calc(17px * var(--ov-text-scale, 1)); height:calc(17px * var(--ov-text-scale, 1));
+    background:var(--credit-coin) center/contain no-repeat;
+    filter:drop-shadow(0 1px 1px rgba(0,0,0,0.8));
+  }
+  .block.current .credits{ color:#86ff92; border-color:rgba(134,255,146,0.8); }
   /* ---------------------------------------------------------------------
      Card style redesigned 2026-09-20 to match the Safe to Retire overlay's
      look (declutter.html) — a droid portrait in a rarity-colored frame
@@ -179,6 +202,18 @@
     return;
   }
 
+  // v1.15.1: the game's credit coin (a gold hexagon with the credit sign), one SVG
+  // shared by every block's .credits::before through a CSS variable.
+  const CREDIT_COIN_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">' +
+    '<defs><linearGradient id="r" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e2a93a"/><stop offset="1" stop-color="#6b4306"/></linearGradient>' +
+    '<linearGradient id="f" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff0a8"/><stop offset=".45" stop-color="#f5bf3a"/><stop offset="1" stop-color="#c6860f"/></linearGradient></defs>' +
+    '<polygon points="31,16 23.5,29 8.5,29 1,16 8.5,3 23.5,3" fill="url(#r)"/>' +
+    '<polygon points="28,16 22,26.4 10,26.4 4,16 10,5.6 22,5.6" fill="url(#f)"/>' +
+    '<path d="M11.4 9.6V21.8M8 13.4H13.4M8 17H13.4M11.4 9.6H22L16 23" fill="none" stroke="#fff1b3" stroke-width="2.6" stroke-linejoin="round" transform="translate(.7 .7)" opacity=".7"/>' +
+    '<path d="M11.4 9.6V21.8M8 13.4H13.4M8 17H13.4M11.4 9.6H22L16 23" fill="none" stroke="#7a4a06" stroke-width="2.6" stroke-linejoin="round"/>' +
+    '</svg>';
+  document.documentElement.style.setProperty('--credit-coin', 'url("data:image/svg+xml,' + encodeURIComponent(CREDIT_COIN_SVG) + '")');
+
   const DOT_COLOR = { B:'var(--r-base)', G:'var(--r-gold)', D:'var(--r-diamond)', R:'var(--r-rainbow2)', K:'var(--r-beskar)', X:'var(--r-galactic)', S:'var(--r-stellar)', Y:'var(--r-kyber)' };
 
   let currentCycle = 1;
@@ -226,8 +261,10 @@
       const isCurrent = i === 0;
       const cycleTag = u.cycle !== currentCycle ? (' · Cycle ' + u.cycle) : '';
       const tag = (isCurrent ? 'NOW · Lvl ' : 'Lvl ') + u.level + cycleTag;
+      const credits = rebirthCreditsFor(u.cycle, u.level); // v1.15.1
+      const creditsHtml = credits === null ? '' : '<span class="credits" title="Credits needed to go through with Rebirth ' + u.level + '">' + formatCredits(credits) + '</span>';
       return '<div class="block' + (isCurrent ? ' current' : '') + '" data-cycle="' + u.cycle + '" data-level="' + u.level + '">' +
-        '<span class="tag">' + tag + '</span>' +
+        '<div class="block-head"><span class="tag">' + tag + '</span>' + creditsHtml + '</div>' +
         '<div class="d-row">' + u.droids.map(cellHtml).join('') + '</div>' +
       '</div>';
     }).join('');

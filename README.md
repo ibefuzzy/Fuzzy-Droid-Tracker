@@ -408,6 +408,15 @@ it can be corrected.
   Leftovers of the in-game "PREVIEW" banner, the card frame and the colored card glow are
   gone.
 
+## 💰 Rebirth credit costs on the HUD (v1.15.1)
+
+- The **🎯 Upcoming RB Req's** HUD now shows what each rebirth costs, next to its level:
+  the game's gold credit coin and the amount in the game's own bold green (**10K** for
+  Rebirth 1 up to **15QA** for Rebirth 40), on a small dark chip so it reads over any
+  scene. You can see at a glance how many credits the next few rebirths need.
+- Costs for Rebirths 1–35 come from the community Super Rebirth chart (game update
+  v1.26); 36–40 were added by hand. They're the same in every cycle.
+
 ## 🎨 App looks + a tidier toolbar (v1.15.0)
 
 **App looks: theme the tracker window itself.** ⚙ Overlay Settings → Appearance → **App
@@ -1005,6 +1014,8 @@ and testing everything above:
 - **Opacity**: same settings panel, defaults to about 55%.
 - **Position**: **🎯 Drag into place** in the settings panel, drag the HUD,
   then click **Lock** on the HUD itself. Remembered between launches.
+- Each block's header shows the level and, on the right, the credits that
+  rebirth costs (v1.15.1).
 - Each block shows a level tag and its 3 required droids as portrait cards
   (redesigned 2026-09-20 to match the ♻ Safe to Retire list's look), framed in
   the color of the rarity that level needs. A droid already covered by

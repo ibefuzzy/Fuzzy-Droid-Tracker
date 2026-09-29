@@ -7,7 +7,9 @@ short on purpose so a fresh session can read it in one pass.
 
 ## Layout that matters
 - `droid-data.js` — CYCLES (5 cycles x 35 levels x 3 [rarityCode, name]),
-  RARITY_ORDER, DROID_RARITY_CLASS. Loaded as a classic `<script>` by every window.
+  RARITY_ORDER, DROID_RARITY_CLASS, REBIRTH_CREDITS (v1.15.1: credits per rebirth 1-40,
+  same every cycle; read it only through requirements.js `rebirthCreditsFor(cycle, level)`
+  + `formatCredits()`, which the HUD uses). Loaded as a classic `<script>` by every window.
 - `requirements.js` — the ONE copy of the shared requirement logic: normKey,
   buildIndex, cycleCeilings, cycleLastNeededLevel, getUpcomingLevels,
   getDeclutterList, getSneakPreview, the ownership helpers (cycleCoveredCount,
@@ -194,7 +196,8 @@ short on purpose so a fresh session can read it in one pass.
   user closes the running app before launching a new build.
 
 ## Tests
-`npm test` runs Node's built-in test runner over `test/**/*.test.js` (109 tests;
+`npm test` runs Node's built-in test runner over `test/**/*.test.js` (112 tests;
+test/rebirth-credits.test.js checks all 40 credit costs display exactly as the game chart writes them;
 test/app-looks.test.js checks the app looks and bans default-colour literals in tracker.html's CSS;
 test/skins.test.js checks every skin/preset, test/appearance.test.js the looks and
 share codes, test/spawn-parse.test.js replays real feed OCR from test/fixtures/).
@@ -226,6 +229,12 @@ site of a shared requirements.js function passes the right number of arguments.
   fake progress via a mock overlayAPI, View = main window or ⚙ settings open. Frames load
   one at a time (IntersectionObserver never fires while the Browser pane is hidden). The
   user couldn't see the hidden Browser pane: give them the localhost link to open in Chrome.
+- **HUD credits preview** (`dev/hud-credits-preview.html`, dev-only, v1.15.1): the real
+  overlay.html ten times (rebirths 0, 4 … 36), so all 40 credit costs show at once;
+  `?cycle=N`, `?cols=N`. To send the user a picture: open it in their Chrome (window is
+  1920 wide at DPR 1, all 10 fit) and screenshot / zoom with `save_to_disk`, then
+  SendUserFile. An off-screen Electron capture from this PowerShell exits -1 before the
+  script runs (even with --no-sandbox), so don't bother with that route.
 - **Spawn Alert replay harness** (`dev/spawn-alert-harness.html`, dev-only): runs the real
   spawn-alert.html with a mock overlayAPI and a fake getDisplayMedia that replays real game
   frames (`dev/spawn-frames/` + manifest.json, 23 frames) at their recorded timing, so
@@ -273,7 +282,59 @@ Stop test copies ONLY by that `--user-data-dir` in the process command line (Win
 never by exe path: the user may be running the app from `release\win-unpacked` too. Tell the
 user before launching; they may be in-game and close stray windows.
 
-## Current state (2026-09-29): v1.15.0 (toolbar + app looks) built, awaiting the user's test
+## Current state (2026-09-29): v1.15.1 built, awaiting the user's in-game test; web tracker work local-only
+
+- **v1.15.1 exe:** `release\Fuzzy's Droid Tracker 1.15.1.exe`, 69.1 MB, SHA256
+  E20E44CEBE4E55C423F0CF0E5BB73B2FC48A26BA87DFAB465D618F69D3239FF2 (app.asar checked). The
+  user picked the credits style from dev/credits-look-mockup.html: they said "style D",
+  read as the 4th column = C "Game style chip" (confirm when they test). The chip is
+  `margin:-3px 0 -2px` so the header row stays 17px (at 22px it cut the "Have:" lines by
+  2px). 1.15.0 exe → Recycle Bin. Not pushed.
+- **Web tracker (ibefuzzy/ibefuzzy.github.io), LOCAL COPY ONLY in `dev/web-tracker/`**
+  (raw downloads of the live files, 2026-09-29; never pushed). Done there: the 13 app
+  looks + 🎨 Look picker, credit costs under each level (By Rebirth Level), timers fixed to
+  the app's schedule (they were stale: Stellar hourly, Galactic, 50-min missions), Kyber
+  styling + emerald colour + legend, cycle completion at real slots (120, was 105), data
+  stamped ?v=1.15.1 (its validator passes). Default look proven unchanged (parity, only
+  the intended diffs). `dev/web-mobile-preview.html` shows it in 4 phone frames. Found on
+  a phone: no sideways scroll, but the "How to use" guide is open on first visit (toolbar
+  starts ~2,100px down) and the toolbar is an 11-button wall. The user OK'd this order:
+  (1) phone layout, (2) "Up next" card (the HUD's content + rebirth level stepper),
+  (3) Add to Home Screen, (4) retire/held marks. DONE locally: (3) manifest + icons (no
+  service worker); (1) the user picked A from dev/web-layout-mockup.html → bottom tab bar
+  on ≤700px with a More sheet, desktop untouched; (2) 🎯 Up next card; plus a player's
+  idea the user asked for: "Rarity on each droid" = picture color / written under the
+  name (🎨 Look). Verified at 375px (every tab shows only its view, stepper, tap-to-log +
+  undo, More sheet, no sideways scroll) and on desktop; screenshots via
+  dev/web-mobile-preview.html sent. (4) retire + held marks done (same store keys/shapes
+  as the app; tested retire/undo, hold → applied on switching cycle, cleared at cycle end).
+  **PUSHED + LIVE 2026-09-29** at the user's request ("do step 4 then push it all"):
+  ibefuzzy.github.io commits 160a041 (tracker/icons), 1726c81 (tracker: index.html,
+  droid-data.js, manifest.webmanifest, .data-manifest.json), aa3b4e1 (CLAUDE.md); all 9
+  files verified equal by blob SHA; live https://ibefuzzy.github.io/tracker/ checked
+  (v1.15.1 stamps, Up next, tab bar, looks, credits, Kyber timer, manifest + icons).
+  dev/web-tracker now == live main; re-download before the next web edit if the site
+  may have changed. Details in dev/web-tracker/CLAUDE.md. Pushing = live instantly for every visitor: only after the user
+  reviews; run scripts/validate-tracker-data.js and commit tracker/.data-manifest.json.
+- **v1.15.1** (package.json bumped): the 🎯 Upcoming RB Req's HUD shows each
+  level's credit cost right of its tag (coin + "1.36B"). Data = REBIRTH_CREDITS in
+  droid-data.js: 1-35 read from the user's community "Super Rebirth – Cycle 5" chart image
+  (Update v1.26, Aug 16 2026), 36-40 given by the user (1.19QA, 2.5QA, 4.5QA, 8QA, 15QA).
+  Assumed the same in every cycle (the user treated it as one table). Also fixed the 6
+  double-encoded dashes in droid-data.js comments. 112 tests. Preview images of all 40
+  levels in the real HUD were sent (dev/hud-credits-preview.html via Chrome); waiting for
+  the user to confirm the values, then build + test + push. Not built yet.
+- **v1.15.0 PUBLISHED** 2026-09-29 05:17 UTC; asset digest = local exe (8D6478A8…BBD6).
+- **v1.15.0 SHIPPED to main** (user approved the build: "All looks good to me lets run it"):
+  commits 5c275c7 (8 root files), 9d1fa54 (test/), 3d3d967 (test/helpers/); all 11 changed
+  files verified equal to local by blob SHA, the other 37 unchanged. Release form open in
+  the user's Chrome (tag v1.15.0, target main, notes + SHA256); the user drags
+  `release\Fuzzy's Droid Tracker 1.15.0.exe` and publishes. After that, check the asset
+  digest against 8D6478A8…BBD6. Only this file changed locally after the push.
+  Commit gotcha again: focus + Enter committed pages 1-2 but not page 3; a coordinate click
+  on "Commit changes" (0.5-scale screenshot × 2) did. list_commits before any retry.
+  Snapshot `_backup_v1.15.0_approved/`. release\ holds only 1.15.0 (1.14.2 exe and the
+  unpublished 1.14.3 in release\next → Recycle Bin).
 
 - **v1.15.0 = the unreleased v1.14.3 toolbar + App looks.** The user tested v1.14.3 ("Love
   it so much"), then asked for themes for the app itself before pushing, so the version
@@ -426,9 +487,6 @@ user before launching; they may be in-game and close stray windows.
   in-game (the user skipped it), and more skins/presets (try them in dev/ first).
 - The 1-row timers window is at least 64px tall (Windows' frameless minimum), so
   there are 19px of transparent space under the banners. It only matters for snapping.
-- droid-data.js's rarity-class comment block (≈ lines 226-261) has old double-encoded
-  em-dashes (`â€”`). Comments only, identical in every backup since at least v1.14.1;
-  fix per the encoding rule above if that file is ever edited.
 - "Add a sound file" opens a native file dialog, so only the user can test that step.
   Everything around it was browser- and CDP-verified.
 - Keep this file short: after a release, replace "Current state" and move the finished
