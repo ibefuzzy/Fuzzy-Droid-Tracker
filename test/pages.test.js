@@ -156,6 +156,30 @@ test('spawn-alert.html loads spawn-parse.js, Tesseract and requirements.js', () 
   for (const n of ['requirements.js', 'spawn-parse.js', 'tesseract.min.js']) assert.ok(names.some((s) => s === n || s.endsWith('/' + n)), `spawn-alert.html doesn't load ${n}`);
 });
 
+// v1.14.3: the toolbar's overlay switchboard. Each tile keeps a fixed name and shows
+// on/off with its light, so a click never changes its width. Setting a tile's text
+// from a script would wipe the light (and bring the width changes back).
+test('toolbar overlay tiles have a name and a light, and no script rewrites their text', () => {
+  const html = fs.readFileSync(path.join(ROOT, 'tracker.html'), 'utf8');
+  const tiles = [...html.matchAll(/<button class="btn tile" id="(\w+)"[^>]*>([\s\S]*?)<\/button>/g)];
+  assert.ok(tiles.length >= 8, `expected the 8 overlay tiles in tracker.html, found ${tiles.length}`);
+  for (const [, id, inner] of tiles) {
+    assert.ok(/class="tile-name"/.test(inner) && /class="led"/.test(inner), `#${id} needs a .tile-name and a .led`);
+  }
+  assert.ok(/\.overlay-board \.tile\[hidden\]\s*\{\s*display:\s*none/.test(html), 'tracker.html lost `.overlay-board .tile[hidden]{display:none}` (the tile display:flex rule beats .btn[hidden])');
+  const ids = tiles.map((t) => t[1]);
+  for (const f of PROJECT_JS_AND_HTML) {
+    const src = stripComments(fs.readFileSync(path.join(ROOT, f), 'utf8'));
+    for (const m of src.matchAll(/(?:const|let|var)\s+(\w+)\s*=\s*document\.getElementById\('(\w+)'\)/g)) {
+      if (!ids.includes(m[2])) continue;
+      assert.ok(!new RegExp(`\\b${m[1]}\\.(textContent|innerText|innerHTML)\\s*=`).test(src), `${f} sets the text of tile #${m[2]}; flip its .on class instead (setTile in overlay-controls.js)`);
+    }
+    for (const id of ids) {
+      assert.ok(!new RegExp(`getElementById\\('${id}'\\)\\.(textContent|innerText|innerHTML)\\s*=`).test(src), `${f} sets the text of tile #${id}`);
+    }
+  }
+});
+
 test('tracker.html uses the shared requirements.js', () => {
   assert.ok(scriptsOf('tracker.html').some((s) => s.name === 'requirements.js'));
 });
