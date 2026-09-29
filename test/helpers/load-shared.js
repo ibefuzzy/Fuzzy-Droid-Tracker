@@ -55,6 +55,8 @@ function loadShared(files = ['droid-data.js', 'requirements.js']) {
     isValidImportPayload: run('isValidImportPayload'),
     cleanMissionWarnTimes: run('cleanMissionWarnTimes'),
     missionWarningsDue: run('missionWarningsDue'),
+    appLookFor: run('appLookFor'),
+    appLookCssVars: run('appLookCssVars'),
     // live views of the mutable module state (re-read after buildIndex())
     get DROID_INDEX() { return run('DROID_INDEX'); },
     get nameMerges() { return run('nameMerges'); },
