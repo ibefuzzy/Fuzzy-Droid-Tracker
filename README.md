@@ -136,7 +136,7 @@ ownership, never lowers it.
 
 **The box only needs drawing once.** After your first successful read, it's
 remembered — click the button again later and it goes straight to reading,
-no redraw. Click the little **↺** next to the button (or **"Box was wrong —
+no redraw. Click **↺ Redraw box** next to the button (or **"Box was wrong —
 redraw"** on the confirm screen) any time you want to redo it, and it'll
 also ask you to redraw automatically if your screen resolution changes
 (a different monitor, a different in-game resolution) since the old box
@@ -159,7 +159,7 @@ wouldn't line up with the new pixels anymore.
 
 ## Diagonal split colors — owned vs. required
 
-In the **Rebirth Reqs** panel and on the overlay's droid chips, each badge/
+In the **🧬 Reqs panel** and on the overlay's droid chips, each badge/
 marker is now split diagonally: the upper-left half is the rarity you've
 actually logged for that droid (from anywhere — the main list or elsewhere),
 the lower-right half is this cycle's highest required rarity for it. Own
@@ -376,10 +376,11 @@ again.**
 - If more than one of Rebirth Requirements / Sneak Preview / Safe to Retire
   is open, the keys drive the one you opened most recently.
 
-Toggle it with **♻ Declutter** in the toolbar or its hotkey, **Ctrl+Shift+4**
-by default. Reposition it the same way as the HUD and timers: **⚙ Overlay
-Settings → Reposition Declutter List → 🎯 Drag into place**, drag it under
-your player counter, then click **Lock** on the list itself.
+Toggle it with the **♻ Safe to Retire** tile under Overlays in the toolbar or
+its hotkey, **Ctrl+Shift+4** by default. Reposition it the same way as the HUD
+and timers: **⚙ Overlay Settings → Layout → ♻ Safe to Retire → 🎯 Drag into
+place**, drag it under your player counter, then click **Lock** on the list
+itself.
 
 **Where the tier data comes from:** the game's own requirement tables don't
 encode rarity class, so it comes from community references — chiefly
@@ -406,6 +407,45 @@ it can be corrected.
 - **Kyber droid icons** are now clean transparent cut-outs like every other colorway.
   Leftovers of the in-game "PREVIEW" banner, the card frame and the colored card glow are
   gone.
+
+## 🎨 App looks + a tidier toolbar (v1.15.0)
+
+**App looks: theme the tracker window itself.** ⚙ Overlay Settings → Appearance → **App
+look** recolors this window: the page, the panels, the console lines and labels, and the
+"on" color (lit tiles, pressed buttons, the progress bar). Thirteen looks: **Default**,
+**Jedi Order**, **Sith**, **Rebel Alliance**, **Galactic Empire**, **First Order**,
+**Galactic Republic**, **Mandalorian**, **Grogu**, **Tatooine**, **Death Star**,
+**Galactic Senate** and **Trade Federation**.
+- **Matches your overlay presets.** Clicking an overlay preset (say **Sith**) also gives
+  the app its Sith look. Don't want that? Untick **Presets switch the app look too**
+  right under the looks, and pick the app look on its own. Your saved looks never change
+  the app look.
+- Rarity and tier colors are the same in every look, so a Diamond is always a Diamond.
+- The tracker opens straight in your look, with no flash of green first.
+- The **Default** look is exactly the tracker you know, down to the pixel.
+
+**A tidier toolbar:**
+
+- **Overlays are a switchboard now.** Every overlay has its own equal-sized tile under
+  **Overlays**, four to a row (two on a narrow window), with a light on the right: lit
+  = on screen. The names stay put, so clicking one no longer changes its width and
+  reshuffles the whole row (before, each button's ": On" / ": Off" text did that).
+- **Everything lines up.** Row labels sit in one column and the dividers run the full
+  width. Before, each row shrank to its buttons and centred, so labels didn't line up
+  and rows wrapped earlier than they needed to.
+- **Clearer names.** **♻ Declutter** is now **♻ Safe to Retire**, its name everywhere
+  else (hotkey, settings, the list itself). The side panel button in Tools is
+  **🧬 Reqs panel**, so it isn't confused with the **🧬 Rebirth Reqs** overlay tile.
+  **⌨ Hotkeys** is **⌨ Hotkey list**.
+- **Rebirth Lvl row:** the second "Rebirth Lvl" label is gone, and the lone **↺** is now
+  **↺ Redraw box**, after **📸 Read Rebirth Screen**: it redraws that reader's box around
+  the Rank number (it read like "reset my level" before).
+- **A–Z / By Rebirth Level** is one joined two-way switch.
+- **⚙ Overlay Settings** and the keybinds lock sit on the last row. **Export** and
+  **Import** are on the right, with **Reset all…** last, in red and away from Export.
+  It still asks before clearing anything.
+
+Nothing about your progress, settings or hotkeys changed.
 
 ## 🔧 Mission warnings actually sound (v1.14.2, hotfix)
 
@@ -726,9 +766,9 @@ Every emblem is vector art (SVG), never a bitmap, specifically so it scales
 cleanly to each overlay's own shape (the wide HUD, the narrow tall lists)
 with no distortion or 9-slicing needed — a fixed-aspect image would have
 squashed badly on the narrower overlays. Bounty Hunter, Tatooine and Grogu
-are hand-drawn; the faction insignia come from Font Awesome (see Credits). The toolbar, settings panel,
-Rebirth Reqs side panel and droid list stay blue, unchanged; this is still a
-per-overlay-window thing, not a whole-app recolor.
+are hand-drawn; the faction insignia come from Font Awesome (see Credits). Border
+skins are per overlay window; the tracker window itself has its own **App look**
+since v1.15.0 (see above), which an overlay preset can switch to match.
 
 **🎨 Per-overlay saber colors (v1.9.0/v1.9.1, superseded above).** The
 original version of this picker offered six flat colors (blue, green,
@@ -751,9 +791,9 @@ project-wide instead of only inside tracker.html.
 
 Every other hotkey in this app toggles its own overlay on and off. This one
 is the deliberate exception: **Ctrl+Shift+1** by default, and it only ever
-turns things **off** — the main HUD, the timers banner, the Declutter list,
-the Rebirth Requirements overlay, the Sneak Preview overlay, and the hotkey
-reference card below, all at once. Pressing it again does nothing; each overlay only comes back when
+turns things **off** — the main HUD, the timers banner, the Safe to Retire list,
+the Rebirth Requirements overlay, the Sneak Preview, the Crit Guide, the Spawn
+Alert and the hotkey reference card below, all at once. Pressing it again does nothing; each overlay only comes back when
 you show it again yourself, individually, the same way you always would
 (its own hotkey or toolbar button).
 
@@ -767,7 +807,7 @@ want on screen again afterward.
 A small card listing every hotkey currently bound, centered on screen. It
 shows up automatically each time you launch the app — a quick reminder so
 you're not stuck guessing the bindings — and can be shown/hidden at any time
-with **Ctrl+Shift+2** (or **⌨ Hotkeys** in the toolbar). Unlike the HUD and
+with **Ctrl+Shift+2** (or the **⌨ Hotkey list** tile in the toolbar). Unlike the HUD and
 timer banners, it isn't draggable — it's meant to be a brief reference, not
 a permanent fixture, so it always reopens centered. (**Ctrl+Shift+1**, Hide
 All Overlays, hides this card too, but doesn't have its own on/off state to
@@ -791,7 +831,7 @@ changeable from **⚙ Overlay Settings**:
 | Toggle Current Rebirth Requirements | Show/hide the rebirth-requirements HUD | `Ctrl+Shift+3` |
 | Toggle Timers | Show/hide the Stellar/Mythic/Kyber/Mission banners | `Alt+Shift+T` |
 | Toggle Hotkey List | Show/hide this reference card | `Ctrl+Shift+2` |
-| Toggle Declutter List | Show/hide the ♻ safe-to-retire droid list | `Ctrl+Shift+4` |
+| Toggle Safe to Retire List | Show/hide the ♻ Safe to Retire droid list | `Ctrl+Shift+4` |
 | Toggle Rebirth Requirements | Show/hide the 🧬 still-needed overlay | `Ctrl+Shift+5` |
 | Trigger Read Rebirth Screen | Fires the 📸 Read Rebirth Screen button | `Ctrl+Shift+6` |
 | Toggle Sneak Preview | Show/hide the 🔮 next-cycle Mythic overlay | *(unbound — set in ⚙ Overlay Settings)* |
@@ -895,7 +935,7 @@ and testing everything above:
 - **Hide the droid list to jump straight to a panel (v1.6.0).** Press the
   already-active **A–Z** or **By Rebirth Level** button again to turn the
   droid list off (press either to bring it back). With the list off, an open
-  **🧬 Rebirth Reqs** panel takes the full width instead of sitting below or
+  **🧬 Reqs panel** takes the full width instead of sitting below or
   beside a long list — handy on small screens. The choice is remembered.
 - **Version badge.** The tracker's title bar and the hotkey reference list
   both now show a small `vX.Y.Z` tag. After unzipping a new copy, check
@@ -966,7 +1006,7 @@ and testing everything above:
 - **Position**: **🎯 Drag into place** in the settings panel, drag the HUD,
   then click **Lock** on the HUD itself. Remembered between launches.
 - Each block shows a level tag and its 3 required droids as portrait cards
-  (redesigned 2026-09-20 to match the ♻ Declutter list's look), framed in
+  (redesigned 2026-09-20 to match the ♻ Safe to Retire list's look), framed in
   the color of the rarity that level needs. A droid already covered by
   something you own elsewhere shows dimmed with a strikethrough — still
   listed (so you know it's required), just flagged as already handled.
@@ -1088,11 +1128,11 @@ and testing everything above:
   hidden by `main.js` via the ⏱ Timers button or its own hotkey.
 - `hotkey-list.html` — the centered, click-through hotkey reference card;
   reads its rows live from shared settings and re-renders on any change.
-  Shown automatically on launch, toggled via the ⌨ Hotkeys button or its own
+  Shown automatically on launch, toggled via the ⌨ Hotkey list tile or its own
   hotkey (`Ctrl+Shift+2` by default).
 - `declutter.html` — the "safe to retire" droid list (every tier); the
   which-droids logic lives in `requirements.js`'s `getDeclutterList`, this
   file handles rendering, the tier filter (read from the `declutterShow*`
   settings), and the hotkey-driven scroll viewport, plus the same live
   store-driven update pattern every other window here already uses. Shown/hidden by `main.js` via the ♻
-  Declutter button or its own hotkey (`Ctrl+Shift+4` by default).
+  Safe to Retire tile or its own hotkey (`Ctrl+Shift+4` by default).

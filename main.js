@@ -270,6 +270,11 @@ const DEFAULT_SETTINGS = {
   overlayThemes: {},
   timersBorder: null,
   customPresets: [],
+  // v1.15.0: the tracker window's own colours (APP_LOOKS in requirements.js; an
+  // unknown key falls back to 'default'), and whether clicking an overlay preset
+  // also switches it to that preset's app look.
+  appLook: 'default',
+  appLookFollowsPresets: true,
   // v1.13.0 sounds: Stellar/Mythic/Kyber can each pick their own (null = the
   // Blueprints pick), and the player's own files ({id, name, ext}, copied into
   // userData/custom-sounds by 'sound:add'; a choice of 'custom:<id>').
@@ -1385,7 +1390,7 @@ const HOTKEY_LABELS = {
   timers: 'Toggle Timers',
   rebirthScreen: 'Trigger Read Rebirth Screen',
   hotkeyList: 'Toggle Hotkey List',
-  declutter: 'Toggle Declutter List',
+  declutter: 'Toggle Safe to Retire List',
   rebirthReqOverlay: 'Toggle Rebirth Requirements', // "Overlay" dropped from the end 2026-09-23, see tracker.html/hotkey-list.html/README for the matching rename
   // Renamed 2026-09-24 (v1.7.3): pages whichever of Safe to Retire /
   // Rebirth Requirements is open, not just Safe to Retire — same

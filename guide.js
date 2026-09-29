@@ -26,7 +26,7 @@
       title: 'Two ways to see what you need',
       body: `
         <p><span class="guide-tag new">NEWER PLAYERS</span><b>🎯 Upcoming RB Req's</b> — a small in-game overlay showing just your current rebirth level and the next 3. Turn it on, keep playing, and it tells you what to grab next without leaving the game.</p>
-        <p><span class="guide-tag vet">KNOW THE GAME</span><b>🧬 Rebirth Reqs</b> — a full panel (or its own in-game overlay) listing everything the active cycle still needs, all at once. Better once you already know the droid pool and just want the complete checklist.</p>
+        <p><span class="guide-tag vet">KNOW THE GAME</span><b>🧬 Rebirth Reqs</b> — everything the active cycle still needs, all at once: as an in-game overlay, or as the <b>🧬 Reqs panel</b> beside your list here. Better once you already know the droid pool and just want the complete checklist.</p>
       `
     },
     {
@@ -42,14 +42,14 @@
       title: 'More overlays, if you want them',
       body: `
         <p><b>⏱ Timers</b> — countdowns to the Stellar/Mythic/Galactic Blueprints and the next Mission.</p>
-        <p><b>♻ Declutter</b> — Legendary/Mythic droids you're already holding that this cycle will never ask for again, safe to sell.</p>
-        <p>Every overlay drags into position from <b>⚙ Overlay Settings</b>, and <b>Ctrl+Shift+1</b> hides all of them at once for a clean screenshot.</p>
+        <p><b>♻ Safe to Retire</b> — droids you're already holding that this cycle will never ask for again, safe to sell.</p>
+        <p>Every overlay has a tile under <b>Overlays</b> in the toolbar; its light shows whether it's on. They drag into position from <b>⚙ Overlay Settings</b>, and <b>Ctrl+Shift+1</b> hides all of them at once for a clean screenshot.</p>
       `
     },
     {
       title: "You're set",
       body: `
-        <p>A full hotkey list pops up on every launch — toggle it with <b>⌨ Hotkeys</b>.</p>
+        <p>A full hotkey list pops up on every launch — toggle it with <b>⌨ Hotkey list</b>.</p>
         <p>Come back to this tour anytime with the <b>❔ Guide</b> button in the toolbar.</p>
       `
     }

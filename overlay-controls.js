@@ -58,7 +58,7 @@
     ['rebirthScreenApplyHotkeyBtn', 'rebirthScreenApplyHotkey', 'Read Rebirth Screen: Apply'], // v1.11.1
     ['rebirthScreenCancelHotkeyBtn', 'rebirthScreenCancelHotkey', 'Read Rebirth Screen: Cancel'], // v1.11.1
     ['hotkeyListHotkeyBtn', 'hotkeyListHotkey', 'Toggle Hotkey List'],
-    ['declutterHotkeyBtn', 'declutterHotkey', 'Toggle Declutter List'],
+    ['declutterHotkeyBtn', 'declutterHotkey', 'Toggle Safe to Retire List'],
     // v1.7.3: these page whichever of Safe to Retire / Rebirth Requirements
     // is open — one shared hotkey pair, not a separate one per overlay (the
     // old rebirthReqScrollUp/DownHotkey rows are retired, same fix as the
@@ -156,58 +156,28 @@
   let opacityDebounce = null;
   const capturing = {}; // settingsKey -> bool, so two hotkey rows never step on each other
 
-  function setToggleLabel(visible){
-    toggleBtn.textContent = visible ? '🎯 Upcoming RB Req\'s: On' : '🎯 Upcoming RB Req\'s: Off';
-    toggleBtn.classList.toggle('on', visible);
+  // v1.14.3: the overlay tiles (tracker.html's .overlay-board) keep a fixed
+  // name and show on/off with their light (.on), so a click never changes a
+  // tile's width. Never set their textContent: it would wipe the light.
+  function setTile(btn, on){
+    if(!btn) return;
+    btn.classList.toggle('on', !!on);
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
   }
-
-  function setTimersToggleLabel(visible){
-    if(!timersToggleBtn) return;
-    timersToggleBtn.textContent = visible ? '⏱ Timers: On' : '⏱ Timers: Off';
-    timersToggleBtn.classList.toggle('on', visible);
-  }
-
-  function setHotkeyListToggleLabel(visible){
-    if(!hotkeyListToggleBtn) return;
-    hotkeyListToggleBtn.textContent = visible ? '⌨ Hotkeys: On' : '⌨ Hotkeys: Off';
-    hotkeyListToggleBtn.classList.toggle('on', visible);
-  }
-
-  function setDeclutterToggleLabel(visible){
-    if(!declutterToggleBtn) return;
-    declutterToggleBtn.textContent = visible ? '♻ Declutter: On' : '♻ Declutter: Off';
-    declutterToggleBtn.classList.toggle('on', visible);
-  }
-
-  function setRebirthReqToggleLabel(visible){
-    if(!rebirthReqToggleBtn) return;
-    rebirthReqToggleBtn.textContent = visible ? '🧬 Rebirth Req: On' : '🧬 Rebirth Req: Off';
-    rebirthReqToggleBtn.classList.toggle('on', visible);
-  }
-
-  function setSneakToggleLabel(visible){
-    if(!sneakToggleBtn) return;
-    sneakToggleBtn.textContent = visible ? '🔮 Sneak Preview: On' : '🔮 Sneak Preview: Off';
-    sneakToggleBtn.classList.toggle('on', visible);
-  }
-
-  function setCritGuideToggleLabel(visible){
-    if(!critGuideToggleBtn) return;
-    critGuideToggleBtn.textContent = visible ? '⚡ Crit Guide: On' : '⚡ Crit Guide: Off';
-    critGuideToggleBtn.classList.toggle('on', visible);
-  }
-
-  function setSpawnAlertToggleLabel(visible){
-    if(!spawnAlertToggleBtn) return;
-    spawnAlertToggleBtn.textContent = visible ? '📡 Spawn Alert: On' : '📡 Spawn Alert: Off';
-    spawnAlertToggleBtn.classList.toggle('on', !!visible);
-  }
+  function setToggleLabel(visible){ setTile(toggleBtn, visible); }
+  function setTimersToggleLabel(visible){ setTile(timersToggleBtn, visible); }
+  function setHotkeyListToggleLabel(visible){ setTile(hotkeyListToggleBtn, visible); }
+  function setDeclutterToggleLabel(visible){ setTile(declutterToggleBtn, visible); }
+  function setRebirthReqToggleLabel(visible){ setTile(rebirthReqToggleBtn, visible); }
+  function setSneakToggleLabel(visible){ setTile(sneakToggleBtn, visible); }
+  function setCritGuideToggleLabel(visible){ setTile(critGuideToggleBtn, visible); }
+  function setSpawnAlertToggleLabel(visible){ setTile(spawnAlertToggleBtn, visible); }
 
   // v1.10.8: inverted sense vs. the toggles above — "on" (accent-highlighted)
   // means LOCKED, since that's the state worth calling attention to.
   function setKeybindsLockToggleLabel(locked){
     if(!keybindsLockToggleBtn) return;
-    keybindsLockToggleBtn.textContent = locked ? '🔒 Keybinds: Locked' : '🔓 Keybinds: Unlocked';
+    keybindsLockToggleBtn.textContent = locked ? '🔒 Keybinds locked' : '🔓 Keybinds unlocked';
     keybindsLockToggleBtn.classList.toggle('on', !!locked);
   }
 
@@ -524,10 +494,10 @@
     }
     if(soon) setSettingsSoon(out); else setSettingsNow(out);
   }
-  function applyLook(name, look, verb){
+  function applyLook(name, look, verb, extra){
     discardPendingSettings(); // a colour tweak still in flight must not land on top of the look
     pendingOverlayThemes = null;
-    window.overlayAPI.setSettings(lookToSettings(look));
+    window.overlayAPI.setSettings({ ...lookToSettings(look), ...(extra || {}) });
     showToast(name + ' ' + (verb || 'applied'));
   }
 
@@ -541,7 +511,9 @@
   const MAX_CUSTOM_PRESETS = 24;
   let presetItems = [], presetListKey = null;
   function customPresetsOf(s){ return Array.isArray(s.customPresets) ? s.customPresets.filter(c => c && typeof c.name === 'string') : []; }
-  function presetButton(name, look, skinKey, title){
+  // appLookKey: a built-in preset's matching app look (THEME_PRESETS' appLook),
+  // applied too while "presets also switch the app look" is on. Saved looks have none.
+  function presetButton(name, look, skinKey, title, appLookKey){
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'preset-btn';
@@ -554,7 +526,14 @@
     label.textContent = name;
     b.append(badge, label);
     b.title = title;
-    b.addEventListener('click', ()=> applyLook(name, look, 'applied to every overlay'));
+    b.addEventListener('click', ()=>{
+      if(appLookKey && lastSettings.appLookFollowsPresets !== false){
+        applyAppLook(appLookKey); // straight away; the settings echo repeats it as a no-op
+        applyLook(name, look, 'applied to every overlay and the app', { appLook: appLookKey });
+      } else {
+        applyLook(name, look, 'applied to every overlay');
+      }
+    });
     return b;
   }
   function renderPresets(s){
@@ -567,7 +546,7 @@
       THEME_PRESETS.forEach(p => {
         const look = presetToLook(p);
         const skin = p.skin && BORDER_SKINS[p.skin];
-        const b = presetButton(p.name, look, p.skin, skin ? p.name + ': ' + skin.label + ' border and matching colors on every overlay' : "Each overlay's own border and colors");
+        const b = presetButton(p.name, look, p.skin, skin ? p.name + ': ' + skin.label + ' border and matching colors on every overlay' : "Each overlay's own border and colors", p.appLook);
         presetGrid.appendChild(b);
         presetItems.push({ el: b, look });
       });
@@ -619,6 +598,60 @@
     lookCodeInput.value = '';
     applyLook('"' + name + '"', got.look, 'imported and applied');
   });
+
+  /* App looks (v1.15.0): the tracker window's own colours, APP_LOOKS in
+     requirements.js. A look sets tracker.html's theme variables on <html>;
+     'default' clears them so its own :root applies. The variables are also kept
+     in localStorage, and tracker.html's <head> puts them back before the first
+     paint, so a themed tracker never flashes the default colours on launch. */
+  const APP_LOOK_CACHE_KEY = 'fdt-appLookVars';
+  const appLookGrid = document.getElementById('appLookGrid');
+  const appLookFollowCheck = document.getElementById('appLookFollowsPresetsCheck');
+  let appliedAppLook = null;
+  function applyAppLook(key){
+    const look = appLookFor(key);
+    if(look.key === appliedAppLook) return; // settings echoes re-apply nothing
+    appliedAppLook = look.key;
+    const roots = [document.documentElement];
+    const pip = window.documentPictureInPicture && window.documentPictureInPicture.window; // ⧉ Pop out
+    if(pip) roots.push(pip.document.documentElement);
+    const vars = appLookCssVars(look);
+    roots.forEach(root => Object.entries(vars).forEach(([name, value]) => {
+      if(look.key === 'default') root.style.removeProperty(name); else root.style.setProperty(name, value);
+    }));
+    try{
+      if(look.key === 'default') localStorage.removeItem(APP_LOOK_CACHE_KEY);
+      else localStorage.setItem(APP_LOOK_CACHE_KEY, document.documentElement.style.cssText);
+    }catch(e){ /* storage off: the look still applies, it just can't pre-paint next launch */ }
+  }
+  const appLookBtns = APP_LOOKS.map(look => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'preset-btn';
+    b.dataset.appLook = look.key;
+    b.style.setProperty('--sw', 'rgb(' + look.accent + ')');
+    const chip = document.createElement('span');
+    chip.className = 'app-look-chip';
+    chip.style.background = 'linear-gradient(135deg, rgb(' + look.bg + ') 0 44%, rgb(' + look.holo + ') 44% 72%, rgb(' + look.accent + ') 72%)';
+    const label = document.createElement('span');
+    label.textContent = look.name;
+    b.append(chip, label);
+    b.title = look.name + ': ' + look.note;
+    b.addEventListener('click', ()=>{
+      applyAppLook(look.key);
+      setSettingsNow({ appLook: look.key });
+      showToast('App look: ' + look.name);
+    });
+    appLookGrid.appendChild(b);
+    return b;
+  });
+  appLookFollowCheck.addEventListener('change', ()=> setSettingsNow({ appLookFollowsPresets: appLookFollowCheck.checked }));
+  function renderAppLook(s){
+    const key = appLookFor(s.appLook).key;
+    applyAppLook(key);
+    appLookBtns.forEach(b => b.classList.toggle('active', b.dataset.appLook === key));
+    appLookFollowCheck.checked = s.appLookFollowsPresets !== false;
+  }
 
   const themeHighlightBorderBtn = document.getElementById('themeHighlightBorderBtn');
   const themeResetBtn = document.getElementById('themeResetBtn');
@@ -1000,6 +1033,7 @@
         + (t === 'timers' ? ' The timers use the backdrop only.' : '') + (t === 'spawnAlert' ? ' The Spawn Alert uses the backdrop only.' : '');
     themeResetBtn.textContent = t ? '↺ Reset this overlay' : '↺ Reset all colors';
     renderPresets(s);
+    renderAppLook(s);
     overlaySnapCheckbox.checked = s.overlaySnap !== false;
     overlaySnapSizeCheckbox.checked = s.overlaySnapSize !== false;
     timersLayoutBtns.forEach(b => b.classList.toggle('on', b.dataset.timersLayout === (s.timersLayout || 'row')));
@@ -1103,10 +1137,10 @@
       const s = await window.overlayAPI.getSettings();
       if(s.declutterLocked){
         await window.overlayAPI.setDeclutterLocked(false);
-        showToast('Declutter list unlocked — drag it into place, then click its own Lock button');
+        showToast('Safe to Retire list unlocked — drag it into place, then click its own Lock button');
       } else {
         await window.overlayAPI.setDeclutterLocked(true);
-        showToast('Declutter list position locked');
+        showToast('Safe to Retire list position locked');
       }
     });
   }
@@ -1116,7 +1150,7 @@
       if(!window.overlayAPI.resetDeclutterPosition) return;
       const s = await window.overlayAPI.resetDeclutterPosition();
       applySettingsToUI(s);
-      showToast('Declutter list position reset to default');
+      showToast('Safe to Retire list position reset to default');
     });
   }
 
@@ -1372,7 +1406,7 @@
       row.style.cssText = 'display: grid; grid-template-columns: 80px 1fr 80px; gap: 8px; margin-bottom: 10px; align-items: center;';
 
       const raritySelect = document.createElement('select');
-      raritySelect.style.cssText = 'padding: 6px; background: rgba(10,14,12,0.5); border: 1px solid rgba(143,214,255,0.3); color: #fff; border-radius: 4px;';
+      raritySelect.style.cssText = 'padding: 6px; background: rgba(var(--bg-rgb),0.5); border: 1px solid rgba(var(--holo-rgb),0.3); color: #fff; border-radius: 4px;';
       rarities.forEach(r => {
         const opt = document.createElement('option');
         opt.value = r;
@@ -1385,7 +1419,7 @@
       nameInput.type = 'text';
       nameInput.placeholder = `Slot ${slot + 1} droid name`;
       nameInput.value = name;
-      nameInput.style.cssText = 'padding: 6px; background: rgba(10,14,12,0.5); border: 1px solid rgba(143,214,255,0.3); color: #fff; border-radius: 4px; font-family: monospace;';
+      nameInput.style.cssText = 'padding: 6px; background: rgba(var(--bg-rgb),0.5); border: 1px solid rgba(var(--holo-rgb),0.3); color: #fff; border-radius: 4px; font-family: monospace;';
 
       const saveBtn = document.createElement('button');
       saveBtn.className = 'btn';

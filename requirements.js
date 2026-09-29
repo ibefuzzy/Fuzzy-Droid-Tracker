@@ -355,19 +355,95 @@ const BORDER_EMBLEMS = {
    settings, applied by overlay-theme.js). skin null = each overlay's own default
    skin; theme {} = each overlay's own colours. Tried out in dev/overlay-lab.html. */
 const THEME_PRESETS = [
-  { name: 'Default look',      skin: null,         theme: {} },
-  { name: 'Rebel Alliance',    skin: 'rebel',      theme: { themeBackdrop: '#1a0c0c', themeBackdropAlpha: 0.7,  themeBox: '#ff3b3b', themeBoxAlpha: 0.08, themeHighlight: '#ffd24a' } },
-  { name: 'Galactic Empire',   skin: 'empire',     theme: { themeBackdrop: '#0b0d10', themeBackdropAlpha: 0.78, themeBox: '#d8dee3', themeBoxAlpha: 0.07, themeHighlight: 'border' } },
-  { name: 'Jedi Order',        skin: 'jedi',       theme: { themeBackdrop: '#0a1426', themeBackdropAlpha: 0.68, themeBox: '#4fa8ff', themeBoxAlpha: 0.09, themeHighlight: '#8ff3ff' } },
-  { name: 'Sith',              skin: 'sith',       theme: { themeBackdrop: '#060303', themeBackdropAlpha: 0.82, themeBox: '#e0142c', themeBoxAlpha: 0.1,  themeHighlight: '#ff3040' } },
-  { name: 'Mandalorian',       skin: 'mando',      theme: { themeBackdrop: '#15120e', themeBackdropAlpha: 0.72, themeBox: '#c9d3dc', themeBoxAlpha: 0.08, themeHighlight: '#9fe7ff' } },
-  { name: 'Grogu',             skin: 'grogu',      theme: { themeBackdrop: '#0f1a0f', themeBackdropAlpha: 0.7,  themeBox: '#c9a77c', themeBoxAlpha: 0.1,  themeHighlight: '#b8ff8a' } },
-  { name: 'First Order',       skin: 'firstorder', theme: { themeBackdrop: '#0a0a0a', themeBackdropAlpha: 0.8,  themeBox: '#ffffff', themeBoxAlpha: 0.07, themeHighlight: '#ff3b30' } },
-  { name: 'Galactic Republic', skin: 'republic',   theme: { themeBackdrop: '#141018', themeBackdropAlpha: 0.72, themeBox: '#ffffff', themeBoxAlpha: 0.08, themeHighlight: '#ff6a5a' } },
-  { name: 'Trade Federation',  skin: 'tradefed',   theme: { themeBackdrop: '#1c140a', themeBackdropAlpha: 0.72, themeBox: '#d9a55a', themeBoxAlpha: 0.1,  themeHighlight: '#ffcf6a' } },
-  { name: 'Death Star',        skin: 'deathstar',  theme: { themeBackdrop: '#0c1016', themeBackdropAlpha: 0.78, themeBox: '#8fa6ba', themeBoxAlpha: 0.08, themeHighlight: '#7dff5a' } },
-  { name: 'Tatooine',          skin: 'tatooine',   theme: { themeBackdrop: '#2a1a0c', themeBackdropAlpha: 0.62, themeBox: '#e08a3c', themeBoxAlpha: 0.09, themeHighlight: '#ffe29a' } }
+  { name: 'Default look',      skin: null,         theme: {}, appLook: 'default' },
+  { name: 'Rebel Alliance',    skin: 'rebel',      theme: { themeBackdrop: '#1a0c0c', themeBackdropAlpha: 0.7,  themeBox: '#ff3b3b', themeBoxAlpha: 0.08, themeHighlight: '#ffd24a' }, appLook: 'rebel' },
+  { name: 'Galactic Empire',   skin: 'empire',     theme: { themeBackdrop: '#0b0d10', themeBackdropAlpha: 0.78, themeBox: '#d8dee3', themeBoxAlpha: 0.07, themeHighlight: 'border' }, appLook: 'empire' },
+  { name: 'Jedi Order',        skin: 'jedi',       theme: { themeBackdrop: '#0a1426', themeBackdropAlpha: 0.68, themeBox: '#4fa8ff', themeBoxAlpha: 0.09, themeHighlight: '#8ff3ff' }, appLook: 'jedi' },
+  { name: 'Sith',              skin: 'sith',       theme: { themeBackdrop: '#060303', themeBackdropAlpha: 0.82, themeBox: '#e0142c', themeBoxAlpha: 0.1,  themeHighlight: '#ff3040' }, appLook: 'sith' },
+  { name: 'Mandalorian',       skin: 'mando',      theme: { themeBackdrop: '#15120e', themeBackdropAlpha: 0.72, themeBox: '#c9d3dc', themeBoxAlpha: 0.08, themeHighlight: '#9fe7ff' }, appLook: 'mando' },
+  { name: 'Grogu',             skin: 'grogu',      theme: { themeBackdrop: '#0f1a0f', themeBackdropAlpha: 0.7,  themeBox: '#c9a77c', themeBoxAlpha: 0.1,  themeHighlight: '#b8ff8a' }, appLook: 'grogu' },
+  { name: 'First Order',       skin: 'firstorder', theme: { themeBackdrop: '#0a0a0a', themeBackdropAlpha: 0.8,  themeBox: '#ffffff', themeBoxAlpha: 0.07, themeHighlight: '#ff3b30' }, appLook: 'firstorder' },
+  { name: 'Galactic Republic', skin: 'republic',   theme: { themeBackdrop: '#141018', themeBackdropAlpha: 0.72, themeBox: '#ffffff', themeBoxAlpha: 0.08, themeHighlight: '#ff6a5a' }, appLook: 'republic' },
+  { name: 'Trade Federation',  skin: 'tradefed',   theme: { themeBackdrop: '#1c140a', themeBackdropAlpha: 0.72, themeBox: '#d9a55a', themeBoxAlpha: 0.1,  themeHighlight: '#ffcf6a' }, appLook: 'tradefed' },
+  { name: 'Death Star',        skin: 'deathstar',  theme: { themeBackdrop: '#0c1016', themeBackdropAlpha: 0.78, themeBox: '#8fa6ba', themeBoxAlpha: 0.08, themeHighlight: '#7dff5a' }, appLook: 'deathstar' },
+  { name: 'Tatooine',          skin: 'tatooine',   theme: { themeBackdrop: '#2a1a0c', themeBackdropAlpha: 0.62, themeBox: '#e08a3c', themeBoxAlpha: 0.09, themeHighlight: '#ffe29a' }, appLook: 'tatooine' }
 ];
+
+/* App looks (v1.15.0): colour sets for the tracker window itself, picked in
+   ⚙ Overlay Settings → Appearance → App look (settings.appLook). Each sets the
+   theme variables in tracker.html's :root: bg / accent / holo (console chrome) /
+   glow / hi (star specks) / surface (console fill) / glow2 as "r,g,b", the rest
+   as hex. 'default' is exactly that :root, so it's applied by clearing the
+   overrides (overlay-controls.js applyAppLook). Rarity and tier colours never
+   change with a look. Keys never change: settings hold them. THEME_PRESETS'
+   appLook is the look an overlay preset also switches the app to, while
+   settings.appLookFollowsPresets is on. Try new looks in dev/app-looks-lab.html. */
+const APP_LOOKS = [
+  { key: 'default', name: 'Default', note: 'green + holo blue',
+    bg: '11,15,13', panel: '#121815', panel2: '#161d19', line: '#26332c', lineBright: '#38493f',
+    text: '#dfe8e2', textDim: '#8fa199', accent: '94,242,166', accentDim: '#2c6b4a',
+    holo: '143,214,255', glow: '79,184,255', hi: '200,230,255', surface: '9,14,20', glow2: '94,150,242' },
+  { key: 'jedi', name: 'Jedi Order', note: 'deep navy, saber blue',
+    bg: '7,11,21', panel: '#0e1526', panel2: '#121b31', line: '#22304c', lineBright: '#34476e',
+    text: '#dde7f6', textDim: '#8a9bb8', accent: '143,243,255', accentDim: '#2b6680',
+    holo: '136,198,255', glow: '79,168,255', hi: '205,230,255', surface: '8,14,30', glow2: '79,168,255' },
+  { key: 'sith', name: 'Sith', note: 'black and blood red',
+    bg: '9,5,6', panel: '#150b0d', panel2: '#1b0e11', line: '#3a1a1f', lineBright: '#58252d',
+    text: '#f2e2e4', textDim: '#a8898d', accent: '255,64,80', accentDim: '#6e1b24',
+    holo: '255,154,154', glow: '224,20,44', hi: '255,200,200', surface: '18,6,8', glow2: '224,20,44' },
+  { key: 'rebel', name: 'Rebel Alliance', note: 'warm red chrome, gold "on"',
+    bg: '15,10,9', panel: '#1a1110', panel2: '#211614', line: '#3b2622', lineBright: '#583731',
+    text: '#f3e6de', textDim: '#ae958a', accent: '255,210,74', accentDim: '#6e5720',
+    holo: '255,170,155', glow: '255,59,59', hi: '255,215,200', surface: '20,10,9', glow2: '255,120,60' },
+  { key: 'empire', name: 'Galactic Empire', note: 'graphite and steel',
+    bg: '10,11,13', panel: '#121417', panel2: '#171a1e', line: '#2a2e34', lineBright: '#3f454d',
+    text: '#e7eaed', textDim: '#949ba3', accent: '236,241,246', accentDim: '#4a5058',
+    holo: '190,200,212', glow: '150,162,178', hi: '232,236,241', surface: '12,13,16', glow2: '130,140,155' },
+  { key: 'firstorder', name: 'First Order', note: 'black, white chrome, red "on"',
+    bg: '7,7,8', panel: '#101012', panel2: '#151518', line: '#2b2b30', lineBright: '#404047',
+    text: '#f1f1f3', textDim: '#9a9aa2', accent: '255,70,58', accentDim: '#6e1f1a',
+    holo: '236,238,242', glow: '200,204,212', hi: '255,255,255', surface: '10,10,12', glow2: '255,59,48' },
+  { key: 'republic', name: 'Galactic Republic', note: 'plum-black, cream chrome, red "on"',
+    bg: '20,16,24', panel: '#1b1620', panel2: '#211b27', line: '#3a3040', lineBright: '#54465c',
+    text: '#f1ebf2', textDim: '#a598a8', accent: '255,106,90', accentDim: '#6e2a24',
+    holo: '240,230,220', glow: '216,64,58', hi: '255,240,230', surface: '22,16,26', glow2: '216,64,58' },
+  { key: 'mando', name: 'Mandalorian', note: 'beskar tan, visor blue "on"',
+    bg: '14,12,10', panel: '#17140f', panel2: '#1d1913', line: '#342c22', lineBright: '#4b4132',
+    text: '#ede6dc', textDim: '#a49a8b', accent: '159,231,255', accentDim: '#2e5f6e',
+    holo: '219,188,130', glow: '201,211,220', hi: '240,225,200', surface: '18,15,11', glow2: '201,211,220' },
+  { key: 'grogu', name: 'Grogu', note: 'forest green, robe tan',
+    bg: '9,15,10', panel: '#101911', panel2: '#141f16', line: '#26382a', lineBright: '#37513c',
+    text: '#e2ecdf', textDim: '#93a78f', accent: '184,255,138', accentDim: '#4a6b34',
+    holo: '214,188,155', glow: '94,242,166', hi: '232,218,194', surface: '11,17,11', glow2: '150,220,120' },
+  { key: 'tatooine', name: 'Tatooine', note: 'desert dusk, twin-sun orange',
+    bg: '20,13,8', panel: '#21160d', panel2: '#291c11', line: '#463322', lineBright: '#634933',
+    text: '#f6eadb', textDim: '#b39d81', accent: '255,226,154', accentDim: '#7a6232',
+    holo: '233,173,119', glow: '255,160,70', hi: '255,225,190', surface: '28,17,9', glow2: '255,190,90' },
+  { key: 'deathstar', name: 'Death Star', note: 'steel grey, superlaser green',
+    bg: '10,13,17', panel: '#11161c', panel2: '#151b23', line: '#25303c', lineBright: '#364555',
+    text: '#dfe6ee', textDim: '#8b99a8', accent: '125,255,90', accentDim: '#3a6b2a',
+    holo: '177,193,207', glow: '110,140,170', hi: '210,220,232', surface: '10,14,19', glow2: '125,255,90' },
+  { key: 'senate', name: 'Galactic Senate', note: 'violet and gold',
+    bg: '11,9,19', panel: '#141128', panel2: '#191530', line: '#2e2850', lineBright: '#443b72',
+    text: '#e8e4f6', textDim: '#9c95b8', accent: '240,200,110', accentDim: '#6b5a2e',
+    holo: '194,183,255', glow: '155,140,255', hi: '222,215,255', surface: '14,11,28', glow2: '155,140,255' },
+  { key: 'tradefed', name: 'Trade Federation', note: 'bronze and brass',
+    bg: '16,12,8', panel: '#1b150d', panel2: '#221a11', line: '#3d3021', lineBright: '#584631',
+    text: '#f0e6d8', textDim: '#aa9b84', accent: '255,207,106', accentDim: '#76602f',
+    holo: '226,187,130', glow: '201,151,90', hi: '245,225,195', surface: '22,16,9', glow2: '201,151,90' }
+];
+// look field -> the tracker.html CSS variable it sets
+const APP_LOOK_VAR_NAMES = { bg: '--bg-rgb', accent: '--accent-rgb', holo: '--holo-rgb', glow: '--holo-glow-rgb',
+  hi: '--holo-hi-rgb', surface: '--surface-rgb', glow2: '--glow2-rgb', panel: '--panel', panel2: '--panel2',
+  line: '--line', lineBright: '--line-bright', text: '--text', textDim: '--text-dim', accentDim: '--accent-dim' };
+/** The app look saved under `key`; the default look for an unknown or stale key. */
+function appLookFor(key){ return APP_LOOKS.find(l => l.key === key) || APP_LOOKS[0]; }
+/** A look's CSS variables for tracker.html: { '--bg-rgb': '11,15,13', ... }. */
+function appLookCssVars(look){
+  const out = {};
+  for(const [field, name] of Object.entries(APP_LOOK_VAR_NAMES)) out[name] = look[field];
+  return out;
+}
 
 /* Small flat emblem for each border skin's badge — fill="currentColor" so
    the caller just sets `color` (normally var(--accent)) on the wrapping

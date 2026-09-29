@@ -13,9 +13,11 @@ short on purpose so a fresh session can read it in one pass.
   getDeclutterList, getSneakPreview, the ownership helpers (cycleCoveredCount,
   cycleDroidKeys, removeCycleMarks, decideOwnedUpdate, isValidImportPayload), and
   BORDER_SKINS/BORDER_SKIN_ORDER/BORDER_EMBLEMS/borderIconSvg (the 15 border
-  skins + emblem renderer) and THEME_PRESETS (v1.12.0 one-click themes).
-  Loaded by tracker.html and every overlay (overlay.html, declutter.html,
-  rebirth-requirements-overlay.html, sneak-preview.html, crit-guide-overlay.html).
+  skins + emblem renderer), THEME_PRESETS and the look helpers (sanitizeLook,
+  effectiveTheme, share codes), APP_LOOKS + appLookFor/appLookCssVars (the tracker
+  window's own colours, v1.15.0), and the mission-warning helpers (cleanMissionWarnTimes,
+  missionWarningsDue). Loaded by tracker.html, timers.html and every overlay page;
+  `grep -l requirements.js *.html` gives the current list.
 - `crit-guide-overlay.html` (v1.10.0) — the 5th overlay, ⚡ Optimal Crit Guide: a
   STATIC reference panel (hardcoded purchase-order data for one specific build),
   unlike the other four — no ownership/cycle data, no fullReload(), no
@@ -37,7 +39,10 @@ short on purpose so a fresh session can read it in one pass.
 - `tracker.html` — main window. The toolbar is a "Command Console": one
   `.console-row` per function group, each a two-column layout (fixed-width label +
   a separate `.console-row-buttons` strip) so a wrapped row indents under the
-  button column instead of falling back under the label. Settings panel is a
+  button column instead of falling back under the label. Since v1.14.3 the Overlays row
+  is a switchboard (`.overlay-board`): one equal `.tile` per overlay with a fixed
+  `.tile-name` and a `.led`; overlay-controls.js `setTile()` only flips `.on`, never the
+  text (test/pages.test.js guards it). Settings panel is a
   tabbed "holo-console" (Keybinds / Layout / Appearance / Filters / Timers / Droid Editor).
   Appearance was "Borders" until v1.11.1 and "Colors" before v1.10.0; its element ids are
   still `setTab-borders`/`setPane-borders`.
@@ -66,7 +71,7 @@ short on purpose so a fresh session can read it in one pass.
   tracker.html's globals (`ownedRank`, `activeCycle`, `markRowObtained`,
   `cycleCoveredCount`, etc.) — see the Rules section below, this is exactly where
   the v1.9.0 regression happened.
-- `overlay-theme.css` / `overlay-theme.js` (v1.11.0) — the 5 droid overlays' shared
+- `overlay-theme.css` / `overlay-theme.js` (v1.11.0) — the droid overlays' and the Spawn Alert's shared
   look variables (`--ov-*`), corner resize grip and size-driven zoom. `overlay-drag.js`
   (v1.11.0) — every overlay window's drag bar (see the no-`-webkit-app-region` Rule).
 - `overlay-snap.js` (v1.11.1) — pure snap math (snapMove/snapResize) that main.js's
@@ -74,9 +79,9 @@ short on purpose so a fresh session can read it in one pass.
   overlay-theme.js (v1.11.1) also applies the `theme*` colour settings and the mark-key
   target (`<html data-mark-list>` pages; `data-ov-own-alpha` on the HUD).
 - `alert-sound.js` + `sounds/good-news-data.js` — `playAlert(choice, volume, readCustom)`
-  (v1.13.0) plays every timer alert: tones, 'goodnews' (default since v1.11.1) and
-  'custom:<id>' files, auto-levelled and capped at 8 s. Used by timers.html and the
-  tracker's ▶ previews. The data file is base64 generated from
+  (v1.13.0) plays every alert sound: tones, 'goodnews' (default since v1.11.1) and
+  'custom:<id>' files, auto-levelled and capped at 8 s. Used by timers.html (timer alerts
+  and mission warnings), spawn-alert.html and the tracker's ▶ previews. The data file is base64 generated from
   `sounds/good-news-everyone.mp3` by `node build-sound-data.js` (the mp3 and the script
   stay out of the exe and the repo). It's a Futurama clip; the user chose to ship it.
 - `game-toast.html` (v1.11.1) — the in-game notice card (main.js `showGameToast`, created
@@ -85,10 +90,10 @@ short on purpose so a fresh session can read it in one pass.
   isn't focused. Not an OVERLAY_WINDOWS entry: it never moves.
 - `build-kyber-card-icons.js` (v1.11.0, not in the exe) — regenerates card-icons-data.js's
   75 Kyber slots as transparent cut-outs from the local Droidex screenshots.
-- `release/` keeps only the latest build or two (cleaned 2026-09-27: 16 old exes went to the
-  Recycle Bin, not deleted). Published exes live on GitHub Releases.
-- `_backup_v1.11.1_approved/`, `_backup_v1.12.0_approved/` (plus the older
-  `_backup_before_v1.10.11/`) — source snapshots taken before big changes. They're excluded
+- `release/` holds only the latest build (the user asked; older exes go to the Recycle Bin,
+  never deleted). Published exes live on GitHub Releases.
+- `_backup_*` folders — source snapshots taken before big changes (current list under
+  Current state). They're excluded
   from the exe (`!_backup*/**`) and from searches (`.ignore`, which ripgrep reads).
 - `dev/` — the Overlay Preview Lab (see Tools). Not in the exe or the repo.
 
@@ -118,8 +123,7 @@ short on purpose so a fresh session can read it in one pass.
   when overlays modify the store (marking droids, advancing cycles), all windows that
   display that data see the change instantly. tracker.html is not exempt — it reads
   ownedRank and must listen. When adding a new store key that overlays can modify,
-  add the listener to EVERY window that reads it. (No test guards this yet — an
-  earlier note claimed a `STORE_LISTENER_REQUIRED_PAGES` check existed; it never did.)
+  add the listener to EVERY window that reads it. (No test guards this.)
 - Border skins (⚙ Overlay Settings → Appearance; BORDER_SKINS/BORDER_SKIN_ORDER in
   requirements.js) are 15 since v1.12.0: glow outline + corner brackets + emblem badge,
   always VECTOR (never bitmaps) so they fit every overlay's shape. Faction emblems are
@@ -127,10 +131,22 @@ short on purpose so a fresh session can read it in one pass.
   MDI Apache 2.0, credited in README → Credits; user-approved 2026-09-27 after
   comparing them in the Preview Lab). hunter/tatooine/grogu stay hand-drawn in
   borderIconSvg(). **Skin keys never change** (saved settings hold them).
-  `THEME_PRESETS` (same file) = one-click skin + theme* colours for all five
-  overlays. Try new skins/presets in `dev/skin-candidates.js` via the lab first.
-  Still scoped to the 5 overlay windows: the toolbar, settings panel, Rebirth Reqs
-  side panel and droid list stay a fixed blue.
+  `THEME_PRESETS` (same file) = one-click skin + theme* colours for every skinnable
+  window (the five droid overlays, the timers, the Spawn Alert). Try new skins/presets in
+  `dev/skin-candidates.js` via the lab first.
+- **App looks (v1.15.0) theme the tracker window itself.** `APP_LOOKS` in requirements.js
+  (13, keys never change; `settings.appLook`) set the theme variables in tracker.html's
+  `:root` (`--bg-rgb`, `--accent-rgb`, `--holo-rgb`, `--surface-rgb`, … + a few hex vars;
+  `APP_LOOK_VAR_NAMES` lists them). **New tracker CSS must use those variables, never a
+  literal of the default green/blue** (e.g. `rgba(var(--holo-rgb),.2)`, not
+  `rgba(143,214,255,.2)`), or it stays green/blue in every look; test/app-looks.test.js
+  fails on the literals. Rarity/tier colours and the settings tabs' `--saber` stay fixed.
+  The default look == :root exactly (tested), and it's applied by clearing the overrides.
+  overlay-controls.js `applyAppLook()` also caches the vars in localStorage
+  (`fdt-appLookVars`) for tracker.html's no-flash `<head>` script. THEME_PRESETS' `appLook`
+  = the look a preset switches the app to while `appLookFollowsPresets` is on. Try new
+  looks in `dev/app-looks-lab.html` (real tracker per look; extras in
+  `dev/app-look-candidates.js`).
 - **Never open/save any project file (JS/HTML, this repo's or the sibling
   web tracker's) without pinning `encoding='utf-8'` explicitly, especially
   from a Windows-side script.** Windows' default `open()` locale encoding is
@@ -178,7 +194,8 @@ short on purpose so a fresh session can read it in one pass.
   user closes the running app before launching a new build.
 
 ## Tests
-`npm test` runs Node's built-in test runner over `test/**/*.test.js` (103 tests;
+`npm test` runs Node's built-in test runner over `test/**/*.test.js` (109 tests;
+test/app-looks.test.js checks the app looks and bans default-colour literals in tracker.html's CSS;
 test/skins.test.js checks every skin/preset, test/appearance.test.js the looks and
 share codes, test/spawn-parse.test.js replays real feed OCR from test/fixtures/).
 `test/helpers/load-shared.js` loads droid-data.js + requirements.js into an isolated vm
@@ -190,7 +207,7 @@ one to requirements.js, or tests can't reach it.
 element id a script looks up exists exactly once, and — as of v1.9.1 — every call
 site of a shared requirements.js function passes the right number of arguments.
 
-## Tools (added v1.10.13–v1.11.1): what to reach for
+## Tools: what to reach for
 
 - **Overlay Preview Lab** (`dev/overlay-lab.html`, dev-only, `!dev/**` keeps it out of the
   exe): all five REAL overlay pages side by side in frames (srcdoc + `<base href="/">` +
@@ -204,6 +221,11 @@ site of a shared requirements.js function passes the right number of arguments.
   (launch.json "tracker-static-alt"). Use it for any look change instead of hand-mocking.
   Gotcha: a literal `</script>` inside an inline script's string ends the block; write `<\/script>`.
 
+- **App Looks Lab** (`dev/app-looks-lab.html`, dev-only, v1.15.0): the REAL tracker.html in
+  one frame per app look (APP_LOOKS + `APP_LOOK_EXTRA` from `dev/app-look-candidates.js`),
+  fake progress via a mock overlayAPI, View = main window or ⚙ settings open. Frames load
+  one at a time (IntersectionObserver never fires while the Browser pane is hidden). The
+  user couldn't see the hidden Browser pane: give them the localhost link to open in Chrome.
 - **Spawn Alert replay harness** (`dev/spawn-alert-harness.html`, dev-only): runs the real
   spawn-alert.html with a mock overlayAPI and a fake getDisplayMedia that replays real game
   frames (`dev/spawn-frames/` + manifest.json, 23 frames) at their recorded timing, so
@@ -251,12 +273,53 @@ Stop test copies ONLY by that `--user-data-dir` in the process command line (Win
 never by exe path: the user may be running the app from `release\win-unpacked` too. Tell the
 user before launching; they may be in-game and close stray windows.
 
-## Current state (2026-09-27): v1.14.2 (mission-warning hotfix) shipped
+## Current state (2026-09-29): v1.15.0 (toolbar + app looks) built, awaiting the user's test
 
-- **Latest: v1.14.2**, user-tested and approved. Source pushed to `main`, then the release
-  form was pre-filled for the user to publish (they drag the exe + click Publish). Next
-  session: confirm on GitHub Releases that v1.14.2 is published and its asset digest equals
-  the exe's SHA256 8AB481982C7CBF15E7FBD4D254C7EF437B83BC8C04F7117B3B02EE0F3407B9E7.
+- **v1.15.0 = the unreleased v1.14.3 toolbar + App looks.** The user tested v1.14.3 ("Love
+  it so much"), then asked for themes for the app itself before pushing, so the version
+  became 1.15.0 (README has one v1.15.0 entry). Snapshot `_backup_v1.14.3_approved/`.
+  App looks: 13 in `APP_LOOKS` (the user liked all 12 previewed in dev/app-looks-lab.html;
+  Galactic Republic added so every overlay preset has a match), picker at the top of
+  Appearance, `appLook` + `appLookFollowsPresets` (default on; user: "as long as it can be
+  turned on & off"). tracker.html colours moved onto variables first; parity check 2,766
+  elements, 0 diffs. 9 looks' chrome lightened after preview so the console labels reach
+  ≥4.2 contrast (Sith/Tatooine capped at a 30% lighten to keep their hue). Verified in the
+  browser: saved look loads, picker, preset → app look, follow off, Default clears. 109 tests.
+- **v1.14.3 part (toolbar tidy-up, design B "Tidy + overlay switchboard"):** the user's pick from
+  `dev/toolbar-mockup.html`, renames included; snapshot `_backup_v1.14.2_approved/` taken
+  first. What changed: `.toolbar.command-console
+  {align-items:stretch}` (rows used to shrink + centre, so labels/dividers didn't line up);
+  Overlays row = `.overlay-board` 4-col grid (2 cols at ≤980px, where "🎯 Upcoming RB Req's"
+  stops fitting) of `.tile`s with a fixed name + `.led`; `.overlay-board .tile[hidden]`
+  rule needed (the tile's display:flex beats `.btn[hidden]`); overlay-controls.js
+  `set*ToggleLabel()` → `setTile()` (.on + aria-pressed only); renames Declutter → Safe to
+  Retire (toolbar, toasts, HOTKEY_BUTTONS + main.js HOTKEY_LABELS), side panel "🧬 Rebirth
+  Reqs" → "🧬 Reqs panel", overlay tile "🧬 Rebirth Reqs", Hotkeys → Hotkey list, ↺ →
+  "↺ Redraw box" after Read Rebirth Screen, duplicate "Rebirth Lvl" label gone, A–Z / By
+  Rebirth Level joined switch, last row = ⚙ Overlay Settings + keybinds lock | Export,
+  Import, red "Reset all…". Tools order: Reqs panel, Rename, Guide, Background (Guide moved
+  before Background so the Dim controls don't push it). Every element id kept. guide.js,
+  README (changelog + current text) updated; new test guards the tiles (104 tests).
+  Browser-checked with a mocked overlayAPI at 1060 / 905 / 760 px.
+- **Reference docs audited and fixed** (2026-09-29; PROMPT_AUDIT.md done → Recycle Bin):
+  GOTCHAS (vector skins, Claude commits uploads, build vs launch), COMMON_TASKS,
+  OVERLAY_TEMPLATE (registration list for a new overlay, overlayAPI not ipcRenderer, tile
+  markup), SETTINGS_SCHEMA (missionWarn*, Spawn Alert, keybinds lock), IPC_REFERENCE (Spawn
+  Alert).
+- **Browser-test gotcha:** document.write the tracker from a UTF-8 page at the same origin
+  (e.g. /dev/toolbar-mockup.html) with `<base href="/">` added. A 404 page is read as
+  windows-1252 (script-set emoji turn to mojibake), and a second write into the same page
+  redeclares top-level let/const.
+- **Builds:** v1.15.0 build 1 → `release\Fuzzy's Droid Tracker 1.15.0.exe`, 69.1 MB, SHA256
+  8D6478A8C4C657B4B19F5E29800E55654433096B308697F6C28866A523FFBBD6 (app.asar checked for
+  the looks + toolbar; dev lab and tests not packed). The user is running the
+  never-published 1.14.3 from `release\next\`; once they close it, send `release\next` to
+  the Recycle Bin. 1.14.2's exe already went there (it's on GitHub Releases).
+- **Latest release: v1.14.2**, published 2026-09-28 03:00 UTC. GitHub `main` = commit
+  5397ac1. v1.15.0 source is NOT pushed yet: after the user approves the build, diff local
+  vs main by blob SHA and push (at least tracker.html, overlay-controls.js, guide.js,
+  main.js, requirements.js, README.md, package.json, test/pages.test.js,
+  test/app-looks.test.js, test/helpers/load-shared.js).
 - v1.14.2 = warnings play whenever a time is picked (they were muted by the timer-expiry
   switch), and the warning and Spawn Alert volume sliders sit on their own line with a
   fixed-width % (they jumped rows as the % text changed width).
@@ -270,25 +333,23 @@ user before launching; they may be in-game and close stray windows.
   `backgroundThrottling:false` (hidden banners slowed the 1 s tick to 1/min, so sounds
   could be late). Browser-checked: warning 30 s before, mission sound at start. The user
   asked for its own volume slider after testing the first build; added.
-- **Next work starts from v1.14.2: bump package.json FIRST.**
+- **Work after v1.14.3 ships: bump package.json FIRST.**
 - When the user says a sound or feature "doesn't work", read their
   `%APPDATA%\fuzzys-droid-tracker\overlay-settings.json` first (read-only): in v1.14.2 it
   showed at once that an off switch, not the timing, was the cause.
-- **Previous release: v1.14.0** = 📡 Spawn Alert (see Layout) + its Filters-tab grid and
-  alert sound. User-tested in-game and approved; published 2026-09-27 23:29 UTC. GitHub
-  `main` = commit 67c339e; all 16 changed/new files matched local by blob SHA before
-  publishing, and the release asset's digest equals the local exe's SHA256 (E9354C01…B3B8).
-  Tests 98/98; browser replay of real frames = 6/6 alerts.
 - package.json is CRLF with PowerShell-style double-space formatting; edit the version in
   place, don't reformat.
 - `release\` holds only the latest exe (+ win-unpacked): the user asked to keep just the
   newest build, so older ones go to the Recycle Bin (published ones are on GitHub Releases). Snapshots of approved source:
   `_backup_v1.11.1_approved/`, `_backup_v1.12.0_approved/`, `_backup_v1.13.1_approved/`,
-  `_backup_v1.14.0_approved/`, `_backup_v1.14.1_approved/`. Take a new `_backup_vX_approved/`
+  `_backup_v1.14.0_approved/`, `_backup_v1.14.1_approved/`, `_backup_v1.14.2_approved/`,
+  `_backup_v1.14.3_approved/` (the approved toolbar, before app looks). Take a new `_backup_vX_approved/`
   before a big change (the user likes these).
 - Don't run `npm run dist` while the user runs the exe it would replace: it hangs with no
   error. Build with `--config.directories.output=release/next` and move it over afterwards.
 - Recent versions in one line each (details: README changelog + CLAUDE_HISTORY.md):
+  - v1.15.0 (built, not released): App looks (13) + the toolbar overlay switchboard,
+    clearer names, rows line up (v1.14.3 was folded into it, never published).
   - v1.14.2: mission warnings play even with timer-expiry sounds off; volume sliders don't jump.
   - v1.14.1: ⚠ Mission warning (30 s / 1 min / 2 min + own times, own sound + volume);
     timer sounds no longer late while the banners are hidden.
@@ -301,7 +362,7 @@ user before launching; they may be in-game and close stray windows.
   - v1.11.1: Appearance colours, mark-key target switch, overlay snapping, compact
     timers, "Good news" default alert, Read Rebirth Screen hotkeys + remembered screen.
   - v1.11.0: overlay resize + zoom, one-monitor drag, clean Kyber card icons.
-- Older per-version status notes (v1.10.5–v1.13.0) are in **CLAUDE_HISTORY.md**
+- Older per-version status notes are in **CLAUDE_HISTORY.md**
   (local-only, like the other root .md docs). Read it only when a task touches that history.
 
 ## Lessons worth keeping (distilled from CLAUDE_HISTORY.md)
@@ -333,8 +394,9 @@ user before launching; they may be in-game and close stray windows.
   the 120 ms batch (a delayed batch once overwrote an immediate change).
 - **Startup:** main.js creates the secondary windows only after the main window's
   `did-finish-load` (five windows each parse the ~3.3 MB icon data).
-- **OCR offline re-test:** `npm install --no-save tesseract.js@5 sharp
-  @tesseract.js-data/eng`, `langPath: node_modules/@tesseract.js-data/eng/4.0.0_best_int`.
+- **OCR offline re-test:** tesseract.js and sharp are dependencies already; add the language
+  data with `npm install --no-save '@tesseract.js-data/eng'` (quoted: a bare `@` is a
+  PowerShell parse error), `langPath: node_modules/@tesseract.js-data/eng/4.0.0_best_int`.
   rebirth-level-detect.js still uses the old threshold/whitelist (untouched until a
   badge misread is reported).
 - **Crit Guide "Eff" going up and down between rows is NOT a bug** (each row is measured
@@ -344,7 +406,7 @@ user before launching; they may be in-game and close stray windows.
 
 ## Known follow-ups (spotted, deliberately not fixed yet)
 - Spawn Alert: no "adjust box" UI yet (the feed box is a fixed screen fraction, measured at
-  1920x1080); no sound option yet (playAlert could do it); not in the Overlay Preview Lab
+  1920x1080); not in the Overlay Preview Lab
   (it only draws while unlocked or alerting). Legendary/Mythic and Gold/Stellar/Kyber lines
   were never seen in a capture: parser-tested only.
 - `overlay:markDroid`/`overlay:markLevel` (main.js) compute `nk` without the player's
@@ -364,8 +426,11 @@ user before launching; they may be in-game and close stray windows.
   in-game (the user skipped it), and more skins/presets (try them in dev/ first).
 - The 1-row timers window is at least 64px tall (Windows' frameless minimum), so
   there are 19px of transparent space under the banners. It only matters for snapping.
+- droid-data.js's rarity-class comment block (≈ lines 226-261) has old double-encoded
+  em-dashes (`â€”`). Comments only, identical in every backup since at least v1.14.1;
+  fix per the encoding rule above if that file is ever edited.
 - "Add a sound file" opens a native file dialog, so only the user can test that step.
   Everything around it was browser- and CDP-verified.
 - Keep this file short: after a release, replace "Current state" and move the finished
   version's detailed notes into CLAUDE_HISTORY.md (newest first) instead of stacking
-  status blocks here. Trimmed 2026-09-27 from 896 to about 310 lines.
+  status blocks here.
