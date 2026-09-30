@@ -408,6 +408,54 @@ it can be corrected.
   Leftovers of the in-game "PREVIEW" banner, the card frame and the colored card glow are
   gone.
 
+## 👥 Friends, colored SELL flags & a new tutorial (v1.16.0)
+
+**A new tutorial.** The first time you open the app, a welcome screen asks **▶ Show me around**
+or **Skip, I'll figure it out myself**. The tour highlights the real buttons one by one (7 quick
+steps). After an update, you only get a short **What's new**, also skippable. Replay it any time
+with **❔ Guide**. The website has the same tutorial, with its own steps for phones.
+
+**💎 Nova Crystal rewards** (a player's request). The Nova Crystals each rebirth gives you now
+show on the 🎯 Upcoming RB Req's HUD, left of the credit cost (with the game's own crystal), and
+under each rebirth number in **By Rebirth Level**: 5 at Rebirth 20 rising to 300 at 35, and 300
+for each of 36–40. Rebirths 1–19 give none. The website shows them too.
+
+**Hotkeys: your own from the start.** A new install starts with no hotkeys set, and the tutorial
+opens **⚙ Overlay Settings → Keybinds** so you can pick your own. The hotkey list no longer pops up
+every time the app starts (open it from the **⌨ Hotkey list** tile). If you already use the app,
+your hotkeys stay exactly as they are.
+
+**👥 Friends: see what your friends need.** No accounts and no server; you swap codes.
+- Press **👥 Friends** (toolbar, Tools row) to open the panel. Type the name your friends
+  will see, then **📋 Copy my code** and paste it to a friend (Discord, anywhere). It's a
+  short code with your cycle, your rebirth and every droid you've logged.
+- Paste a friend's code into the box at the bottom and press **Add**. Each friend is one line
+  with the 3 droids they need right now; click it to open:
+  - **🎯 Up next**: their next 4 rebirths, like your HUD.
+  - **🧬 Rebirth Reqs**: everything their cycle needs, rarest first, with how many they still
+    need per rarity (**only needs** hides what they have).
+- A code is a snapshot of that moment ("code from 2h ago"). When they send a new one, paste it:
+  it replaces the old one. A code from a different version of the app says so instead of
+  showing the wrong droids.
+- **🔗 Copy link** gives a website link that opens your progress in any browser, no app needed.
+- In-game: bind **👥 Switch you / friends** (⚙ Overlay Settings → Keybinds, under 🎯 Mark
+  droids). It flips the 🎯 Upcoming RB Req's HUD from your list to each friend's and back, in the
+  same spot and size. An amber name tag shows whose list it is, and marking is off while it shows
+  a friend. Friends' progress never touches yours.
+- No one to try it with yet? Paste your own code: you show up as a friend.
+
+**Colored SELL flags on the droid pictures**, in the colors of the old Cycle 5 community chart:
+- 🟡 **SELL**: never needed again this cycle.
+- 🔴 **a number (21–30)**: you can sell it now; that rebirth needs it again, at a higher rarity.
+- 🟢 **a number (31+)**: the same, needed again at Rebirth 31 or later.
+- No flag: it's needed again soon (in the same stretch: rebirths 1–20, 21–30 or 31+), or later at
+  the same rarity, so keep it.
+
+The flags hang off the side of the picture on the 🎯 HUD and in 👥 Friends' Up next, so the droid
+stays fully visible. The **By Rebirth Level** list shows the same colors as the tag by the name
+(it used to be one green SELL). Hover a card in the tracker for the meaning. Cards from the next
+cycle (when the HUD runs past the end) follow that cycle's own table.
+
 ## 💰 Rebirth credit costs on the HUD (v1.15.1)
 
 - The **🎯 Upcoming RB Req's** HUD now shows what each rebirth costs, next to its level:
@@ -813,13 +861,12 @@ want on screen again afterward.
 
 ## ⌨ Hotkey reference list
 
-A small card listing every hotkey currently bound, centered on screen. It
-shows up automatically each time you launch the app — a quick reminder so
-you're not stuck guessing the bindings — and can be shown/hidden at any time
-with **Ctrl+Shift+2** (or the **⌨ Hotkey list** tile in the toolbar). Unlike the HUD and
-timer banners, it isn't draggable — it's meant to be a brief reference, not
-a permanent fixture, so it always reopens centered. (**Ctrl+Shift+1**, Hide
-All Overlays, hides this card too, but doesn't have its own on/off state to
+A small card listing every hotkey currently bound, centered on screen. Show or
+hide it with the **⌨ Hotkey list** tile in the toolbar (or its own hotkey, once you
+set one). Since v1.16.0 it no longer pops up on every launch: the tutorial shows
+where to set your keys instead. Unlike the HUD and timer banners, it isn't
+draggable — it's meant to be a brief reference, so it always reopens centered.
+(Hide All Overlays hides this card too, but doesn't have its own on/off state to
 toggle back — see above.)
 
 **v1.10.10:** the card now lists the 🎯/🧬 mark & navigate hotkeys and the
@@ -831,10 +878,12 @@ hotkey there, the list updates immediately without a restart. Only hotkeys
 that are actually bound are listed — the optional ones (scroll and tier
 hotkeys) show up here once you set them.
 
-All hotkeys work even while Fortnite has focus, and every default is
-changeable from **⚙ Overlay Settings**:
+All hotkeys work even while Fortnite has focus. **Since v1.16.0 a new install starts
+with no hotkeys set**: pick your own in **⚙ Overlay Settings → Keybinds** (the tutorial
+opens it for you). An install from before v1.16.0 keeps the keys it already had; the
+old defaults are in the last column.
 
-| Hotkey | Action | Default |
+| Hotkey | Action | Default before v1.16.0 |
 |---|---|---|
 | Hide All Overlays | Turns every overlay off — one-way only, never toggles back on | `Ctrl+Shift+1` |
 | Toggle Current Rebirth Requirements | Show/hide the rebirth-requirements HUD | `Ctrl+Shift+3` |
@@ -843,6 +892,7 @@ changeable from **⚙ Overlay Settings**:
 | Toggle Safe to Retire List | Show/hide the ♻ Safe to Retire droid list | `Ctrl+Shift+4` |
 | Toggle Rebirth Requirements | Show/hide the 🧬 still-needed overlay | `Ctrl+Shift+5` |
 | Trigger Read Rebirth Screen | Fires the 📸 Read Rebirth Screen button | `Ctrl+Shift+6` |
+| Switch You / Friends (v1.16.0) | Flips the 🎯 HUD between your list and each 👥 friend's | *(unbound)* |
 | Toggle Sneak Preview | Show/hide the 🔮 next-cycle Mythic overlay | *(unbound — set in ⚙ Overlay Settings)* |
 | Toggle Optimal Crit Guide | Show/hide the ⚡ crystal-spend order overlay | *(unbound — set in ⚙ Overlay Settings)* |
 | Scroll List: Up / Down | Pages whichever of the ♻ Safe to Retire / 🧬 Rebirth Requirements lists is open, one screen at a time — one shared pair, not one per overlay | *(unbound)* |
@@ -854,7 +904,7 @@ changeable from **⚙ Overlay Settings**:
 | Switch Mark Keys to the Next Open List | With two or more of 🧬 Rebirth Requirements / ♻ Safe to Retire / 🔮 Sneak Preview open, moves the mark & navigate keys to the next one (v1.11.1) | *(unbound)* |
 | Read Rebirth Screen: Apply / Cancel | Accept the rank it just read, or close the reader without changing anything (v1.11.1) | *(unbound, one each)* |
 
-The seventeen unbound hotkeys above ship with no key combo on purpose (see the convention note in `main.js`): they only appear on the on-screen hotkey list once you've set them.
+Unbound hotkeys have no key combo until you set one; they only appear on the on-screen hotkey list once you have.
 
 The read-button hotkey doesn't do anything new under the hood — pressing it
 just clicks the real toolbar button for you, so the exact same
@@ -1139,8 +1189,8 @@ and testing everything above:
   hidden by `main.js` via the ⏱ Timers button or its own hotkey.
 - `hotkey-list.html` — the centered, click-through hotkey reference card;
   reads its rows live from shared settings and re-renders on any change.
-  Shown automatically on launch, toggled via the ⌨ Hotkey list tile or its own
-  hotkey (`Ctrl+Shift+2` by default).
+  Hidden on launch since v1.16.0; toggled via the ⌨ Hotkey list tile or its own
+  hotkey (unbound on new installs).
 - `declutter.html` — the "safe to retire" droid list (every tier); the
   which-droids logic lives in `requirements.js`'s `getDeclutterList`, this
   file handles rendering, the tier filter (read from the `declutterShow*`

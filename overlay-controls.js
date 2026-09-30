@@ -87,6 +87,7 @@
     ['markRightBtn', 'markRight', 'Navigate Right'],
     ['markUpBtn', 'markUp', 'Navigate Up'],
     ['markDownBtn', 'markDown', 'Navigate Down'],
+    ['hudFriendHotkeyBtn', 'hudFriendHotkey', "Upcoming RB Req's: Switch You / Friends"], // v1.16.0
     // v1.10.3: hotkey-based marking in Rebirth Requirements overlay
     ['rebirthMarkDroidBtn', 'rebirthMarkDroid', 'Mark Selected Droid (Rebirth Reqs / Sneak Preview / Safe to Retire)'],
     ['rebirthMarkLeftBtn', 'rebirthMarkLeft', 'Navigate Left (Rebirth Reqs / Sneak Preview / Safe to Retire)'],
@@ -1111,9 +1112,9 @@
       setHotkeyListToggleLabel(visible);
     });
   }
-  // Shown automatically on launch (see main.js) — reflect that as this
-  // button's initial label rather than waiting on a broadcast.
-  setHotkeyListToggleLabel(true);
+  // Hidden on launch since v1.16.0 (see main.js hotkeyListVisible) — reflect
+  // that as this button's initial state rather than waiting on a broadcast.
+  setHotkeyListToggleLabel(false);
 
   if(declutterToggleBtn){
     declutterToggleBtn.addEventListener('click', async ()=>{

@@ -235,6 +235,19 @@ const REBIRTH_CREDITS = [
   3e12, 4.5e12, 6e12, 9e12, 13.5e12, 21e12, 32e12, 45e12, 68e12, 100e12,          // 21-30
   150e12, 230e12, 345e12, 520e12, 778e12, 1.19e15, 2.5e15, 4.5e15, 8e15, 15e15    // 31-40
 ];
+/* ---------------- NOVA CRYSTALS per rebirth (v1.16.0, a player's request) ----------------
+   The Nova Crystals the game gives for reaching each rebirth. Index = rebirth
+   level - 1, like REBIRTH_CREDITS ("19->20: 5" is Rebirth 20). From a community
+   chart that starts at Rebirth 20 (1-19 give none, null = nothing shown) and ends
+   at 35; 36-40 give 300 each (the user). Treated as the same in every cycle;
+   rebirthCrystalsFor() in requirements.js is the only lookup. Shown on the HUD
+   and in By Rebirth Level. */
+const REBIRTH_CRYSTALS = [
+  null, null, null, null, null, null, null, null, null, null,   // 1-10
+  null, null, null, null, null, null, null, null, null, 5,      // 11-20
+  10, 15, 20, 25, 40, 50, 60, 70, 80, 120,                      // 21-30
+  140, 160, 180, 200, 300, 300, 300, 300, 300, 300              // 31-40
+];
 
 /* ---------------- droid RARITY CLASS (Common/Rare/Epic/Legendary/Mythic/Iconic) ----------------
    A second, separate axis from the Base->Stellar variant ladder above — this

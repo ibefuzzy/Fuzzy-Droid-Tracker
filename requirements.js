@@ -75,6 +75,7 @@ function buildIndex(){
   // instead of keeping stale post-rename entries for the rest of this
   // window's lifetime.
   RARITY_CLASS_BY_NK = null;
+  SELL_NEEDS_CACHE = {}; // v1.16.0 sellFlagFor(): keyed by the merged names too
 }
 
 /* ---------------- PER-CYCLE REBIRTH CEILINGS ----------------
@@ -281,6 +282,19 @@ function nextCycleOf(cycle){ return cycle >= 5 ? 1 : cycle + 1; }
 function rebirthCreditsFor(cycle, level){
   const n = REBIRTH_CREDITS[level - 1];
   return typeof n === 'number' ? n : null;
+}
+/** Nova Crystals the game gives for reaching rebirth `level` (REBIRTH_CRYSTALS, v1.16.0); null when none/unknown. */
+function rebirthCrystalsFor(cycle, level){
+  const n = (typeof REBIRTH_CRYSTALS !== 'undefined') ? REBIRTH_CRYSTALS[level - 1] : undefined;
+  return typeof n === 'number' ? n : null;
+}
+/* The Nova Crystal icon (v1.16.0): the game's own crystal (the user's screenshot, kept as
+   dev/nova-crystal-source.png), cut out of its green panel to a 30x30 transparent PNG.
+   Pages set it as the CSS variable --nova-crystal (applyNovaCrystalIcon) and draw it with
+   background: var(--nova-crystal). */
+const NOVA_CRYSTAL_URI = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAYAAAA7MK6iAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAEQ0lEQVRIx92XfUzUdRzHf4msg/sd/hCEE+S84+RZvDs4HyA0kViCs8yiFcnmZpvUtCANQvABn/Lh1EDkBI9RKCrEw0F/UFrWRKQiTMvNGqPZnG7ZJtMyl8G9+h5s1d/ewR99tve+vz9++70+36f35/OTpP9bKO/0ZEjxvWiKB5kQ4Pq+EfzXgaQ7j1QCPhnfjz84sgYmrxRQvzakAjEWwuNrfh4/cPiONjTbYFLGQyTr2VHgY0JuuLnq7viAzc5hpDwXUqKY2Ws3kbYKoEhC2iT0pouCnofjAI67iBTllhOpbgTpoIBVgu9hMe4ZW+r090e8C/aNOonP7I+RlWIUvY2ArTeQjjMmh5BN7PfUPUhueQ3qV4BqaglTlLfQandi0FexIK6JQHk7k9RFSKpS1EHlqPzFe/IG74DVfiVEhVQTaqxFH74fa0w9i+JPkWt1EqTZgqK1Uf3NbQKUTQL8BhHz7DaPoYGqMrTyXuYv6uYJUxfpUS2sSjrHhsxLFL9yGUt4LakxDRhmOQgM2IRWXer5bDWqEmbK+zAotSxJ7mPD0kFKnvqBQzm/ULfmV1aZzlGU2k32rGYswVXEaXaRHVLnGThAQHWa9zAHHyNpeiuFaVe40QZf7nvIt+IUX9oNndvuUmi9wDO6JsoiOlkgkvQIqvIrJ0i9F2NANQvDTlMwv5+W1UP8OcQ/MeiE08/dYqO1l+W601hkG5Hy5kcHT8u8hsbvAFr/ChKUejJmdLA7dYDBgy7+GwMfQVvubdaZu0nXOogO2I45tvbRwT5BrSjqdvTyccyaE+RHdtOd9xtDZ8aALpdrVNdbXDTk3+GlmC7MoZUsjW94dOjU+Kv4GH4kXOnmWW0H62eeYaX+M67ueMBNh4uhT+H3fhi+B/3Ff1CU9DXLoz/kBVMnWc9/4cH+Kq1olR5xfRqZY20jWmPnxbnnqci7Ts2yKzSvvc65glv0br3HkRUDbEz/ihWJTtKiGjy9QmWolIuo5XoU+RDTxIHJERa5LLqJXIuTtaldlKaf50DOd7ye9jnL57R7Dp2ZX9khZT4QPnsGX9kutFskYcMwwzHqVFnJjawQejmlnZy5nTyd2Myi2A9IEcbhEXhytKip+p+QFPEheZdI4F2KLtwhXFfB3Dg7SxY0kmWpZ1nSSZ5MOEWaUMrsRi94crAAKlVjUHmLeC4lyeQgLMLGYlMt2SkNGBMaMcaewLJ6hHnl3ip9oYeRhOUlvSpOp1yGebadZLODFNMxUi3HMeQ9IDb/L3KbIWW/w4v1VtmJ5F+CJEw+cPoBEmOPYkmwEyf2MMzaQba4x29fG/ZugQ91r9qUvaJhc9dV4dE6O0ZDFUZjPSFRrWS3Q+UNL3cV/7rHvlGwHHKEkOl29NEdKDon8eWMc6sqYG6wb9BRgnWfoIk4i3bz/QlozMWddWvSjD5U+ssT8ycwVpZqkBben0DgBMbfyc2cuAoT4egAAAAASUVORK5CYII=';
+function applyNovaCrystalIcon(){
+  document.documentElement.style.setProperty('--nova-crystal', 'url("' + NOVA_CRYSTAL_URI + '")');
 }
 const CREDIT_SUFFIXES = ['', 'K', 'M', 'B', 'T', 'QA', 'QI'];
 /** A credit amount the way the game writes it: 10K, 2.95M, 1.36B, 13.5T, 1.19QA. */
@@ -722,6 +736,165 @@ function cycleRealLevelCount(cycle){
 /** Returns the count of real (non-placeholder) droid slots in a cycle: cycleRealLevelCount(cycle) * 3. */
 function cycleRealSlotCount(cycle){
   return cycleRealLevelCount(cycle) * 3;
+}
+
+/* ---------------- SELL FLAGS (v1.16.0) ----------------
+   The coloured flag on a droid card in the Upcoming RB Req's HUD, the 👥 Friends
+   panel's Up next and the tracker's By Rebirth Level list, in the colours of the
+   old Cycle 5 community chart. For the droid at (cycle, level, slot), looking only
+   at the rest of THAT cycle's table (a card the HUD shows from the next cycle
+   passes its own cycle, so it follows that cycle's table):
+     - never asked for again this cycle                 -> {kind:'yellow'}        "SELL"
+     - not asked for again in this stretch of the cycle
+       (rebirths 1-20 / 21-30 / 31+), and next asked for
+       at a HIGHER rarity in 21-30 / 31+                -> {kind:'red'|'kyber', next} the rebirth number
+     - otherwise (needed again soon, or at the same or a
+       lower rarity, so keep it)                        -> null
+   Yellow is exactly cycleLastNeededLevel()'s rule (the old green SELL tag). The
+   flag is page markup over the picture, never part of the shared card art, so no
+   other list can pick it up. */
+function sellStretchOf(level){ return level >= 31 ? 2 : level >= 21 ? 1 : 0; }
+let SELL_NEEDS_CACHE = {}; // cycle -> {nk -> [{level, rank}] ascending}; reset by buildIndex() (it depends on nameMerges)
+function cycleNeedsByDroid(cycle){
+  if(SELL_NEEDS_CACHE[cycle]) return SELL_NEEDS_CACHE[cycle];
+  const needs = {};
+  const cycleLen = CYCLES[cycle] ? CYCLES[cycle].length : 0;
+  for(let l=1;l<=cycleLen;l++){
+    CYCLES[cycle][l-1].forEach(d=>{
+      if(d[0] === '?') return;
+      const nk = normKey(canonicalName(d[1]));
+      (needs[nk] = needs[nk] || []).push({ level:l, rank:rankOf(d[0]) });
+    });
+  }
+  SELL_NEEDS_CACHE[cycle] = needs;
+  return needs;
+}
+/** The SELL flag for one card: {kind:'yellow'} | {kind:'red'|'kyber', next:level} | null. See above. */
+function sellFlagFor(cycle, level, slot){
+  const row = CYCLES[cycle] && CYCLES[cycle][level-1];
+  const d = row && row[slot];
+  if(!d || d[0] === '?') return null;
+  const later = (cycleNeedsByDroid(cycle)[normKey(canonicalName(d[1]))] || []).filter(x => x.level > level);
+  if(!later.length) return { kind:'yellow' };
+  const next = later[0];
+  if(sellStretchOf(next.level) === sellStretchOf(level) || next.rank <= rankOf(d[0])) return null;
+  return { kind: sellStretchOf(next.level) === 1 ? 'red' : 'kyber', next: next.level };
+}
+
+/* ---------------- FRIEND CODES (v1.16.0) ----------------
+   👥 Friends: a player's progress as a short code to paste in Discord (or a
+   website link carrying it after the #), no server. The code is
+     "FDTP1." + base64url of
+     [1][fingerprint hi][fingerprint lo][cycle][rebirth][minutes since 2026-01-01, 4 bytes]
+     [name length][name UTF-8][every droid's logged rarity, 2 per byte: 0 = none, rank+1][checksum]
+   Droids are listed by their RAW droid-data.js name in first-seen order (cycle 1
+   -> 5), never by a player's renames/merges, so both sides agree whatever either
+   one renamed. The fingerprint hashes that list: a code made with a different
+   droid-data.js (a game patch, an out-of-date app or website) is refused instead
+   of read wrong. Friend data lives in its own store key ('rebirth-friends', the
+   pasted codes) and never touches ownedRank. */
+const FRIEND_CODE_PREFIX = 'FDTP1.';
+const FRIEND_LINK_BASE = 'https://ibefuzzy.github.io/tracker/#friend=';
+const FRIEND_EPOCH_MIN = Date.UTC(2026, 0, 1) / 60000;
+const FRIEND_DROIDS = (function(){ // [{key, names:[raw names]}], first-seen order
+  const out = [], byKey = {};
+  for(let c=1;c<=5;c++) (CYCLES[c] || []).forEach(row => row.forEach(d=>{
+    if(d[0] === '?') return;
+    const k = normKey(d[1]);
+    if(!byKey[k]){ byKey[k] = { key:k, names:[] }; out.push(byKey[k]); }
+    if(byKey[k].names.indexOf(d[1]) === -1) byKey[k].names.push(d[1]);
+  }));
+  return out;
+})();
+const FRIEND_FINGERPRINT = (function(str){ // FNV-1a folded to 16 bits
+  let h = 0x811c9dc5;
+  for(let i=0;i<str.length;i++){ h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+  return (h ^ (h >>> 16)) & 0xffff;
+})(FRIEND_DROIDS.map(d => d.key).join(','));
+
+function bytesToB64url(bytes){ let s = ''; bytes.forEach(b=>{ s += String.fromCharCode(b); }); return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+function b64urlToBytes(str){ const b = atob(str.replace(/-/g,'+').replace(/_/g,'/')); return Uint8Array.from(b, ch => ch.charCodeAt(0)); }
+function cleanFriendName(name){ return String(name || '').replace(/[\u0000-\u001f<>&"]/g, '').trim().slice(0, 16); }
+/** "25 min ago" / "2h ago" / "3d ago" for a friend code's time. */
+function friendAgeText(time, now){
+  const m = Math.max(0, Math.round(((now || Date.now()) - time) / 60000));
+  if(m < 60) return m + ' min ago';
+  const h = Math.round(m / 60);
+  return h < 24 ? h + 'h ago' : Math.round(h / 24) + 'd ago';
+}
+
+/** This player's ownedRank as {raw droid key -> rank}, resolved through their own merges (what a friend code carries). */
+function friendOwnedFromMine(ownedRank){
+  const out = {};
+  FRIEND_DROIDS.forEach(d=>{
+    d.names.forEach(n=>{
+      const r = ownedRank[normKey(canonicalName(n))];
+      if(r !== undefined && (out[d.key] === undefined || r > out[d.key])) out[d.key] = r;
+    });
+  });
+  return out;
+}
+/** A friend's {raw droid key -> rank} as an ownedRank keyed the way THIS player's lists look droids up (their merges). */
+function friendOwnedRank(rawOwned){
+  const out = {};
+  FRIEND_DROIDS.forEach(d=>{
+    const r = rawOwned[d.key];
+    if(r === undefined) return;
+    d.names.forEach(n=>{
+      const nk = normKey(canonicalName(n));
+      if(out[nk] === undefined || r > out[nk]) out[nk] = r;
+    });
+  });
+  return out;
+}
+/** p = {name, cycle, level, owned: {raw droid key -> rank} (see friendOwnedFromMine), time: ms}. Returns the code. */
+function encodeFriendCode(p){
+  let name = cleanFriendName(p.name);
+  let nameBytes = new TextEncoder().encode(name);
+  while(nameBytes.length > 24){ name = name.slice(0, -1); nameBytes = new TextEncoder().encode(name); }
+  const mins = Math.max(0, Math.floor(p.time / 60000 - FRIEND_EPOCH_MIN));
+  const bytes = [1, FRIEND_FINGERPRINT >> 8, FRIEND_FINGERPRINT & 255, p.cycle, p.level,
+    (mins >>> 24) & 255, (mins >>> 16) & 255, (mins >>> 8) & 255, mins & 255, nameBytes.length];
+  nameBytes.forEach(b => bytes.push(b));
+  const nib = k => (p.owned[k] === undefined ? 0 : p.owned[k] + 1);
+  for(let i=0;i<FRIEND_DROIDS.length;i+=2){
+    bytes.push((nib(FRIEND_DROIDS[i].key) << 4) | (i + 1 < FRIEND_DROIDS.length ? nib(FRIEND_DROIDS[i+1].key) : 0));
+  }
+  bytes.push(bytes.reduce((s, x) => (s + x) & 255, 0));
+  return FRIEND_CODE_PREFIX + bytesToB64url(bytes);
+}
+/** A pasted code or website link -> {name, cycle, level, owned (raw keys), time, code}, or {error, name?}. Never throws. */
+function decodeFriendCode(input){
+  const bad = { error:"That isn't a friend code." };
+  try{
+    let str = String(input || '').trim();
+    const at = str.indexOf('#friend=');
+    if(at !== -1) str = str.slice(at + 8);
+    str = str.replace(/\s+/g, '');
+    if(!str.startsWith(FRIEND_CODE_PREFIX) || str.length > 400) return bad;
+    const b = b64urlToBytes(str.slice(FRIEND_CODE_PREFIX.length));
+    if(b.length < 12 || b[0] !== 1) return bad;
+    if(b.slice(0, -1).reduce((s, x) => (s + x) & 255, 0) !== b[b.length-1]) return { error:'That code is cut off or mistyped. Copy it again.' };
+    const n = b[9];
+    if(10 + n > b.length - 1) return bad;
+    const name = cleanFriendName(new TextDecoder().decode(b.slice(10, 10 + n))) || 'Friend';
+    if(((b[1] << 8) | b[2]) !== FRIEND_FINGERPRINT) return { error:'That code is from a different version of the app or website. One of you needs to update.', name };
+    const cycle = b[3], level = b[4];
+    if(!(cycle >= 1 && cycle <= 5) || level > cycleRealLevelCount(cycle)) return bad;
+    if(b.length !== 10 + n + Math.ceil(FRIEND_DROIDS.length / 2) + 1) return bad;
+    const owned = {};
+    let pos = 10 + n;
+    for(let i=0;i<FRIEND_DROIDS.length;i+=2, pos++){
+      const hi = b[pos] >> 4, lo = b[pos] & 15;
+      if(hi > RARITY_ORDER.length || lo > RARITY_ORDER.length) return bad;
+      if(hi) owned[FRIEND_DROIDS[i].key] = hi - 1;
+      if(lo && i + 1 < FRIEND_DROIDS.length) owned[FRIEND_DROIDS[i+1].key] = lo - 1;
+    }
+    const mins = ((b[5] << 24) | (b[6] << 16) | (b[7] << 8) | b[8]) >>> 0;
+    return { name, cycle, level, owned, time:(mins + FRIEND_EPOCH_MIN) * 60000, code:str };
+  }catch(e){
+    return bad;
+  }
 }
 
 /* ---------------- MISSION WARNINGS (v1.14.1) ----------------

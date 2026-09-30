@@ -129,6 +129,28 @@
     filter:drop-shadow(0 1px 1px rgba(0,0,0,0.8));
   }
   .block.current .credits{ color:#86ff92; border-color:rgba(134,255,146,0.8); }
+  /* v1.16.0 (a player's request): the Nova Crystals this rebirth gives, left of its
+     credit cost, on the same kind of chip in violet. REBIRTH_CRYSTALS in droid-data.js. */
+  /* a touch more compact than .credits, so both chips stay clear of the border badge
+     on the top block even at "+300 · 2.5QA" (measured in dev/hud-credits-preview.html) */
+  .head-chips{ display:inline-flex; align-items:center; gap:3px; min-width:0; }
+  .head-chips .credits{ padding:0 7px 0 2px; } /* 2 px tighter than on its own (v1.16.0), for the same reason */
+  .crystals{
+    font-family:'Rajdhani',sans-serif; font-style:italic; font-weight:700;
+    font-size:calc(15px * var(--ov-text-scale, 1)); letter-spacing:0; line-height:1.25;
+    color:#dcc4ff;
+    text-shadow:-1px -1px 0 #1a0633, 1px -1px 0 #1a0633, -1px 1px 0 #1a0633, 1px 1px 0 #1a0633, 0 2px 3px rgba(0,0,0,0.9);
+    display:inline-flex; align-items:center; gap:1px; white-space:nowrap;
+    background:rgba(14,6,26,0.72); border:1px solid rgba(181,123,255,0.55); border-radius:999px;
+    padding:0 5px 0 2px; box-shadow:0 0 6px -2px rgba(181,123,255,0.6);
+    margin:-3px 0 -2px;
+  }
+  .crystals::before{
+    content:''; flex:none; width:calc(15px * var(--ov-text-scale, 1)); height:calc(15px * var(--ov-text-scale, 1));
+    background:var(--nova-crystal) center/contain no-repeat;
+    filter:drop-shadow(0 1px 1px rgba(0,0,0,0.8));
+  }
+  .block.current .crystals{ color:#ecdcff; border-color:rgba(200,160,255,0.85); }
   /* ---------------------------------------------------------------------
      Card style redesigned 2026-09-20 to match the Safe to Retire overlay's
      look (declutter.html) — a droid portrait in a rarity-colored frame
@@ -151,11 +173,34 @@
     border:2px solid var(--rc, var(--r-base));
     box-shadow:0 0 5px -1px var(--rc, transparent);
     display:flex; align-items:center; justify-content:center;
-    overflow:hidden;
+    overflow:visible; /* v1.16.0: the SELL flag hangs off the right side; the picture rounds its own corners */
   }
   .d-icon-wrap img{
-    width:100%; height:100%; object-fit:cover;
+    width:100%; height:100%; object-fit:cover; border-radius:4px;
   }
+  /* v1.16.0 SELL flags: a flag hanging off the picture's right side, in the empty
+     space beside it, so the droid stays fully visible (the user's pick of the
+     dev/sell-banner-mockup.html rounds). Colours = the old Cycle 5 chart: yellow
+     SELL = never needed again this cycle; red / Kyber green = the rebirth that
+     needs it again (21-30 / 31+). requirements.js sellFlagFor() decides. */
+  .sell-flag{
+    position:absolute; z-index:2; left:calc(100% + 1px); bottom:1px; pointer-events:none; white-space:nowrap;
+    font:700 calc(12.5px * var(--ov-text-scale, 1))/1 'Rajdhani',sans-serif; padding:2px 4px 1px 3px;
+    border-radius:0 5px 5px 0; border:1px solid rgba(0,0,0,0.9); border-left:0; box-shadow:1px 1px 3px rgba(0,0,0,0.8);
+  }
+  .sell-flag.yellow{ font-size:calc(8.5px * var(--ov-text-scale, 1)); letter-spacing:.04em; padding:3px 4px 2px 3px; background:#f5c518; color:#140f00; }
+  .sell-flag.red{ background:#d91f1f; color:#fff; text-shadow:0 0 2px #000, 0 1px 1px #000; }
+  .sell-flag.kyber{ background:var(--r-kyber); color:#03170b; }
+  /* v1.16.0 👥 friend view (hudFriend hotkey): an amber name tag and amber level edges, so it's never mistaken for your own list */
+  .friend-tag{
+    display:none; position:absolute; top:4px; left:8px; z-index:4;
+    font:700 12px 'Rajdhani',sans-serif; letter-spacing:.06em; color:#1a1204;
+    background:#f2b95e; border-radius:999px; padding:1px 9px; box-shadow:0 0 8px -1px rgba(242,185,94,0.8);
+  }
+  .friend-tag small{ font:600 9.5px 'IBM Plex Mono',monospace; letter-spacing:0; opacity:.8; margin-left:4px; }
+  html.friend-view .friend-tag{ display:block; }
+  html.friend-view .block{ border-left-color:rgba(242,185,94,0.55); }
+  html.friend-view .block.current{ border-left-color:#f2b95e; }
   .d-name{
     font-size:calc(9.5px * var(--ov-text-scale, 1)); font-weight:700; color:#f2f6f4; text-align:center;
     text-shadow:0 1px 2px rgba(0,0,0,0.9); line-height:1.15;
@@ -188,6 +233,7 @@
       <span>Drag to move, corner to resize, then Lock</span>
       <button id="lockBtn">Lock</button>
     </div>
+    <div class="friend-tag" id="friendTag"></div>
     <div class="blocks" id="blocks"></div>
   </div>
 
@@ -213,6 +259,7 @@
     '<path d="M11.4 9.6V21.8M8 13.4H13.4M8 17H13.4M11.4 9.6H22L16 23" fill="none" stroke="#7a4a06" stroke-width="2.6" stroke-linejoin="round"/>' +
     '</svg>';
   document.documentElement.style.setProperty('--credit-coin', 'url("data:image/svg+xml,' + encodeURIComponent(CREDIT_COIN_SVG) + '")');
+  applyNovaCrystalIcon(); // v1.16.0 (requirements.js)
 
   const DOT_COLOR = { B:'var(--r-base)', G:'var(--r-gold)', D:'var(--r-diamond)', R:'var(--r-rainbow2)', K:'var(--r-beskar)', X:'var(--r-galactic)', S:'var(--r-stellar)', Y:'var(--r-kyber)' };
 
@@ -220,6 +267,16 @@
   let currentLevel = 0; // last rebirth COMPLETED; 0 = none yet
   let ownedRankLocal = {};
   let selectedPos = { levelIndex: 0, slot: 0 }; // v1.10.3: hotkey-based marking — track which level card + droid (0-2)
+  // v1.16.0 👥: the friends pasted in the tracker ('rebirth-friends' codes, the readable
+  // ones decoded) and whose list the HUD shows: 0 = you, n = friends[n-1]. A friend's
+  // list is look-only: clicks and the mark keys do nothing while it's showing.
+  let friends = [];
+  let hudView = 0;
+  function viewingFriend(){ return hudView > 0 ? (friends[hudView - 1] || null) : null; }
+  function setFriends(codes){
+    friends = (Array.isArray(codes) ? codes : []).map(decodeFriendCode).filter(f => !f.error);
+    if(hudView > friends.length) hudView = 0;
+  }
 
   async function loadIndexData(){
     nameMerges = (await window.overlayAPI.storeGet('rebirth-nameMerges')) || {};
@@ -231,20 +288,30 @@
     currentCycle = (await window.overlayAPI.storeGet('rebirth-activeCycle')) || 1;
     currentLevel = (await window.overlayAPI.storeGet('rebirth-currentLevel')) || 0;
     ownedRankLocal = (await window.overlayAPI.storeGet('rebirth-ownedRank-v2')) || {};
+    setFriends(await window.overlayAPI.storeGet('rebirth-friends'));
   }
 
-  function cellHtml(d){
+  // v1.16.0: the SELL flag markup for sellFlagFor(this card), or ''
+  function sellFlagHtml(f){
+    if(!f) return '';
+    if(f.kind === 'yellow') return '<span class="sell-flag yellow">SELL</span>';
+    return '<span class="sell-flag ' + f.kind + '">' + f.next + '</span>';
+  }
+
+  function cellHtml(d, friend){
     const reqColor = DOT_COLOR[d.code] || 'var(--r-base)';
     const ownedCode = (d.ownedRankValue !== undefined) ? RARITY_ORDER[d.ownedRankValue] : null;
     const ownedColor = ownedCode ? (DOT_COLOR[ownedCode] || 'var(--r-base)') : 'rgba(255,255,255,0.5)';
-    const haveText = ownedCode ? ('Have: ' + RNAME[ownedCode]) : 'Not owned';
+    const haveText = ownedCode ? ((friend ? 'Has: ' : 'Have: ') + RNAME[ownedCode]) : 'Not owned';
     const iconKey = d.cycle + '-' + d.level + '-' + d.slot;
     const b64 = (typeof CARD_ICONS !== 'undefined' && CARD_ICONS[iconKey]) || (typeof ICONS !== 'undefined' && ICONS[iconKey]);
     const src = b64 ? 'data:image/webp;base64,' + b64 : '';
     const imgTag = src ? ('<img src="' + src + '" alt="' + d.display + '" loading="lazy">') : '';
-    const title = d.display + ' — need ' + RNAME[d.code] + ' — ' + (ownedCode ? ('you have ' + RNAME[ownedCode]) : 'not logged yet');
+    const flag = sellFlagFor(d.cycle, d.level, d.slot);
+    const sellText = !flag ? '' : flag.kind === 'yellow' ? ' — SELL: not needed again this cycle' : (' — can be sold, needed again at Rebirth ' + flag.next);
+    const title = d.display + ' — need ' + RNAME[d.code] + ' — ' + (ownedCode ? ((friend ? 'they have ' : 'you have ') + RNAME[ownedCode]) : 'not logged yet') + sellText;
     return '<div class="d-cell' + (d.owned ? ' owned' : '') + '" data-cycle="' + d.cycle + '" data-level="' + d.level + '" data-slot="' + d.slot + '" title="' + title + '">' +
-      '<div class="d-icon-wrap" style="--rc:' + reqColor + ';">' + imgTag + '</div>' +
+      '<div class="d-icon-wrap" style="--rc:' + reqColor + ';">' + imgTag + sellFlagHtml(flag) + '</div>' +
       '<div class="d-name">' + d.display + '</div>' +
       '<div class="d-owned" style="color:' + ownedColor + '">' + haveText + '</div>' +
     '</div>';
@@ -255,17 +322,25 @@
     // getUpcomingLevels wraps to the next cycle's levels 1+ once the current
     // cycle runs out, so this is never empty at 35/35 — it previews the next
     // cycle's first rebirths instead, same idea as Sneak Preview.
-    const upcoming = getUpcomingLevels(currentCycle, currentLevel, ownedRankLocal, 4);
+    const fr = viewingFriend(); // v1.16.0: a friend's list, or yours
+    const cycle = fr ? fr.cycle : currentCycle;
+    const upcoming = fr ? getUpcomingLevels(fr.cycle, fr.level, friendOwnedRank(fr.owned), 4)
+                        : getUpcomingLevels(currentCycle, currentLevel, ownedRankLocal, 4);
+    document.documentElement.classList.toggle('friend-view', !!fr);
+    document.getElementById('friendTag').innerHTML = fr
+      ? ('👥 ' + fr.name.toUpperCase() + '<small>C' + fr.cycle + ' · RB ' + fr.level + ' · ' + friendAgeText(fr.time) + '</small>') : '';
 
     blocksEl.innerHTML = upcoming.map((u, i)=>{
       const isCurrent = i === 0;
-      const cycleTag = u.cycle !== currentCycle ? (' · Cycle ' + u.cycle) : '';
+      const cycleTag = u.cycle !== cycle ? (' · Cycle ' + u.cycle) : '';
       const tag = (isCurrent ? 'NOW · Lvl ' : 'Lvl ') + u.level + cycleTag;
       const credits = rebirthCreditsFor(u.cycle, u.level); // v1.15.1
       const creditsHtml = credits === null ? '' : '<span class="credits" title="Credits needed to go through with Rebirth ' + u.level + '">' + formatCredits(credits) + '</span>';
+      const crystals = rebirthCrystalsFor(u.cycle, u.level); // v1.16.0
+      const crystalsHtml = crystals === null ? '' : '<span class="crystals" title="Nova Crystals for reaching Rebirth ' + u.level + '">+' + crystals + '</span>';
       return '<div class="block' + (isCurrent ? ' current' : '') + '" data-cycle="' + u.cycle + '" data-level="' + u.level + '">' +
-        '<div class="block-head"><span class="tag">' + tag + '</span>' + creditsHtml + '</div>' +
-        '<div class="d-row">' + u.droids.map(cellHtml).join('') + '</div>' +
+        '<div class="block-head"><span class="tag">' + tag + '</span><span class="head-chips">' + crystalsHtml + creditsHtml + '</span></div>' +
+        '<div class="d-row">' + u.droids.map(d => cellHtml(d, !!fr)).join('') + '</div>' +
       '</div>';
     }).join('');
 
@@ -287,6 +362,7 @@
   }
 
   async function handleDroidCellClick(e){
+    if(viewingFriend()) return; // a friend's list is look-only
     const cell = e.currentTarget;
     const cycle = parseInt(cell.dataset.cycle, 10);
     const level = parseInt(cell.dataset.level, 10);
@@ -296,6 +372,7 @@
 
   async function handleLevelTagClick(e){
     e.stopPropagation();
+    if(viewingFriend()) return;
     const block = e.currentTarget.closest('.block');
     if(!block) return;
     const cycle = parseInt(block.dataset.cycle, 10);
@@ -351,6 +428,7 @@
     else if(key === 'rebirth-activeCycle'){ currentCycle = value || 1; selectedPos = { levelIndex: 0, slot: 0 }; render(); }
     else if(key === 'rebirth-currentLevel'){ currentLevel = value || 0; selectedPos = { levelIndex: 0, slot: 0 }; render(); }
     else if(key === 'rebirth-nameMerges' || key === 'rebirth-displayOverrides'){ fullReload(); }
+    else if(key === 'rebirth-friends'){ setFriends(value); render(); } // v1.16.0
   });
 
   function applySettings(settings){
@@ -372,6 +450,14 @@
 
   // v1.10.3: hotkey-based marking in Upcoming RB Req's overlay
   window.overlayAPI.onHotkeyTriggered(async (name)=>{
+    // v1.16.0 👥: you -> each friend -> you. Marking is off while a friend shows.
+    if(name === 'hudFriend'){
+      hudView = friends.length ? (hudView + 1) % (friends.length + 1) : 0;
+      selectedPos = { levelIndex: 0, slot: 0 };
+      render();
+      return;
+    }
+    if(viewingFriend()) return;
     if(name === 'markLeft') moveSelection(-1, 0);
     else if(name === 'markRight') moveSelection(1, 0);
     else if(name === 'markUp') moveSelection(0, -1);
@@ -391,6 +477,7 @@
   function applySelection(){
     // Remove old selection highlight
     document.querySelectorAll('.d-cell.selected').forEach(c => c.classList.remove('selected'));
+    if(viewingFriend()) return; // v1.16.0: no selection on a friend's (look-only) list
     // Find and highlight the selected cell
     const blocks = document.querySelectorAll('.block');
     if(selectedPos.levelIndex < blocks.length){

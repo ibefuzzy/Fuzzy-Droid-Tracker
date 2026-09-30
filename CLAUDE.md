@@ -17,8 +17,9 @@ short on purpose so a fresh session can read it in one pass.
   BORDER_SKINS/BORDER_SKIN_ORDER/BORDER_EMBLEMS/borderIconSvg (the 15 border
   skins + emblem renderer), THEME_PRESETS and the look helpers (sanitizeLook,
   effectiveTheme, share codes), APP_LOOKS + appLookFor/appLookCssVars (the tracker
-  window's own colours, v1.15.0), and the mission-warning helpers (cleanMissionWarnTimes,
-  missionWarningsDue). Loaded by tracker.html, timers.html and every overlay page;
+  window's own colours, v1.15.0), the mission-warning helpers (cleanMissionWarnTimes,
+  missionWarningsDue), and (v1.16.0) `sellFlagFor` (the coloured SELL flags) + the 👥 friend
+  codes (`encodeFriendCode`/`decodeFriendCode`, `friendOwnedFromMine`/`friendOwnedRank`). Loaded by tracker.html, timers.html and every overlay page;
   `grep -l requirements.js *.html` gives the current list.
 - `crit-guide-overlay.html` (v1.10.0) — the 5th overlay, ⚡ Optimal Crit Guide: a
   STATIC reference panel (hardcoded purchase-order data for one specific build),
@@ -52,6 +53,11 @@ short on purpose so a fresh session can read it in one pass.
   (DEFAULT_SETTINGS + the generic `settings:set` IPC handler — any new setting key
   that isn't a hotkey or a position just works, no special-casing needed), global
   hotkeys, screen-capture handler.
+- `tour.js` + `guide.js` (v1.16.0) — the tutorial. tour.js is the engine (welcome card with
+  "Show me around" / "Skip", spotlight steps, "What's new" for updaters) and is byte-identical in
+  dev/web-tracker/tracker/tour.js; guide.js holds the app's steps. **A new feature = a new step
+  with `since: '<version>'`** in guide.js AND the web's TOUR_STEPS_COMPUTER/PHONE (+ bump the web's
+  TOUR_VERSION). App: settings.hasSeenIntroGuide + introGuideVersion; ❔ Guide replays.
 - `persistence.js` — crash-safe `loadJson`/`saveJsonNow` (tmp file + fsync +
   rename, `.bak` of the last good save, recovery from `.bak` if the main file is
   ever unreadable).
@@ -97,7 +103,12 @@ short on purpose so a fresh session can read it in one pass.
 - `_backup_*` folders — source snapshots taken before big changes (current list under
   Current state). They're excluded
   from the exe (`!_backup*/**`) and from searches (`.ignore`, which ripgrep reads).
-- `dev/` — the Overlay Preview Lab (see Tools). Not in the exe or the repo.
+- `dev/` — the Overlay Preview Lab and other mockups/labs (see Tools). Not in the exe or the repo.
+- `dev/web-tracker/` — a byte-exact working copy of the website repo
+  `ibefuzzy/ibefuzzy.github.io` (tracker/ = the web tracker). Edit here, preview at
+  http://localhost:5178/dev/web-tracker/tracker/index.html (phone frames:
+  dev/web-mobile-preview.html), push through the web upload pages. Its CLAUDE.md is the
+  site repo's own notes.
 
 ## Rules
 - Never change the persistence format without a migration. The store holds real progress.
@@ -196,7 +207,9 @@ short on purpose so a fresh session can read it in one pass.
   user closes the running app before launching a new build.
 
 ## Tests
-`npm test` runs Node's built-in test runner over `test/**/*.test.js` (112 tests;
+`npm test` runs Node's built-in test runner over `test/**/*.test.js` (121 tests; plain
+`node --test` also sweeps _backup_* and the static server, so use npm test;
+test/sell-flags.test.js + test/friends.test.js cover v1.16.0;
 test/rebirth-credits.test.js checks all 40 credit costs display exactly as the game chart writes them;
 test/app-looks.test.js checks the app looks and bans default-colour literals in tracker.html's CSS;
 test/skins.test.js checks every skin/preset, test/appearance.test.js the looks and
@@ -282,147 +295,71 @@ Stop test copies ONLY by that `--user-data-dir` in the process command line (Win
 never by exe path: the user may be running the app from `release\win-unpacked` too. Tell the
 user before launching; they may be in-game and close stray windows.
 
-## Current state (2026-09-29): v1.15.1 built, awaiting the user's in-game test; web tracker work local-only
+## Current state (2026-09-30): v1.16.0 released (app + website)
 
-- **v1.15.1 exe:** `release\Fuzzy's Droid Tracker 1.15.1.exe`, 69.1 MB, SHA256
-  E20E44CEBE4E55C423F0CF0E5BB73B2FC48A26BA87DFAB465D618F69D3239FF2 (app.asar checked). The
-  user picked the credits style from dev/credits-look-mockup.html: they said "style D",
-  read as the 4th column = C "Game style chip" (confirm when they test). The chip is
-  `margin:-3px 0 -2px` so the header row stays 17px (at 22px it cut the "Have:" lines by
-  2px). 1.15.0 exe → Recycle Bin. Not pushed.
-- **Web tracker (ibefuzzy/ibefuzzy.github.io), LOCAL COPY ONLY in `dev/web-tracker/`**
-  (raw downloads of the live files, 2026-09-29; never pushed). Done there: the 13 app
-  looks + 🎨 Look picker, credit costs under each level (By Rebirth Level), timers fixed to
-  the app's schedule (they were stale: Stellar hourly, Galactic, 50-min missions), Kyber
-  styling + emerald colour + legend, cycle completion at real slots (120, was 105), data
-  stamped ?v=1.15.1 (its validator passes). Default look proven unchanged (parity, only
-  the intended diffs). `dev/web-mobile-preview.html` shows it in 4 phone frames. Found on
-  a phone: no sideways scroll, but the "How to use" guide is open on first visit (toolbar
-  starts ~2,100px down) and the toolbar is an 11-button wall. The user OK'd this order:
-  (1) phone layout, (2) "Up next" card (the HUD's content + rebirth level stepper),
-  (3) Add to Home Screen, (4) retire/held marks. DONE locally: (3) manifest + icons (no
-  service worker); (1) the user picked A from dev/web-layout-mockup.html → bottom tab bar
-  on ≤700px with a More sheet, desktop untouched; (2) 🎯 Up next card; plus a player's
-  idea the user asked for: "Rarity on each droid" = picture color / written under the
-  name (🎨 Look). Verified at 375px (every tab shows only its view, stepper, tap-to-log +
-  undo, More sheet, no sideways scroll) and on desktop; screenshots via
-  dev/web-mobile-preview.html sent. (4) retire + held marks done (same store keys/shapes
-  as the app; tested retire/undo, hold → applied on switching cycle, cleared at cycle end).
-  **PUSHED + LIVE 2026-09-29** at the user's request ("do step 4 then push it all"):
-  ibefuzzy.github.io commits 160a041 (tracker/icons), 1726c81 (tracker: index.html,
-  droid-data.js, manifest.webmanifest, .data-manifest.json), aa3b4e1 (CLAUDE.md); all 9
-  files verified equal by blob SHA; live https://ibefuzzy.github.io/tracker/ checked
-  (v1.15.1 stamps, Up next, tab bar, looks, credits, Kyber timer, manifest + icons).
-  dev/web-tracker now == live main; re-download before the next web edit if the site
-  may have changed. Details in dev/web-tracker/CLAUDE.md. Pushing = live instantly for every visitor: only after the user
-  reviews; run scripts/validate-tracker-data.js and commit tracker/.data-manifest.json.
-- **v1.15.1** (package.json bumped): the 🎯 Upcoming RB Req's HUD shows each
-  level's credit cost right of its tag (coin + "1.36B"). Data = REBIRTH_CREDITS in
-  droid-data.js: 1-35 read from the user's community "Super Rebirth – Cycle 5" chart image
-  (Update v1.26, Aug 16 2026), 36-40 given by the user (1.19QA, 2.5QA, 4.5QA, 8QA, 15QA).
-  Assumed the same in every cycle (the user treated it as one table). Also fixed the 6
-  double-encoded dashes in droid-data.js comments. 112 tests. Preview images of all 40
-  levels in the real HUD were sent (dev/hud-credits-preview.html via Chrome); waiting for
-  the user to confirm the values, then build + test + push. Not built yet.
-- **v1.15.0 PUBLISHED** 2026-09-29 05:17 UTC; asset digest = local exe (8D6478A8…BBD6).
-- **v1.15.0 SHIPPED to main** (user approved the build: "All looks good to me lets run it"):
-  commits 5c275c7 (8 root files), 9d1fa54 (test/), 3d3d967 (test/helpers/); all 11 changed
-  files verified equal to local by blob SHA, the other 37 unchanged. Release form open in
-  the user's Chrome (tag v1.15.0, target main, notes + SHA256); the user drags
-  `release\Fuzzy's Droid Tracker 1.15.0.exe` and publishes. After that, check the asset
-  digest against 8D6478A8…BBD6. Only this file changed locally after the push.
-  Commit gotcha again: focus + Enter committed pages 1-2 but not page 3; a coordinate click
-  on "Commit changes" (0.5-scale screenshot × 2) did. list_commits before any retry.
-  Snapshot `_backup_v1.15.0_approved/`. release\ holds only 1.15.0 (1.14.2 exe and the
-  unpublished 1.14.3 in release\next → Recycle Bin).
-
-- **v1.15.0 = the unreleased v1.14.3 toolbar + App looks.** The user tested v1.14.3 ("Love
-  it so much"), then asked for themes for the app itself before pushing, so the version
-  became 1.15.0 (README has one v1.15.0 entry). Snapshot `_backup_v1.14.3_approved/`.
-  App looks: 13 in `APP_LOOKS` (the user liked all 12 previewed in dev/app-looks-lab.html;
-  Galactic Republic added so every overlay preset has a match), picker at the top of
-  Appearance, `appLook` + `appLookFollowsPresets` (default on; user: "as long as it can be
-  turned on & off"). tracker.html colours moved onto variables first; parity check 2,766
-  elements, 0 diffs. 9 looks' chrome lightened after preview so the console labels reach
-  ≥4.2 contrast (Sith/Tatooine capped at a 30% lighten to keep their hue). Verified in the
-  browser: saved look loads, picker, preset → app look, follow off, Default clears. 109 tests.
-- **v1.14.3 part (toolbar tidy-up, design B "Tidy + overlay switchboard"):** the user's pick from
-  `dev/toolbar-mockup.html`, renames included; snapshot `_backup_v1.14.2_approved/` taken
-  first. What changed: `.toolbar.command-console
-  {align-items:stretch}` (rows used to shrink + centre, so labels/dividers didn't line up);
-  Overlays row = `.overlay-board` 4-col grid (2 cols at ≤980px, where "🎯 Upcoming RB Req's"
-  stops fitting) of `.tile`s with a fixed name + `.led`; `.overlay-board .tile[hidden]`
-  rule needed (the tile's display:flex beats `.btn[hidden]`); overlay-controls.js
-  `set*ToggleLabel()` → `setTile()` (.on + aria-pressed only); renames Declutter → Safe to
-  Retire (toolbar, toasts, HOTKEY_BUTTONS + main.js HOTKEY_LABELS), side panel "🧬 Rebirth
-  Reqs" → "🧬 Reqs panel", overlay tile "🧬 Rebirth Reqs", Hotkeys → Hotkey list, ↺ →
-  "↺ Redraw box" after Read Rebirth Screen, duplicate "Rebirth Lvl" label gone, A–Z / By
-  Rebirth Level joined switch, last row = ⚙ Overlay Settings + keybinds lock | Export,
-  Import, red "Reset all…". Tools order: Reqs panel, Rename, Guide, Background (Guide moved
-  before Background so the Dim controls don't push it). Every element id kept. guide.js,
-  README (changelog + current text) updated; new test guards the tiles (104 tests).
-  Browser-checked with a mocked overlayAPI at 1060 / 905 / 760 px.
-- **Reference docs audited and fixed** (2026-09-29; PROMPT_AUDIT.md done → Recycle Bin):
-  GOTCHAS (vector skins, Claude commits uploads, build vs launch), COMMON_TASKS,
-  OVERLAY_TEMPLATE (registration list for a new overlay, overlayAPI not ipcRenderer, tile
-  markup), SETTINGS_SCHEMA (missionWarn*, Spawn Alert, keybinds lock), IPC_REFERENCE (Spawn
-  Alert).
-- **Browser-test gotcha:** document.write the tracker from a UTF-8 page at the same origin
-  (e.g. /dev/toolbar-mockup.html) with `<base href="/">` added. A 404 page is read as
-  windows-1252 (script-set emoji turn to mojibake), and a second write into the same page
-  redeclares top-level let/const.
-- **Builds:** v1.15.0 build 1 → `release\Fuzzy's Droid Tracker 1.15.0.exe`, 69.1 MB, SHA256
-  8D6478A8C4C657B4B19F5E29800E55654433096B308697F6C28866A523FFBBD6 (app.asar checked for
-  the looks + toolbar; dev lab and tests not packed). The user is running the
-  never-published 1.14.3 from `release\next\`; once they close it, send `release\next` to
-  the Recycle Bin. 1.14.2's exe already went there (it's on GitHub Releases).
-- **Latest release: v1.14.2**, published 2026-09-28 03:00 UTC. GitHub `main` = commit
-  5397ac1. v1.15.0 source is NOT pushed yet: after the user approves the build, diff local
-  vs main by blob SHA and push (at least tracker.html, overlay-controls.js, guide.js,
-  main.js, requirements.js, README.md, package.json, test/pages.test.js,
-  test/app-looks.test.js, test/helpers/load-shared.js).
-- v1.14.2 = warnings play whenever a time is picked (they were muted by the timer-expiry
-  switch), and the warning and Spawn Alert volume sliders sit on their own line with a
-  fixed-width % (they jumped rows as the % text changed width).
-- v1.14.1 = ⚠ Mission warning: Timers tab
-  chips 30 s / 1 min / 2 min + up to 3 own times → `settings.missionWarnTimes` (seconds),
-  `missionWarnSound` (default 'chime'), `missionWarnVolume` (own slider, 0.35). Logic =
-  `cleanMissionWarnTimes()` / `missionWarningsDue()` in requirements.js
-  (test/mission-warn.test.js); timers.html plays it via `playMissionWarning()`, which
-  ignores `timerSoundEnabled` since v1.14.2 (picking a time is the opt-in; in v1.14.1 the
-  switch silently muted warnings for a user who had it off). Also: the timers window now has
-  `backgroundThrottling:false` (hidden banners slowed the 1 s tick to 1/min, so sounds
-  could be late). Browser-checked: warning 30 s before, mission sound at start. The user
-  asked for its own volume slider after testing the first build; added.
-- **Work after v1.14.3 ships: bump package.json FIRST.**
+- **App v1.16.0** = 👥 Friends (friend codes, no server; tracker panel + HUD friend switch),
+  coloured SELL flags, the new tutorial (tour.js/guide.js, skippable, "What's new" for updaters),
+  💎 Nova Crystal rewards, and no default hotkeys for new installs (no hotkey list on launch).
+  The design decisions are in CLAUDE_HISTORY.md (2026-09-30). Source pushed to `main` and checked
+  by blob SHA; the user publishes the release (drags the exe). `release\` holds only 1.16.0 (+
+  win-unpacked). Snapshots: `_backup_v1.15.1_approved/`, `_backup_v1.16.0_approved/`.
+- **Web tracker** got the same features (Friends + `#friend=` link view, SELL colours, tutorial
+  with phone steps, crystals; data `?v=1.16.0`). The local copy `dev/web-tracker/` == live
+  `main` after the push; re-download it (raw files, byte-exact) before the next web edit if
+  the site may have changed. Its own notes: dev/web-tracker/CLAUDE.md.
+- **Next app work: bump package.json FIRST** (1.16.0 is published; a feature → 1.17.0). A new
+  feature also gets a tutorial step (`since: '1.17.0'`) in guide.js AND the web's step lists.
+- Players are starting to send feedback/requests (the crystals were the first); expect more.
+- **NEXT TASK (the user's decision, 2026-09-29): "Rarity on each droid" in the app, OVERLAYS
+  ONLY** (not the tracker window). It's the website's 🎨 Look option (a player's idea): **Picture
+  color** (today) or **Written under the name** (neutral icon frame + "NEED STELLAR" in the
+  rarity's colour under the droid's name). Apply to the 🎯 HUD (overlay.html), 🧬 Rebirth
+  Reqs, ♻ Safe to Retire ("HAVE X") and 🔮 Sneak Preview cards. Suggested: one setting (e.g.
+  `overlayRarityStyle`, 'color' | 'text'), picked in ⚙ Overlay Settings → Appearance; the
+  shared overlay-theme.js sets a class on each overlay's `<html>` and each card renders a
+  hidden-by-default label (the web version's pattern: `.rar-label` + `html.rarity-text`,
+  see dev/web-tracker/tracker/index.html). Keep the cards from growing (measure
+  scrollHeight vs clientHeight, as with the credit chip); mockup first in the Overlay
+  Preview Lab and send a picture before building.
+- The user may have turned on GitHub 2FA (required by Nov 4, 2026). Never change account
+  security settings for them.
+- Candidate next ideas (offered 2026-09-29, none picked yet):
+  - App: an "update available" notice (checks GitHub releases); Spawn Alert "adjust box" for
+    screens other than 1920x1080; Export/Import that also carries held/retired marks (app
+    AND web); rebirth history + pace ("time per rebirth"); a spawn log; a hotkey to cycle
+    looks in-game; the two small fixes under Known follow-ups.
+  - Credits: read the cost off the Rebirth screen with the existing OCR, if it's shown there
+    (would confirm the per-cycle assumption). Needs a screenshot from the user.
+- Working habits that held up this session (details in memory + Lessons):
+  - Show looks/layouts as mockups first (dev/*-mockup.html, dev/app-looks-lab.html,
+    dev/web-layout-mockup.html); the user picks by eye. When the Browser pane is hidden,
+    give a localhost link or screenshot through their Chrome and SendUserFile.
+  - Release: bump → build (release/next if their exe is running) → user tests → snapshot →
+    blob-SHA diff vs main → one upload page per folder, Claude commits (focus+Enter or a
+    coordinate click; list_commits before any retry) → verify SHAs → pre-fill the release →
+    user drags the exe + publishes → check the asset digest.
+  - Web push: run `node scripts/validate-tracker-data.js` in dev/web-tracker; bump both `?v=`
+    stamps when droid-data.js/icons-data.js change; upload icons/assets before the page that
+    uses them; check the live URL afterwards. The site is live the moment `main` changes.
 - When the user says a sound or feature "doesn't work", read their
-  `%APPDATA%\fuzzys-droid-tracker\overlay-settings.json` first (read-only): in v1.14.2 it
-  showed at once that an off switch, not the timing, was the cause.
-- package.json is CRLF with PowerShell-style double-space formatting; edit the version in
-  place, don't reformat.
-- `release\` holds only the latest exe (+ win-unpacked): the user asked to keep just the
-  newest build, so older ones go to the Recycle Bin (published ones are on GitHub Releases). Snapshots of approved source:
-  `_backup_v1.11.1_approved/`, `_backup_v1.12.0_approved/`, `_backup_v1.13.1_approved/`,
-  `_backup_v1.14.0_approved/`, `_backup_v1.14.1_approved/`, `_backup_v1.14.2_approved/`,
-  `_backup_v1.14.3_approved/` (the approved toolbar, before app looks). Take a new `_backup_vX_approved/`
-  before a big change (the user likes these).
+  `%APPDATA%\fuzzys-droid-tracker\overlay-settings.json` first (read-only).
+- package.json is CRLF with PowerShell-style double-space formatting; edit lines in place.
+- `release\` keeps only the newest exe (older ones → Recycle Bin; published ones are on
+  GitHub Releases). Take a `_backup_vX_approved/` before a big change and recycle the
+  oldest so about two remain (snapshots copy the whole root, ~56 MB each).
 - Don't run `npm run dist` while the user runs the exe it would replace: it hangs with no
   error. Build with `--config.directories.output=release/next` and move it over afterwards.
 - Recent versions in one line each (details: README changelog + CLAUDE_HISTORY.md):
-  - v1.15.0 (built, not released): App looks (13) + the toolbar overlay switchboard,
-    clearer names, rows line up (v1.14.3 was folded into it, never published).
+  - v1.16.0: 👥 Friends (codes, no server), coloured SELL flags, tutorial, 💎 crystals, no default hotkeys.
+  - v1.15.1: rebirth credit costs on the HUD (game coin + green chip).
+  - v1.15.0: App looks (13, presets can switch them) + the toolbar overlay switchboard,
+    clearer names, rows line up (v1.14.3 was folded into it).
   - v1.14.2: mission warnings play even with timer-expiry sounds off; volume sliders don't jump.
-  - v1.14.1: ⚠ Mission warning (30 s / 1 min / 2 min + own times, own sound + volume);
-    timer sounds no longer late while the banners are hidden.
-  - v1.14.0: 📡 Spawn Alert (OCR of the game's spawn feed → big placeable alert), per
-    type × tier Off/Show/Show+sound grid in Filters, one alert sound.
-  - v1.13.1: Kyber banner every hour at :15:00 (the launch-event window code is gone).
-  - v1.13.0: saved/shareable looks (share codes), per-overlay colours, compact cards +
-    text size, themed timers, per-timer sounds + your own sound files.
+  - v1.14.1: ⚠ Mission warning (30 s / 1 min / 2 min + own times, own sound + volume).
+  - v1.14.0: 📡 Spawn Alert (OCR of the game's spawn feed → big placeable alert).
+  - v1.13.x: saved/shareable looks, per-overlay colours, own sounds; Kyber banner hourly :15.
   - v1.12.0: 15 border skins with real insignia, one-click theme presets, Preview Lab.
-  - v1.11.1: Appearance colours, mark-key target switch, overlay snapping, compact
-    timers, "Good news" default alert, Read Rebirth Screen hotkeys + remembered screen.
-  - v1.11.0: overlay resize + zoom, one-monitor drag, clean Kyber card icons.
+  - v1.11.x: resize + zoom, one-monitor drag, Appearance colours, snapping, compact timers.
 - Older per-version status notes are in **CLAUDE_HISTORY.md**
   (local-only, like the other root .md docs). Read it only when a task touches that history.
 
@@ -462,8 +399,18 @@ user before launching; they may be in-game and close stray windows.
   badge misread is reported).
 - **Crit Guide "Eff" going up and down between rows is NOT a bug** (each row is measured
   after the purchase above it). Don't re-flag it.
-- The sibling web tracker (`ibefuzzy/ibefuzzy.github.io`) shares droid data and can
-  drift from the app; see the memory note on syncing it.
+- **The web tracker is a hand-synced port, and it drifts silently.** On 2026-09-29 it
+  still had month-old timers, no Kyber styling and a 105-slot cycle count, and nobody had
+  noticed. When the app changes shared data, timers, looks (APP_LOOKS is copied into the
+  web's `<head>`) or marks, check dev/web-tracker too (its notes list what's synced).
+- **Theme-colour refactors: prove "no visible change" with a computed-style parity
+  snapshot** (TEST_WITHOUT_ELECTRON.md), comparing as a multiset when new elements shift
+  positions. It caught nothing wrong twice (tracker, web) and made the change safe to ship.
+- **Test a page's real render path, not just its math:** the HUD chip looked fine in code
+  but cut 2px off the cards (found by measuring scrollHeight vs clientHeight per block).
+- **Electron off-screen capture doesn't run from this shell** (exits -1 before the script
+  starts, even with --no-sandbox); for images to send the user, render a dev page in their
+  Chrome and use screenshot/zoom with `save_to_disk`.
 
 ## Known follow-ups (spotted, deliberately not fixed yet)
 - Spawn Alert: no "adjust box" UI yet (the feed box is a fixed screen fraction, measured at
@@ -478,7 +425,11 @@ user before launching; they may be in-game and close stray windows.
 - Sneak Preview's "✓ Have" counts global ownership, which mid-cycle includes droids
   the current cycle's completion wipe will erase. Marking them ("✓ Marked") is the safe path.
 - Export/Import only covers ownedRank/nameMerges/displayOverrides, not
-  `rebirth-heldMarks` / `rebirth-retired`.
+  `rebirth-heldMarks` / `rebirth-retired` (same gap on the web tracker since it gained marks).
+- Rebirth credit costs are assumed the same in every cycle (only a Cycle 5 chart was seen).
+- Web tracker: its "Up next" doesn't auto-advance the level when all 3 droids are logged
+  (the app's HUD does); the player uses − / +. The browser's install offer only appears
+  once the site qualifies and stops after installing, so 📲 Install may show menu steps.
 - tracker.html's `window.overlayAPI.onStoreChanged(...)` at the end of init isn't
   guarded, so it throws in browser/localStorage mode (harmless, runs last).
 - User idea, deferred: a manual "Sync Kyber timer" like the mission sync, if event

@@ -76,8 +76,13 @@ const STORE_PATH = path.join(app.getPath('userData'), 'droid-tycoon-store.json')
 const SETTINGS_PATH = path.join(app.getPath('userData'), 'overlay-settings.json');
 
 const DEFAULT_SETTINGS = {
-  hideAllHotkey: 'Control+Shift+1', // one-way ONLY — hides every overlay below, never toggles them back on (new 2026-09-20, see migrateHotkeyLayout() below)
-  hotkey: 'Control+Shift+3',   // toggles the Current Rebirth Requirements HUD ("Upcoming RB Req's") show/hide, works even while Fortnite is focused (moved from Alt+Shift+D on 2026-09-23 — brought into the same Ctrl+Shift+N family as every other overlay hotkey instead of sitting on its own odd-one-out combo)
+  // v1.16.0: EVERY hotkey starts unbound on a fresh install (the user's call): players pick
+  // their own in ⚙ Overlay Settings → Keybinds, and the tutorial (guide.js) opens that tab.
+  // An existing install keeps whatever its saved settings file holds, so nobody loses keys.
+  // The "moved from" notes below are the history of the old defaults (migrateHotkeyLayout()
+  // only moves a key still sitting on an old default, so '' never moves).
+  hideAllHotkey: '', // one-way ONLY — hides every overlay below, never toggles them back on (was Ctrl+Shift+1 by default, 2026-09-20 to v1.15.1)
+  hotkey: '',   // toggles the Current Rebirth Requirements HUD ("Upcoming RB Req's") show/hide, works even while Fortnite is focused (moved from Alt+Shift+D on 2026-09-23 — brought into the same Ctrl+Shift+N family as every other overlay hotkey instead of sitting on its own odd-one-out combo)
   // calibHotkey / craftBenchHotkey retired 2026-09-22 along with the whole
   // Read Crafting Bench feature (see crafting-bench-read.js's own header
   // comment for why) — deliberately no longer in DEFAULT_SETTINGS, so a
@@ -86,9 +91,9 @@ const DEFAULT_SETTINGS = {
   // settings file (not from this object), so removing it here doesn't
   // affect that migration's correctness for anyone upgrading from an
   // older version.
-  timersHotkey: 'Alt+Shift+T', // toggles the blueprint/mission countdown banners, same deal
-  rebirthScreenHotkey: 'Control+Shift+6', // fires the 📸 Read Rebirth Screen button, same deal (moved from Ctrl+Shift+5 on 2026-09-23 — shifted down to make room for the new Ctrl+Shift+3 Upcoming RB Req's hotkey below)
-  hotkeyListHotkey: 'Control+Shift+2', // toggles the on-screen hotkey reference list, same deal (moved from Ctrl+Shift+1 on 2026-09-20 — freed up for hideAllHotkey above)
+  timersHotkey: '', // toggles the blueprint/mission countdown banners, same deal (was Alt+Shift+T until v1.15.1)
+  rebirthScreenHotkey: '', // fires the 📸 Read Rebirth Screen button, same deal (moved from Ctrl+Shift+5 on 2026-09-23 — shifted down to make room for the new Ctrl+Shift+3 Upcoming RB Req's hotkey below)
+  hotkeyListHotkey: '', // toggles the on-screen hotkey reference list, same deal (moved from Ctrl+Shift+1 on 2026-09-20 — freed up for hideAllHotkey above)
   visible: true,
   opacity: 0.55,           // background opacity of the overlay panel, 0.2-0.92
   locked: true,            // false while the user is dragging it into position
@@ -112,7 +117,7 @@ const DEFAULT_SETTINGS = {
   missionSoundChoice: 'goodnews', // 'goodnews' (alert-sound.js, v1.11.1) | 'beep' | 'boop' | 'chime' | 'off'
   blueprintSoundChoice: 'goodnews',
   soundDefaultVersion: 0, // bumped by migrateSoundDefault(); 0 here so an older settings file (which lacks it) runs that once
-  declutterHotkey: 'Control+Shift+4', // toggles the "safe to retire" Legendary/Mythic droid list, same deal (moved from Ctrl+Shift+3 on 2026-09-23 — see hotkey above)
+  declutterHotkey: '', // toggles the "safe to retire" Legendary/Mythic droid list, same deal (moved from Ctrl+Shift+3 on 2026-09-23 — see hotkey above)
   declutterVisible: true,
   declutterLocked: true,
   declutterPosition: null,
@@ -150,7 +155,7 @@ const DEFAULT_SETTINGS = {
   declutterTierMythicHotkey: '',
   declutterShowRetired: true,       // v1.10.13: retired droids shown dimmed at the bottom of Safe to Retire
   declutterRetiredHotkey: '',
-  rebirthReqOverlayHotkey: 'Control+Shift+5', // toggles the standalone Rebirth Requirements overlay, same deal (moved from Ctrl+Shift+4 on 2026-09-23 — see hotkey above)
+  rebirthReqOverlayHotkey: '', // toggles the standalone Rebirth Requirements overlay, same deal (moved from Ctrl+Shift+4 on 2026-09-23 — see hotkey above)
   rebirthReqVisible: true,
   rebirthReqLocked: true,
   rebirthReqPosition: null,
@@ -202,13 +207,15 @@ const DEFAULT_SETTINGS = {
   spawnAlertSound: 'goodnews',
   spawnAlertVolume: 0.35,
   hasSeenIntroGuide: false, // first-launch walkthrough (guide.js) — set true once dismissed or finished; an existing settings file just merges this in as false via loadJson(), so upgraders see it once too
+  introGuideVersion: '',    // v1.16.0: the app version whose tour this player last saw ('' = before 1.16.0); guide.js shows only newer steps ("What's new")
   hotkeyLayoutVersion: 0,   // bumped by the migrations below; never hand-edit
-  markDroid: '\\',          // mark selected droid in Upcoming RB Req's overlay (v1.10.3)
+  markDroid: '',            // mark selected droid in Upcoming RB Req's overlay (v1.10.3; was \ until v1.15.1)
   markLevel: '',            // mark entire current level (v1.10.3)
   markLeft: '',             // navigate left across droids (v1.10.3)
   markRight: '',            // navigate right across droids (v1.10.3)
   markUp: '',               // navigate up between levels (v1.10.3)
   markDown: '',             // navigate down between levels (v1.10.3)
+  hudFriendHotkey: '',      // v1.16.0: flip the Upcoming RB Req's HUD between you and each 👥 friend
   rebirthMarkDroid: '',     // mark selected droid in Rebirth Requirements overlay (v1.10.3)
   rebirthMarkLeft: '',      // navigate left in grid (v1.10.3)
   rebirthMarkRight: '',     // navigate right in grid (v1.10.3)
@@ -463,7 +470,7 @@ let sneakWindow = null;
 let critGuideWindow = null;
 let spawnAlertWindow = null;
 let hotkeyListWindow = null;
-let hotkeyListVisible = true; // runtime-only — always shown fresh each launch, not persisted
+let hotkeyListVisible = false; // runtime-only, not persisted. v1.16.0: no longer shown on launch (the tutorial points players to ⚙ Overlay Settings → Keybinds); ⌨ Hotkey list or its hotkey opens it
 let storeData = {};
 let settings = { ...DEFAULT_SETTINGS };
 let storeWriteTimer = null;
@@ -1056,12 +1063,12 @@ function setRebirthReqVisible(visible){
 }
 
 /* On-screen hotkey reference list: a small centered, click-through card
-   listing every hotkey currently bound, shown automatically each time the
-   app starts so a fresh session doesn't require remembering the bindings.
-   It has no draggable position (see computeDefaultHotkeyListBounds) and its
-   shown/hidden state is intentionally NOT persisted to settings — it
-   always starts visible on launch and is only toggled at runtime via its
-   own hotkey or toolbar button. */
+   listing every hotkey currently bound. Until v1.15.1 it showed on every
+   launch; since v1.16.0 it starts hidden (the tutorial covers the Keybinds
+   tab instead). It has no draggable position (see
+   computeDefaultHotkeyListBounds) and its shown/hidden state is NOT
+   persisted to settings — it is only toggled at runtime via its own hotkey
+   or toolbar button. */
 function createHotkeyListWindow(){
   const bounds = computeDefaultHotkeyListBounds();
 
@@ -1335,6 +1342,8 @@ const HOTKEY_HANDLERS = {
   markRight: () => broadcast('hotkey:triggered', 'markRight'),
   markUp: () => broadcast('hotkey:triggered', 'markUp'),
   markDown: () => broadcast('hotkey:triggered', 'markDown'),
+  // v1.16.0: only overlay.html acts on it (switches whose list the HUD shows)
+  hudFriend: () => broadcast('hotkey:triggered', 'hudFriend'),
   // v1.10.3: hotkey-based marking in the Rebirth Requirements overlay; since
   // v1.10.13 the same keys also drive Sneak Preview — see sendToMarkList().
   rebirthMarkDroid: () => sendToMarkList('rebirthMarkDroid'),
@@ -1421,6 +1430,7 @@ const HOTKEY_LABELS = {
   markRight: 'Navigate Right',
   markUp: 'Navigate Up',
   markDown: 'Navigate Down',
+  hudFriend: "Upcoming RB Req's: Switch You / Friends",
   rebirthMarkDroid: 'Mark Selected Droid (Rebirth Reqs / Sneak Preview / Safe to Retire)',
   rebirthMarkLeft: 'Navigate Left (Rebirth Reqs / Sneak Preview / Safe to Retire)',
   rebirthMarkRight: 'Navigate Right (Rebirth Reqs / Sneak Preview / Safe to Retire)',
@@ -1461,6 +1471,7 @@ const HOTKEY_SETTINGS_KEY = {
   markRight: 'markRight',
   markUp: 'markUp',
   markDown: 'markDown',
+  hudFriend: 'hudFriendHotkey',
   rebirthMarkDroid: 'rebirthMarkDroid',
   rebirthMarkLeft: 'rebirthMarkLeft',
   rebirthMarkRight: 'rebirthMarkRight',
