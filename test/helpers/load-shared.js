@@ -17,7 +17,7 @@ const ROOT = path.join(__dirname, '..', '..');
 
 function loadShared(files = ['droid-data.js', 'requirements.js']) {
   // the browser globals requirements.js uses (share codes, v1.13.0)
-  const ctx = vm.createContext({ console, TextEncoder, TextDecoder, atob, btoa });
+  const ctx = vm.createContext({ console, TextEncoder, TextDecoder, atob, btoa, encodeURIComponent });
   for (const f of files) {
     const src = fs.readFileSync(path.join(ROOT, f), 'utf8');
     vm.runInContext(src, ctx, { filename: f });
@@ -60,6 +60,13 @@ function loadShared(files = ['droid-data.js', 'requirements.js']) {
     REBIRTH_CREDITS: run('REBIRTH_CREDITS'),
     rebirthCreditsFor: run('rebirthCreditsFor'),
     formatCredits: run('formatCredits'),
+    REBIRTH_CRYSTALS: run('REBIRTH_CRYSTALS'),        // v1.16.0
+    rebirthCrystalsFor: run('rebirthCrystalsFor'),
+    sellFlagFor: run('sellFlagFor'),                  // v1.16.0
+    encodeFriendCode: run('encodeFriendCode'),        // v1.16.0
+    decodeFriendCode: run('decodeFriendCode'),
+    friendOwnedFromMine: run('friendOwnedFromMine'),
+    friendOwnedRank: run('friendOwnedRank'),
     // live views of the mutable module state (re-read after buildIndex())
     get DROID_INDEX() { return run('DROID_INDEX'); },
     get nameMerges() { return run('nameMerges'); },
