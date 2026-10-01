@@ -314,23 +314,24 @@ Stop test copies ONLY by that `--user-data-dir` in the process command line (Win
 never by exe path: the user may be running the app from `release\win-unpacked` too. Tell the
 user before launching; they may be in-game and close stray windows.
 
-## Current state (2026-10-01): v1.16.0 released (app + website); v1.17.0 built, not yet published
+## Current state (2026-10-01): v1.17.0 released (app); website last synced at v1.16.0
 
+- **App v1.17.0 PUBLISHED 2026-10-01 05:00 UTC** ("Rarity written on each droid", below): `main` =
+  5011ca1 (clean, level with `origin/main`), release asset digest = local exe sha256 a285fba6…905fc4
+  (69,948,079 bytes). `release\` holds only 1.17.0 (+ win-unpacked; `release\next` is a leftover
+  copy of the same exe, recycle it once the app is closed). Snapshots: `_backup_v1.16.0_approved/`,
+  `_backup_v1.17.0_approved/` (each includes the DROID IMAGES*.png; 1.15.1's went to the Recycle Bin).
 - **App v1.16.0** = 👥 Friends (friend codes, no server; tracker panel + HUD friend switch),
   coloured SELL flags, the new tutorial (tour.js/guide.js, skippable, "What's new" for updaters),
   💎 Nova Crystal rewards, and no default hotkeys for new installs (no hotkey list on launch).
-  The design decisions are in CLAUDE_HISTORY.md (2026-09-30). **Published 2026-09-30 20:14 UTC**:
-  `main` = 48818ea (all 59 files matched local by blob SHA), release asset digest = local exe
-  sha256 cf44996a…4c12620. The user added to the release notes' Friends paragraph: "FEATURE IS NOT
-  ONLINE - MANUAL UPDATE NEEDED VIA NEW CODE GENERATED WHEN YOU REACH NEW REBIRTHS. POSSIBLE ONLINE
-  FEATURE TBD." `release\` holds only 1.16.0 (+ win-unpacked). Snapshots:
-  `_backup_v1.15.1_approved/`, `_backup_v1.16.0_approved/`.
+  The design decisions are in CLAUDE_HISTORY.md (2026-09-30). Published 2026-09-30 20:14 UTC. The
+  user added to its release notes' Friends paragraph: "FEATURE IS NOT ONLINE - MANUAL UPDATE NEEDED
+  VIA NEW CODE GENERATED WHEN YOU REACH NEW REBIRTHS. POSSIBLE ONLINE FEATURE TBD."
 - **Web tracker** got the same features (Friends + `#friend=` link view, SELL colours, tutorial
   with phone steps, crystals; data `?v=1.16.0`). The local copy `dev/web-tracker/` == live
   `main` (its own git repo since 2026-09-30); run `git -C dev/web-tracker pull` before the
   next web edit if the site may have changed. Its own notes: dev/web-tracker/CLAUDE.md.
-- **v1.17.0 (package.json already bumped) is in progress and unpublished; the next feature after it
-  is 1.18.0, so bump package.json FIRST.** A new feature also gets a tutorial step
+- **Next app work: bump package.json to 1.18.0 FIRST** (1.17.0 is published). A new feature also gets a tutorial step
   (`since: '<version>'`) in guide.js AND the web's step lists (v1.17.0's step is app-only: the web
   tracker already had its own Rarity option, so there was nothing new to tell its visitors).
 - Players are starting to send feedback/requests (the crystals were the first); expect more.
@@ -362,9 +363,8 @@ user before launching; they may be in-game and close stray windows.
   - **Also:** a README privacy note (what's sent, where, when; off by default), a tutorial step
     `since: '1.18.0'` (app + web), and new release notes replacing the user's "NOT ONLINE" line.
     Tests: the code↔server payload validation, the debounce, and ID/key generation.
-- **v1.17.0 = "Rarity on each droid" (a player's idea), built 2026-10-01 in a cloud session** on branch
-  `claude/laughing-mayer-8j6wtb`, NOT yet merged/published: the user still has to test it in the real app.
-  One setting `overlayRarityStyle` ('color' default | 'text'; `rarityStyleOf()` in requirements.js), a
+- **v1.17.0 = "Rarity on each droid" (a player's idea), built 2026-10-01 in a cloud session** (merged
+  as PR #1, then built locally and user-tested before publishing). One setting `overlayRarityStyle` ('color' default | 'text'; `rarityStyleOf()` in requirements.js), a
   two-button row in ⚙ Overlay Settings → Appearance (`#rarityStyleRow`), applied by overlay-theme.js as
   `html.rarity-text`; the CSS lives in overlay-theme.css (`.rar-label`, `.d-owned.need/.has`, `.have-word`).
   HUD + Rebirth Reqs get a hidden-by-default "NEED X" line; Sneak/Retire reuse their status line.
