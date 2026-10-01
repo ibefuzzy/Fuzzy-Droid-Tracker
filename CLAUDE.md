@@ -217,9 +217,9 @@ short on purpose so a fresh session can read it in one pass.
   user closes the running app before launching a new build.
 
 ## Tests
-`npm test` runs Node's built-in test runner over `test/**/*.test.js` (121 tests; plain
+`npm test` runs Node's built-in test runner over `test/**/*.test.js` (130 tests; plain
 `node --test` also sweeps _backup_* and the static server, so use npm test;
-test/sell-flags.test.js + test/friends.test.js cover v1.16.0;
+test/sell-flags.test.js + test/friends.test.js cover v1.16.0; test/rarity-style.test.js covers v1.17.0;
 test/rebirth-credits.test.js checks all 40 credit costs display exactly as the game chart writes them;
 test/app-looks.test.js checks the app looks and bans default-colour literals in tracker.html's CSS;
 test/skins.test.js checks every skin/preset, test/appearance.test.js the looks and
@@ -314,7 +314,7 @@ Stop test copies ONLY by that `--user-data-dir` in the process command line (Win
 never by exe path: the user may be running the app from `release\win-unpacked` too. Tell the
 user before launching; they may be in-game and close stray windows.
 
-## Current state (2026-09-30): v1.16.0 released (app + website)
+## Current state (2026-10-01): v1.16.0 released (app + website); v1.17.0 built, not yet published
 
 - **App v1.16.0** = 👥 Friends (friend codes, no server; tracker panel + HUD friend switch),
   coloured SELL flags, the new tutorial (tour.js/guide.js, skippable, "What's new" for updaters),
@@ -329,10 +329,12 @@ user before launching; they may be in-game and close stray windows.
   with phone steps, crystals; data `?v=1.16.0`). The local copy `dev/web-tracker/` == live
   `main` (its own git repo since 2026-09-30); run `git -C dev/web-tracker pull` before the
   next web edit if the site may have changed. Its own notes: dev/web-tracker/CLAUDE.md.
-- **Next app work: bump package.json FIRST** (1.16.0 is published; a feature → 1.17.0). A new
-  feature also gets a tutorial step (`since: '1.17.0'`) in guide.js AND the web's step lists.
+- **v1.17.0 (package.json already bumped) is in progress and unpublished; the next feature after it
+  is 1.18.0, so bump package.json FIRST.** A new feature also gets a tutorial step
+  (`since: '<version>'`) in guide.js AND the web's step lists (v1.17.0's step is app-only: the web
+  tracker already had its own Rarity option, so there was nothing new to tell its visitors).
 - Players are starting to send feedback/requests (the crystals were the first); expect more.
-- **NEXT BIG TASK (the user's pick, 2026-09-30): LIVE 👥 Friends via Cloudflare Workers** (v1.17.0;
+- **NEXT BIG TASK (the user's pick, 2026-09-30): LIVE 👥 Friends via Cloudflare Workers** (now v1.18.0;
   start after the weekly usage reset on Oct 3). The user chose it over Discord Rich Presence and
   webhooks/bots because it "takes less effort from users". Friends today are paste-only snapshots:
   no connection anywhere, which the user asked about for security. Keep that promise: live
@@ -358,19 +360,18 @@ user before launching; they may be in-game and close stray windows.
     offline, the same as today. Show "live · updated 3 min ago".
   - **Website:** the same GET for a `#live=` link view (and publishing from the web, optional).
   - **Also:** a README privacy note (what's sent, where, when; off by default), a tutorial step
-    `since: '1.17.0'` (app + web), and new release notes replacing the user's "NOT ONLINE" line.
+    `since: '1.18.0'` (app + web), and new release notes replacing the user's "NOT ONLINE" line.
     Tests: the code↔server payload validation, the debounce, and ID/key generation.
-- **Queued idea (the user's decision 2026-09-29, still not built): "Rarity on each droid" in the app,
-  OVERLAYS ONLY** (not the tracker window). It's the website's 🎨 Look option (a player's idea): **Picture
-  color** (today) or **Written under the name** (neutral icon frame + "NEED STELLAR" in the
-  rarity's colour under the droid's name). Apply to the 🎯 HUD (overlay.html), 🧬 Rebirth
-  Reqs, ♻ Safe to Retire ("HAVE X") and 🔮 Sneak Preview cards. Suggested: one setting (e.g.
-  `overlayRarityStyle`, 'color' | 'text'), picked in ⚙ Overlay Settings → Appearance; the
-  shared overlay-theme.js sets a class on each overlay's `<html>` and each card renders a
-  hidden-by-default label (the web version's pattern: `.rar-label` + `html.rarity-text`,
-  see dev/web-tracker/tracker/index.html). Keep the cards from growing (measure
-  scrollHeight vs clientHeight, as with the credit chip); mockup first in the Overlay
-  Preview Lab and send a picture before building.
+- **v1.17.0 = "Rarity on each droid" (a player's idea), built 2026-10-01 in a cloud session** on branch
+  `claude/laughing-mayer-8j6wtb`, NOT yet merged/published: the user still has to test it in the real app.
+  One setting `overlayRarityStyle` ('color' default | 'text'; `rarityStyleOf()` in requirements.js), a
+  two-button row in ⚙ Overlay Settings → Appearance (`#rarityStyleRow`), applied by overlay-theme.js as
+  `html.rarity-text`; the CSS lives in overlay-theme.css (`.rar-label`, `.d-owned.need/.has`, `.have-word`).
+  HUD + Rebirth Reqs get a hidden-by-default "NEED X" line; Sneak/Retire reuse their status line.
+  **Safe to Retire keeps its frame + dot** (they show the droid's CLASS, not a rarity; the user chose that).
+  In 'text' mode the HUD picture is 28px (was 34) and block padding 1px tighter so the extra line fits the
+  fixed window; verified by rendering the real pages in headless Chromium: 'color' mode is
+  byte-identical to before (PNG hashes), 'text' clips nothing. Tutorial step `since: '1.17.0'` added.
 - The user may have turned on GitHub 2FA (required by Nov 4, 2026). Never change account
   security settings for them.
 - Candidate next ideas (offered 2026-09-29 and 2026-09-30, none picked yet):

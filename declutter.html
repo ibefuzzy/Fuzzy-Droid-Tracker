@@ -316,7 +316,9 @@
     return '<div class="d-cell' + (retired ? ' retired' : '') + '" data-index="' + i + '" title="' + title + '">' +
       '<div class="d-icon-wrap ' + rarityClass + '">' + imgTag + '<span class="d-rarity-dot"></span></div>' +
       '<div class="d-name">' + item.display + '</div>' +
-      '<div class="d-owned" style="color:' + ownedColorVar + '">' + (retired ? '✓ Retired' : RNAME[item.ownedCode]) + '</div>' +
+      // v1.17.0: 'Written under the name' spells it out as HAVE GOLD (.have-word, overlay-theme.css);
+      // the frame and tier dot keep the droid's CLASS colour on purpose
+      '<div class="d-owned' + (retired ? '' : ' has') + '" style="color:' + ownedColorVar + '">' + (retired ? '✓ Retired' : '<span class="have-word">Have </span>' + RNAME[item.ownedCode]) + '</div>' +
     '</div>';
   }
 

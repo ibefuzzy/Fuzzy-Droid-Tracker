@@ -408,6 +408,23 @@ it can be corrected.
   Leftovers of the in-game "PREVIEW" banner, the card frame and the colored card glow are
   gone.
 
+## 🔤 Rarity written on each droid (v1.17.0)
+
+**A player's idea.** The color of a droid's picture frame has always been its rarity. If you'd
+rather read it, open **⚙ Overlay Settings → Appearance → Rarity on each droid** and pick
+**🔤 Written under the name**: the frames turn neutral and the rarity is spelled out in its own
+color. **🎨 Picture color** is the default and looks exactly like before.
+
+| Overlay | In "Written under the name" |
+|---|---|
+| 🎯 Upcoming RB Req's | a **NEED BESKAR** line under each name (pictures are a little smaller so all four levels still fit) |
+| 🧬 Rebirth Requirements | the same **NEED …** line under each name |
+| ♻ Safe to Retire | **HAVE GOLD** etc. The frame and corner dot keep their color on purpose: they show the droid's class (Default / Rare / Epic / Legendary / Mythic), which is a different thing from the rarity you hold |
+| 🔮 Sneak Preview | its "Needs …" line is colored by the rarity it names |
+
+One setting for every droid overlay. **Compact** (icons only) still hides the written lines.
+The website tracker has had this option since v1.16.0 (🎨 Look).
+
 ## 👥 Friends, colored SELL flags & a new tutorial (v1.16.0)
 
 **A new tutorial.** The first time you open the app, a welcome screen asks **▶ Show me around**

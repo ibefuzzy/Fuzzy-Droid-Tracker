@@ -283,6 +283,7 @@
     return '<div class="d-cell" data-cycle="' + info.cycle + '" data-level="' + info.level + '" data-slot="' + info.slot + '" title="' + title + '">' +
       '<div class="d-icon-wrap" style="--rc:' + reqColor + ';">' + imgTag + '</div>' +
       '<div class="d-name">' + display + '</div>' +
+      '<div class="rar-label ' + code + '">Need ' + RNAME[code] + '</div>' + // shown by 'Written under the name' (v1.17.0)
       '<div class="d-owned" style="color:' + ownedColor + '">' + haveText + '</div>' +
     '</div>';
   }

@@ -76,6 +76,20 @@
         <p>The other tabs place your overlays, pick borders and colors, and set sounds.</p>`
     },
     {
+      // v1.17.0: opens ⚙ Overlay Settings on Appearance, where the switch lives
+      since: '1.17.0', target: '#rarityStyleRow',
+      before: ()=>{
+        const panel = document.getElementById('overlaySettingsPanel');
+        if(panel && panel.hidden) document.getElementById('overlaySettingsBtn').click();
+        const tab = document.getElementById('setTab-borders');
+        if(tab) tab.click();
+      },
+      title: 'Rarity written on each droid',
+      body: `<p>On the overlays, the color of a droid's picture frame shows its rarity. If you'd rather read it, pick <b>Written under the name</b>
+        (⚙ Overlay Settings → Appearance): the frame turns neutral and the rarity is spelled out in its color, like <b>NEED STELLAR</b>.
+        Pick <b>Picture color</b> to go back.</p>`
+    },
+    {
       since: '1.0.0', target: '#guideOpenBtn',
       title: "You're all set",
       body: `<p>Your progress saves by itself as you go.</p>
@@ -88,7 +102,7 @@
 
   async function start(replay){
     const settings = await window.overlayAPI.getSettings();
-    const version = (await window.overlayAPI.getAppVersion?.()) || '1.16.0';
+    const version = (await window.overlayAPI.getAppVersion?.()) || '1.17.0';
     const seen = !settings.hasSeenIntroGuide ? null : (settings.introGuideVersion || '1.15.1');
     FDT_TOUR.run({
       steps: GUIDE_STEPS,

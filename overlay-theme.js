@@ -120,6 +120,22 @@
   window.overlayAPI.getSettings().then(applyTheme);
   window.overlayAPI.onSettingsChanged(applyTheme);
 
+  /* 4a. Rarity on each droid (v1.17.0, ⚙ Overlay Settings → Appearance). 'text' puts
+     html.rarity-text on the page: overlay-theme.css then turns each picture frame
+     neutral and shows the .rar-label / "Have" wording every card already carries
+     (hidden otherwise). Rows get a line taller, so the list's scrollbar is re-measured. */
+  let lastRarityStyle = null;
+  function applyRarityStyle(s){
+    const style = rarityStyleOf(s && s.overlayRarityStyle);
+    if(style === lastRarityStyle) return;
+    const first = lastRarityStyle === null;
+    lastRarityStyle = style;
+    root.classList.toggle('rarity-text', style === 'text');
+    if(!first) window.dispatchEvent(new Event('resize'));
+  }
+  window.overlayAPI.getSettings().then(applyRarityStyle);
+  window.overlayAPI.onSettingsChanged(applyRarityStyle);
+
   /* 4. Mark-key target (v1.11.1). A list page (<html data-mark-list="name">)
      shows its selection glow only while the rebirthMark* keys drive it, plus a
      KEYS tag while more than one list is open. main.js decides the target
