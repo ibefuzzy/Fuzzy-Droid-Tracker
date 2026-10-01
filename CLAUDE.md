@@ -334,6 +334,16 @@ user before launching; they may be in-game and close stray windows.
 - **Next app work: bump package.json to 1.18.0 FIRST** (1.17.0 is published). A new feature also gets a tutorial step
   (`since: '<version>'`) in guide.js AND the web's step lists (v1.17.0's step is app-only: the web
   tracker already had its own Rarity option, so there was nothing new to tell its visitors).
+- **Queued (discussed 2026-10-01, not built): "update available" notice in the app.** Plan: on launch,
+  at most once a day, GET a tiny `version.json` ({version, note}) from the GitHub Pages site (not
+  GitHub's API: no rate limits, and the user words the note); if newer than package.json's version,
+  the tracker shows a banner with a Download button that opens the release page. Notify only, NO
+  auto-update (portable unsigned exe, SmartScreen, can't swap a running exe). Read-only request,
+  sends nothing about the player. Needs a visible on/off setting + a README line saying exactly what
+  it does (the user cares about connections); default-on vs ask-once is the user's call. Publishing a
+  release then also means updating version.json on the site. Also needs a tutorial step, a test for
+  the version compare, and a mockup of the banner first. Small: could be v1.17.1 or 1.18.0, ahead of
+  live Friends (it also proves the app-to-web path). The web tracker needs nothing.
 - Players are starting to send feedback/requests (the crystals were the first); expect more.
 - **NEXT BIG TASK (the user's pick, 2026-09-30): LIVE 👥 Friends via Cloudflare Workers** (now v1.18.0;
   start after the weekly usage reset on Oct 3). The user chose it over Discord Rich Presence and
