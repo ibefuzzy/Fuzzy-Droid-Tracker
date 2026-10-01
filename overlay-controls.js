@@ -183,6 +183,9 @@
   }
 
   function applySettingsToUI(settings){
+    // v1.17.0 Rarity on each droid (one setting for every droid overlay, not part of the colour looks)
+    const rarityStyle = rarityStyleOf(settings.overlayRarityStyle);
+    document.querySelectorAll('[data-rarity-style]').forEach(b=>{ b.classList.toggle('on', b.dataset.rarityStyle === rarityStyle); });
     HOTKEY_BUTTONS.forEach(({ btn, settingsKey })=>{
       if(btn && !capturing[settingsKey]) btn.textContent = settings[settingsKey] || '(none set)';
     });
@@ -687,6 +690,10 @@
   // one overlay can opt OUT of an all-overlays Compact, so it stores false there
   themeCompactCheck.addEventListener('change', ()=> setTheme({ themeCompact: themeCompactCheck.checked ? true : (themeTarget() ? false : null) }));
   themeCardDefaultBtn.addEventListener('click', ()=> setTheme({ themeTextScale: null, themeCompact: null }));
+  // v1.17.0: Rarity on each droid, applied by overlay-theme.js in every overlay
+  document.querySelectorAll('[data-rarity-style]').forEach(b=>{
+    b.addEventListener('click', ()=> setSettingsNow({ overlayRarityStyle: rarityStyleOf(b.dataset.rarityStyle) }));
+  });
   themeTargetSel.addEventListener('change', ()=> applyAppearanceUI(lastSettings));
   themeResetBtn.addEventListener('click', ()=>{
     const t = themeTarget();

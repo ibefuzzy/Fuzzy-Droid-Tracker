@@ -34,6 +34,7 @@ function loadShared(files = ['droid-data.js', 'requirements.js']) {
     rankOf: run('rankOf'),
     // requirements.js
     normKey: run('normKey'),
+    rarityStyleOf: run('rarityStyleOf'),
     canonicalName: run('canonicalName'),
     buildIndex: run('buildIndex'),
     cycleCeilings: run('cycleCeilings'),

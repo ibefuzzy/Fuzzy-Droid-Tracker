@@ -519,6 +519,11 @@ function borderIconSvg(key, size){
    saved custom presets and share codes are all looks. Every value that comes
    from outside (a pasted share code, the settings file) goes through
    sanitizeLook(), which keeps only known keys with valid values. */
+/* Rarity on each droid (v1.17.0): ⚙ Overlay Settings → Appearance. 'color' = the picture frame
+   shows the rarity (how it always was); 'text' = a neutral frame and the rarity written under the
+   name. One setting for every droid overlay (settings.overlayRarityStyle); anything else = 'color'. */
+function rarityStyleOf(v){ return v === 'text' ? 'text' : 'color'; }
+
 const THEME_KEYS = ['themeBackdrop', 'themeBackdropAlpha', 'themeBox', 'themeBoxAlpha', 'themeHighlight', 'themeCompact', 'themeTextScale'];
 const THEMED_OVERLAYS = ['overlay', 'declutter', 'rebirthReq', 'sneak', 'critGuide', 'timers', 'spawnAlert'];
 // Each overlay's border-skin settings key, and its default (main.js DEFAULT_SETTINGS

@@ -274,6 +274,9 @@ const DEFAULT_SETTINGS = {
   // ({name, look} — lookToSettings() applies one).
   themeCompact: null,
   themeTextScale: null,
+  // v1.17.0: 'color' (the picture frame shows the rarity) or 'text' (neutral frame, rarity written under
+  // the name) for every droid overlay; see rarityStyleOf() in requirements.js
+  overlayRarityStyle: 'color',
   overlayThemes: {},
   timersBorder: null,
   customPresets: [],

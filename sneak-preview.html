@@ -273,7 +273,9 @@
     return '<div class="d-cell" data-index="' + i + '" title="' + title + '">' +
       '<div class="d-icon-wrap" style="--rc:' + reqColor + ';">' + imgTag + (held ? '<span class="d-held">✓</span>' : '') + '</div>' +
       '<div class="d-name">' + it.display + '</div>' +
-      '<div class="d-owned" style="color:' + ownedColor + '">' + statusText + '</div>' +
+      // v1.17.0: 'Needs …' is the one state that names the rarity the next cycle asks for; 'Written under
+      // the name' colours it by that rarity (--nc) instead of by what you hold
+      '<div class="d-owned' + ((held || covered) ? '' : ' need') + '" style="color:' + ownedColor + ';--nc:' + reqColor + '">' + statusText + '</div>' +
     '</div>';
   }
 

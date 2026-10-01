@@ -211,6 +211,11 @@
     font-size:calc(7.5px * var(--ov-text-scale, 1)); font-weight:600; text-align:center;
     text-shadow:0 1px 2px rgba(0,0,0,0.9); opacity:0.85;
   }
+  /* v1.17.0 Rarity on each droid ('Written under the name', overlay-theme.css): the extra
+     "NEED …" line makes each block ~4px too tall for the fixed HUD window, so the picture is
+     6px smaller and the block padding 1px tighter (measured: nothing is cut off). */
+  html.rarity-text:not(.ov-compact){ --ov-icon-size:28px; }
+  html.rarity-text:not(.ov-compact) .block{ padding-top:3px; padding-bottom:3px; gap:1px; }
   .d-cell.owned{ opacity:0.42; }
   .d-cell.owned .d-name{ text-decoration:line-through; }
   /* v1.10.3: hotkey-based marking — selected droid highlight */
@@ -313,6 +318,7 @@
     return '<div class="d-cell' + (d.owned ? ' owned' : '') + '" data-cycle="' + d.cycle + '" data-level="' + d.level + '" data-slot="' + d.slot + '" title="' + title + '">' +
       '<div class="d-icon-wrap" style="--rc:' + reqColor + ';">' + imgTag + sellFlagHtml(flag) + '</div>' +
       '<div class="d-name">' + d.display + '</div>' +
+      '<div class="rar-label ' + d.code + '">Need ' + RNAME[d.code] + '</div>' + // shown by 'Written under the name' (v1.17.0)
       '<div class="d-owned" style="color:' + ownedColor + '">' + haveText + '</div>' +
     '</div>';
   }
