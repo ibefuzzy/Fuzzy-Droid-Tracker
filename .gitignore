@@ -16,7 +16,52 @@ src/
 
 # per-machine Claude settings (launch.json is shared and stays tracked)
 .claude/settings.local.json
+.claude/settings.json
+
+# local-only workflow (never on main)
+/.github/workflows/post-release-to-twitter.yml
 
 # OS noise
 Thumbs.db
 .DS_Store
+
+# source snapshots taken before big changes
+/_backup*/
+
+# dev-only labs and mockups; dev/web-tracker is its own repo (ibefuzzy.github.io)
+/dev/
+
+# local-only notes (CLAUDE.md and README.md are the only tracked docs)
+/CLAUDE_HISTORY.md
+/GOTCHAS_AND_CONSTRAINTS.md
+/COMMON_TASKS.md
+/TEST_WITHOUT_ELECTRON.md
+/IPC_REFERENCE.md
+/SETTINGS_SCHEMA.md
+/OVERLAY_TEMPLATE.md
+/DROIDEX_IMAGE_IMPORT_GUIDE.md
+
+# local Droidex / card sources and the tools that read them
+/droid-cards/
+/droidex-card-screenshots/
+/droid-data-external/
+/DROID IMAGES*.png
+/card-full-data.js
+/extract-droid-cards.js
+/build-card-icons.js
+/build-kyber-card-icons.js
+/scrape-droidex.js
+/scrape-droidex-cards.js
+/capture-droid-variants.js
+
+# sound source and its generator (sounds/good-news-data.js is the tracked output)
+/sounds/*.mp3
+/build-sound-data.js
+
+# other local helpers and scratch
+/build-release.bat
+/build-output.txt
+/exe-sha256.txt
+/droid-data.backup.js
+*.traineddata
+/.ignore

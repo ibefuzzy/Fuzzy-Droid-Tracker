@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "tracker-static",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["test/helpers/static-server.js", "5178"],
+      "port": 5178
+    },
+    {
+      "name": "tracker-static-alt",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["test/helpers/static-server.js", "5179"],
+      "port": 5179
+    }
+  ]
+}

@@ -102,12 +102,13 @@ short on purpose so a fresh session can read it in one pass.
   never deleted). Published exes live on GitHub Releases.
 - `_backup_*` folders — source snapshots taken before big changes (current list under
   Current state). They're excluded
-  from the exe (`!_backup*/**`) and from searches (`.ignore`, which ripgrep reads).
+  from the exe (`!_backup*/**`), from git (`.gitignore`) and from searches (`.ignore`,
+  which ripgrep reads).
 - `dev/` — the Overlay Preview Lab and other mockups/labs (see Tools). Not in the exe or the repo.
-- `dev/web-tracker/` — a byte-exact working copy of the website repo
-  `ibefuzzy/ibefuzzy.github.io` (tracker/ = the web tracker). Edit here, preview at
+- `dev/web-tracker/` — the website repo `ibefuzzy/ibefuzzy.github.io` as its own git repo
+  (tracker/ = the web tracker). Edit here, preview at
   http://localhost:5178/dev/web-tracker/tracker/index.html (phone frames:
-  dev/web-mobile-preview.html), push through the web upload pages. Its CLAUDE.md is the
+  dev/web-mobile-preview.html), commit and push from that folder. Its CLAUDE.md is the
   site repo's own notes.
 
 ## Rules
@@ -173,19 +174,28 @@ short on purpose so a fresh session can read it in one pass.
   apart from an earlier "fix" that destroyed it with U+FFFD, and how to
   reverse it) if this project's own README/HTML ever shows `�` or
   `â€™`-style garbage.
-- No git on this machine (not installed). GitHub repo: ibefuzzy/Fuzzy-Droid-Tracker.
-  Source pushes go through Claude in Chrome's `file_upload` onto
-  `github.com/ibefuzzy/Fuzzy-Droid-Tracker/upload/main` — works directly from the
-  project folder (a separate staging copy elsewhere fails; `file_upload` only reads
-  paths already in the session's allowed folders). Release flow: after pushing
-  source, open `releases/new?tag=vX.Y.Z&target=main&title=...&body=...` prefilled
-  with notes + the exe's SHA256; the user drags the exe in (too large — 65+MB — for
-  `file_upload`'s 10MB cap) and publishes themselves.
-  **Push source BEFORE the release is published, and verify it landed**: v1.10.10–
-  v1.10.12 shipped as exes while `main` stayed on v1.10.9 source, so those tags
-  point at stale code. Diff local vs `main` by git blob SHA, and use one upload page
-  per folder (`/upload/main/test`, `/upload/main/test/helpers`). Exact steps in
-  GOTCHAS_AND_CONSTRAINTS.md → "No Git Locally".
+- **Git is installed (2026-09-30): commit and push from this folder.** Repo
+  ibefuzzy/Fuzzy-Droid-Tracker, `main` tracks `origin/main`; global `core.autocrlf=false`,
+  so git never rewrites a file's bytes (see the encoding rule above). `.gitignore` lists
+  everything local-only (snapshots, dev/, the root notes, the Droidex/card sources and
+  their tools, the mp3), so `git status` shows only real changes: read it before every
+  commit and stage files by name. **Never `reset --hard`, `checkout`/`restore` over local
+  files, `clean` or `stash` here**: the ignored local-only work has no other copy.
+  Cloud sessions push to `claude/...` branches that reach `main` through a pull request,
+  so run `git pull` before building.
+  If a push fails with "Cannot prompt", the saved GitHub sign-in is gone: Claude's shell
+  can't open the sign-in window (the app sets `GCM_INTERACTIVE=never`), so the user runs
+  `git push --dry-run origin main` once in their own terminal.
+  Release flow: commit and push, then open
+  `releases/new?tag=vX.Y.Z&target=main&title=...&body=...` prefilled with notes + the exe's
+  SHA256; the user drags the exe in (65+ MB) and publishes themselves.
+  **Push source BEFORE the release is published, and verify it landed** (`git fetch`, then
+  `git status -sb`: a clean tree, nothing ahead of or behind `origin/main`): v1.10.10–
+  v1.10.12 shipped as exes while `main` stayed on v1.10.9 source, so those tags point at
+  stale code.
+  The website copy `dev/web-tracker` is its own repo (ibefuzzy/ibefuzzy.github.io, same
+  setup, inside the ignored dev/ folder): `git -C dev/web-tracker ...`. The site is live
+  the moment its `main` changes.
 - **Overlay marks that aren't real ownership never write ownedRank** (v1.10.13).
   Sneak Preview "held" marks and Safe to Retire "retired" marks each have their own
   per-cycle store key (`rebirth-heldMarks`, `rebirth-retired`). Writing them to
@@ -244,7 +254,15 @@ site of a shared requirements.js function passes the right number of arguments.
   user couldn't see the hidden Browser pane: give them the localhost link to open in Chrome.
 - **HUD credits preview** (`dev/hud-credits-preview.html`, dev-only, v1.15.1): the real
   overlay.html ten times (rebirths 0, 4 … 36), so all 40 credit costs show at once;
-  `?cycle=N`, `?cols=N`. To send the user a picture: open it in their Chrome (window is
+  `?cycle=N`, `?cols=N`, `?starts=22,35` (v1.16.0: just those; used to prove the crystal and
+  credit chips clear the border badge).
+- **Tutorial review** (`dev/tutorial-review.html`, v1.16.0): the local web tracker as a
+  first-time visitor (`?tour`) in a phone frame, plus a link to the computer view. For the app
+  as a new player, launch the build with `--user-data-dir=%TEMP%\fdt-tutorial-review-<n>` (a
+  throwaway profile; recycle those folders afterwards).
+- **Nova Crystal icon** (`dev/nova-crystal-cutout.js`): regenerates the transparent crystal from
+  `dev/nova-crystal-source.png` (the user's screenshot); its base64 is NOVA_CRYSTAL_URI in
+  requirements.js and the web's index.html. To send the user a picture: open it in their Chrome (window is
   1920 wide at DPR 1, all 10 fit) and screenshot / zoom with `save_to_disk`, then
   SendUserFile. An off-screen Electron capture from this PowerShell exits -1 before the
   script runs (even with --no-sandbox), so don't bother with that route.
@@ -264,9 +282,10 @@ site of a shared requirements.js function passes the right number of arguments.
 - **Prove a CSS refactor changes nothing:** snapshot every element's computed style
   before, edit, snapshot after, diff (recipe in TEST_WITHOUT_ELECTRON.md → "Computed-style
   parity"). Used to prove v1.11.0's theme refactor was pixel-identical (853 elements).
-- **Before any release, diff local vs GitHub `main`** by git blob SHA and upload only the
-  mismatches, one upload page per folder (recipe + script in COMMON_TASKS.md → Building &
-  Releasing). v1.10.10–v1.10.12 shipped without their source reaching `main`.
+- **Before any release, check the source reached GitHub `main`:** `git fetch`, then
+  `git status -sb` must show a clean tree and nothing ahead of or behind `origin/main`
+  (steps in COMMON_TASKS.md → Building & Releasing). v1.10.10–v1.10.12 shipped without
+  their source reaching `main`.
 - **Drive an overlay in the browser:** mock `window.overlayAPI` (a Proxy that no-ops
   anything unmocked), capture the `on*` callbacks, and call them to fake hotkeys, store
   and settings broadcasts (TEST_WITHOUT_ELECTRON.md → "Driving an Overlay's Hotkeys").
@@ -300,18 +319,49 @@ user before launching; they may be in-game and close stray windows.
 - **App v1.16.0** = 👥 Friends (friend codes, no server; tracker panel + HUD friend switch),
   coloured SELL flags, the new tutorial (tour.js/guide.js, skippable, "What's new" for updaters),
   💎 Nova Crystal rewards, and no default hotkeys for new installs (no hotkey list on launch).
-  The design decisions are in CLAUDE_HISTORY.md (2026-09-30). Source pushed to `main` and checked
-  by blob SHA; the user publishes the release (drags the exe). `release\` holds only 1.16.0 (+
-  win-unpacked). Snapshots: `_backup_v1.15.1_approved/`, `_backup_v1.16.0_approved/`.
+  The design decisions are in CLAUDE_HISTORY.md (2026-09-30). **Published 2026-09-30 20:14 UTC**:
+  `main` = 48818ea (all 59 files matched local by blob SHA), release asset digest = local exe
+  sha256 cf44996a…4c12620. The user added to the release notes' Friends paragraph: "FEATURE IS NOT
+  ONLINE - MANUAL UPDATE NEEDED VIA NEW CODE GENERATED WHEN YOU REACH NEW REBIRTHS. POSSIBLE ONLINE
+  FEATURE TBD." `release\` holds only 1.16.0 (+ win-unpacked). Snapshots:
+  `_backup_v1.15.1_approved/`, `_backup_v1.16.0_approved/`.
 - **Web tracker** got the same features (Friends + `#friend=` link view, SELL colours, tutorial
   with phone steps, crystals; data `?v=1.16.0`). The local copy `dev/web-tracker/` == live
-  `main` after the push; re-download it (raw files, byte-exact) before the next web edit if
-  the site may have changed. Its own notes: dev/web-tracker/CLAUDE.md.
+  `main` (its own git repo since 2026-09-30); run `git -C dev/web-tracker pull` before the
+  next web edit if the site may have changed. Its own notes: dev/web-tracker/CLAUDE.md.
 - **Next app work: bump package.json FIRST** (1.16.0 is published; a feature → 1.17.0). A new
   feature also gets a tutorial step (`since: '1.17.0'`) in guide.js AND the web's step lists.
 - Players are starting to send feedback/requests (the crystals were the first); expect more.
-- **NEXT TASK (the user's decision, 2026-09-29): "Rarity on each droid" in the app, OVERLAYS
-  ONLY** (not the tracker window). It's the website's 🎨 Look option (a player's idea): **Picture
+- **NEXT BIG TASK (the user's pick, 2026-09-30): LIVE 👥 Friends via Cloudflare Workers** (v1.17.0;
+  start after the weekly usage reset on Oct 3). The user chose it over Discord Rich Presence and
+  webhooks/bots because it "takes less effort from users". Friends today are paste-only snapshots:
+  no connection anywhere, which the user asked about for security. Keep that promise: live
+  sharing must be opt-in and add only outgoing HTTPS. Plan (confirm with the user, mockup first):
+  - **Server:** a Cloudflare Worker on the FREE plan (no credit card = can't be billed; over the
+    daily limit it just stops answering). **The user creates the Cloudflare account; Claude can't.**
+    Claude writes the Worker (paste into the dashboard, no build tools) and walks them through it.
+    The Worker URL is public, not a secret.
+  - **API:** `PUT /p/<shareId>` (body = the existing friend code, header with the player's secret
+    key; the first write registers sha256(key), later writes must match), `GET /p/<shareId>` →
+    {code, updatedAt}. The share ID is random (≥10 base62 chars, unguessable) and is what friends
+    add. The secret key (32 random bytes) never leaves the player's PC (store key, not settings).
+  - **Limits:** entries ≤ 200 bytes and must decode as a friend code, rate-limit writes per ID,
+    expire untouched entries after ~14 days, CORS for the site + app only. No names beyond the
+    code's own, no IPs stored.
+  - **Storage:** Workers KV free is ~1,000 writes/day, so the app must save only on change,
+    debounced (at most every ~2 min). If the community grows, use D1 or a Durable Object (much
+    higher free write limits). **Check the current free limits at build time.**
+  - **App:** a "🌐 Live" switch in 👥 Friends (off by default). While on, it publishes your code on
+    change and on launch. It re-fetches live friends about every 60-120 s, only while the Friends
+    panel or the HUD friend view is showing (or when the window gets focus). A live friend is added
+    by a live code/link (e.g. `FDTL1.<shareId>` / `#live=<shareId>`). Snapshot codes keep working
+    offline, the same as today. Show "live · updated 3 min ago".
+  - **Website:** the same GET for a `#live=` link view (and publishing from the web, optional).
+  - **Also:** a README privacy note (what's sent, where, when; off by default), a tutorial step
+    `since: '1.17.0'` (app + web), and new release notes replacing the user's "NOT ONLINE" line.
+    Tests: the code↔server payload validation, the debounce, and ID/key generation.
+- **Queued idea (the user's decision 2026-09-29, still not built): "Rarity on each droid" in the app,
+  OVERLAYS ONLY** (not the tracker window). It's the website's 🎨 Look option (a player's idea): **Picture
   color** (today) or **Written under the name** (neutral icon frame + "NEED STELLAR" in the
   rarity's colour under the droid's name). Apply to the 🎯 HUD (overlay.html), 🧬 Rebirth
   Reqs, ♻ Safe to Retire ("HAVE X") and 🔮 Sneak Preview cards. Suggested: one setting (e.g.
@@ -323,7 +373,11 @@ user before launching; they may be in-game and close stray windows.
   Preview Lab and send a picture before building.
 - The user may have turned on GitHub 2FA (required by Nov 4, 2026). Never change account
   security settings for them.
-- Candidate next ideas (offered 2026-09-29, none picked yet):
+- Candidate next ideas (offered 2026-09-29 and 2026-09-30, none picked yet):
+  - **Landing page redesign** (2026-09-30): https://ibefuzzy.github.io/ looks "boring and basic";
+    the "What it actually does" stats box has hardcoded numbers (5 cycles, 35 levels, 105 slots,
+    7 rarities) that go stale when game patches change them. Make the design visually fresh and
+    sync stats to droid-data.js so no churn when levels/rebirths expand.
   - App: an "update available" notice (checks GitHub releases); Spawn Alert "adjust box" for
     screens other than 1920x1080; Export/Import that also carries held/retired marks (app
     AND web); rebirth history + pace ("time per rebirth"); a spawn log; a hotkey to cycle
@@ -334,15 +388,17 @@ user before launching; they may be in-game and close stray windows.
   - Show looks/layouts as mockups first (dev/*-mockup.html, dev/app-looks-lab.html,
     dev/web-layout-mockup.html); the user picks by eye. When the Browser pane is hidden,
     give a localhost link or screenshot through their Chrome and SendUserFile.
-  - Release: bump → build (release/next if their exe is running) → user tests → snapshot →
-    blob-SHA diff vs main → one upload page per folder, Claude commits (focus+Enter or a
-    coordinate click; list_commits before any retry) → verify SHAs → pre-fill the release →
-    user drags the exe + publishes → check the asset digest.
+  - Release: `git pull` → bump → build (release/next if their exe is running) → user tests →
+    snapshot → commit + push → `git status -sb` clean and level with `origin/main` →
+    pre-fill the release → user drags the exe + publishes → check the asset digest.
   - Web push: run `node scripts/validate-tracker-data.js` in dev/web-tracker; bump both `?v=`
-    stamps when droid-data.js/icons-data.js change; upload icons/assets before the page that
-    uses them; check the live URL afterwards. The site is live the moment `main` changes.
+    stamps when droid-data.js/icons-data.js change; commit and push from dev/web-tracker
+    (one commit, so a page and its icons/assets land together); check the live URL
+    afterwards. The site is live the moment `main` changes.
 - When the user says a sound or feature "doesn't work", read their
   `%APPDATA%\fuzzys-droid-tracker\overlay-settings.json` first (read-only).
+- Support case (2026-09-30): a player's overlays showed their own title + CSS as plain text
+  instead of panels. It was a bad install (re-download the release exe), not an app bug.
 - package.json is CRLF with PowerShell-style double-space formatting; edit lines in place.
 - `release\` keeps only the newest exe (older ones → Recycle Bin; published ones are on
   GitHub Releases). Take a `_backup_vX_approved/` before a big change and recycle the
