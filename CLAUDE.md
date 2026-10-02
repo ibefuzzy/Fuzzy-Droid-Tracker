@@ -314,7 +314,7 @@ Stop test copies ONLY by that `--user-data-dir` in the process command line (Win
 never by exe path: the user may be running the app from `release\win-unpacked` too. Tell the
 user before launching; they may be in-game and close stray windows.
 
-## Current state (2026-10-01): v1.17.0 released (app); website last synced at v1.16.0
+## Current state (2026-10-02): v1.17.0 released (app); web tracker last synced at v1.16.0; landing page redesigned 2026-10-01
 
 - **App v1.17.0 PUBLISHED 2026-10-01 05:00 UTC** ("Rarity written on each droid", below): `main` =
   5011ca1 (clean, level with `origin/main`), release asset digest = local exe sha256 a285fba6…905fc4
@@ -331,6 +331,10 @@ user before launching; they may be in-game and close stray windows.
   with phone steps, crystals; data `?v=1.16.0`). The local copy `dev/web-tracker/` == live
   `main` (its own git repo since 2026-09-30); run `git -C dev/web-tracker pull` before the
   next web edit if the site may have changed. Its own notes: dev/web-tracker/CLAUDE.md.
+  **The site's `main` moved on 2026-10-01 (56cade4): the landing page (root index.html) was redesigned
+  in a cloud session**, so `git -C dev/web-tracker pull` before the next web edit (new `assets/`
+  folder; scripts/validate-tracker-data.js gained Check 3b: the landing page loads
+  `tracker/droid-data.js?v=X`, and X must equal the tracker's stamp, so bump both).
 - **Next app work: bump package.json to 1.18.0 FIRST** (1.17.0 is published). A new feature also gets a tutorial step
   (`since: '<version>'`) in guide.js AND the web's step lists (v1.17.0's step is app-only: the web
   tracker already had its own Rarity option, so there was nothing new to tell its visitors).
@@ -385,16 +389,22 @@ user before launching; they may be in-game and close stray windows.
 - The user may have turned on GitHub 2FA (required by Nov 4, 2026). Never change account
   security settings for them.
 - Candidate next ideas (offered 2026-09-29 and 2026-09-30, none picked yet):
-  - **Landing page redesign** (2026-09-30): https://ibefuzzy.github.io/ looks "boring and basic";
-    the "What it actually does" stats box has hardcoded numbers (5 cycles, 35 levels, 105 slots,
-    7 rarities) that go stale when game patches change them. Make the design visually fresh and
-    sync stats to droid-data.js so no churn when levels/rebirths expand.
   - App: an "update available" notice (checks GitHub releases); Spawn Alert "adjust box" for
     screens other than 1920x1080; Export/Import that also carries held/retired marks (app
     AND web); rebirth history + pace ("time per rebirth"); a spawn log; a hotkey to cycle
     looks in-game; the two small fixes under Known follow-ups.
   - Credits: read the cost off the Rebirth screen with the existing OCR, if it's shown there
     (would confirm the per-cycle assumption). Needs a screenshot from the user.
+  - **Spawn Alert: name the actual droid (the user's question, 2026-10-02; not started).** Today the
+    alert says only "<Type> <Tier>": the in-game feed line has no droid name. The Overwolf app
+    "Droidex Companion" (DubTrackr, overwolf.com/app/dubtrackr-droidex_companion; its site says "private,
+    local screen recognition") apparently names the droid that comes out of the sandcrawler. HOW is
+    unknown: the cloud session couldn't open overwolf.com (blocked), only search snippets. Don't
+    decompile or copy their app. Next step: ask the user for 2-3 full-screen screenshots at the moment a
+    sandcrawler droid spawns (plus their overlay's alert if possible) and when theirs names it (before or
+    after pickup). If a name is anywhere on screen it's a small job (spawn-parse.js's fuzzy match, 62
+    names); if only the 3D model is visible it's image recognition (many real captures, accuracy risk):
+    plan it before building. The user was at 90% weekly usage on 2026-10-02, so wait for the reset.
 - Working habits that held up this session (details in memory + Lessons):
   - Show looks/layouts as mockups first (dev/*-mockup.html, dev/app-looks-lab.html,
     dev/web-layout-mockup.html); the user picks by eye. When the Browser pane is hidden,
@@ -406,6 +416,12 @@ user before launching; they may be in-game and close stray windows.
     stamps when droid-data.js/icons-data.js change; commit and push from dev/web-tracker
     (one commit, so a page and its icons/assets land together); check the live URL
     afterwards. The site is live the moment `main` changes.
+- Cloud vs local sessions: a cloud session (claude.ai/code) can edit, test and open PRs for BOTH repos
+  (pushes only to `claude/...` branches, squash-merged on the user's go) and can render the real pages in
+  headless Chromium with a mock overlayAPI. It can't build the exe, run Electron/Windows, see `dev/` or
+  the local-only notes, or reach overwolf.com / ibefuzzy.github.io. Anything touching the exe or the
+  user's PC = a local session. A purely mechanical pull + test + build can run on Haiku 4.5 if it gets a
+  strict script that says "stop and report on anything unexpected" (and bans reset --hard/checkout/clean).
 - When the user says a sound or feature "doesn't work", read their
   `%APPDATA%\fuzzys-droid-tracker\overlay-settings.json` first (read-only).
 - Support case (2026-09-30): a player's overlays showed their own title + CSS as plain text
@@ -480,6 +496,8 @@ user before launching; they may be in-game and close stray windows.
   Chrome and use screenshot/zoom with `save_to_disk`.
 
 ## Known follow-ups (spotted, deliberately not fixed yet)
+- package.json still lists mac and linux build targets, but only a Windows portable exe has ever been
+  published (checked across all 40 releases, 2026-10-01). The landing page now says Windows + web tracker.
 - Spawn Alert: no "adjust box" UI yet (the feed box is a fixed screen fraction, measured at
   1920x1080); not in the Overlay Preview Lab
   (it only draws while unlocked or alerting). Legendary/Mythic and Gold/Stellar/Kyber lines
