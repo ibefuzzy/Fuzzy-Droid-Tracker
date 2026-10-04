@@ -346,8 +346,8 @@ user before launching; they may be in-game and close stray windows.
   folder; scripts/validate-tracker-data.js gained Check 3b: the landing page loads
   `tracker/droid-data.js?v=X`, and X must equal the tracker's stamp, so bump both).
 - **v1.18.0 IN PROGRESS (2026-10-04, built + committed locally, NOT pushed, NOT released):** package.json is 1.18.0;
-  exe built at `release/next/Fuzzy's Droid Tracker 1.18.0.exe` (rebuilt 2026-10-04 14:04 with the LO fix,
-  sha256 715e9e41…a0ae8dad, 71,785,232 bytes; the user has not tested it yet). Contents:
+  exe built at `release/next/Fuzzy's Droid Tracker 1.18.0.exe` (rebuilt 2026-10-04 with the LO fix + the ultrareview fix,
+  sha256 0bfa72fd…74050d8d, 71,783,791 bytes; the user has not tested it yet). Contents:
   (1) **Update notice**: update-check.js (pure: version compare, version.json parse, once-a-day rule) + main.js
   `checkForUpdate()` (net.fetch of https://ibefuzzy.github.io/version.json, 5 s after launch, silent on failure) +
   preload `getUpdate/dismissUpdate/openUpdatePage/onUpdateState` + tracker `#updateBanner` wired in overlay-controls.js;
@@ -362,6 +362,8 @@ user before launching; they may be in-game and close stray windows.
   local-only, reusing build-kyber-card-icons.js's cut-out steps, which were factored out byte-identically), and
   icons-data.js's 2 wrong crops hold the same cut-outs. All 62 droids x every rarity (and Kyber) were then eyeballed
   against the Droidex cards: no other wrong picture. test/card-icons.test.js guards it. 145 tests pass.
+  (5) **/code-review ultra (2026-10-04)** over the 3 unpushed commits found 1 nit, fixed: checkForUpdate cleared
+  its 10 s abort timer only on success (now in a finally). Nothing else reported.
   **Website (dev/web-tracker), committed locally, NOT pushed:** tracker/icons-data.js ICONS = the app's CARD_ICONS
   for all 600 slots (the 6 LO fix + the 75 clean Kyber cut-outs it never got), stamps ?v=1.18.0 (tracker + landing
   page), validator passes, .data-manifest.json updated. `version.json` there is still untracked.

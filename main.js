@@ -1694,9 +1694,11 @@ async function checkForUpdate(){
   try{
     const ctl = new AbortController();
     const timer = setTimeout(()=> ctl.abort(), 10000);
-    const res = await net.fetch(updateCheck.UPDATE_URL, { signal: ctl.signal, cache: 'no-store' });
-    const text = res.ok ? await res.text() : '';
-    clearTimeout(timer);
+    let text = '';
+    try{
+      const res = await net.fetch(updateCheck.UPDATE_URL, { signal: ctl.signal, cache: 'no-store' });
+      text = res.ok ? await res.text() : '';
+    }finally{ clearTimeout(timer); } // also when the fetch fails (offline), not only on success
     const info = updateCheck.parseUpdateInfo(text);
     if(!info) return;
     settings = { ...settings, updateLastCheck: Date.now(), updateInfo: info };
