@@ -281,6 +281,7 @@ site of a shared requirements.js function passes the right number of arguments.
   `droid-cards/rebirth/<VARIANT>/` (from `extract-droid-cards.js`), and rewrites ONLY the
   75 Kyber slots of `card-icons-data.js`. Back that file up first, then eyeball a
   contact sheet (recipe in COMMON_TASKS.md → "Regenerating Kyber card icons").
+- **version.json after a release:** `node dev/bump-version-json.js "<one-line note>"` (v1.18.1; `--check` shows both versions), then commit + push dev/web-tracker.
 - **Fill a slot that has no picture:** `node build-missing-card-icons.js` (v1.18.0, local-only, needs
   `droid-cards/rebirth/`). It cuts the droid out of its own Droidex card for that rarity, exactly like the
   Kyber builder (it imports that script's cut-out steps), and never touches an existing slot. Use it when
@@ -326,8 +327,24 @@ user before launching; they may be in-game and close stray windows.
 
 ## Current state (2026-10-04): v1.18.0 published; v1.18.1 built + committed locally, waiting for the user's test
 
-- **v1.18.1 IN PROGRESS (committed locally, NOT pushed, NOT released; exe
-  `release/next/Fuzzy's Droid Tracker 1.18.1.exe`, sha256 fd3bc492…4d886eb1c6, 71,785,394 bytes, untested):**
+- **v1.18.1 IN PROGRESS (committed locally, NOT pushed, NOT released).** The CURRENT exe is
+  `release/next2/Fuzzy's Droid Tracker 1.18.1.exe` (sha256 99d7a9b3…9811146e, 69,266,812 bytes; untested by the user).
+  `release/next/` holds the user's earlier test build (first batch only): recycle it once they've closed it, then move
+  next2's exe + win-unpacked to `release\` (1.18.0's to the Recycle Bin). Website commit 960894b (dev/web-tracker) is
+  also local only; push it with the release (it's live on push), then `node dev/bump-version-json.js "<note>"`.
+  **Second batch (the user's "do all of 1-9", same day):** ↶ Undo finish cycle (`lastFinish` snapshot in
+  `resetCycleAndAdvance`, 10 min, in memory only; `#undoFinishBtn` next to Reset all + `undoFinishCycle` key);
+  `rebirthLevelUp/Down` keys (rebirth-level-detect.js, game toast); HUD READY strip (overlay.html `hudState`: skipped
+  lines = one `.ready-strip` + 3 lines; measured unclipped at 340x370 in both rarity styles, dev/hud-ready-preview.html);
+  Export/Import + pre-import backup carry `heldMarks` + `retired` (requirements.js `cleanCycleMarks`; null = old file,
+  keep current); no page loads icons-data.js and the exe leaves it out (test/marks-and-merges.test.js); main.js mark
+  handlers set nameMerges first (`shared.setNameMerges`); Rebirth Reqs `scroller.reveal`; `dev/bump-version-json.js`
+  (version.json from package.json + a note, refuses non-newer). Web: Up next skip + READY strip (4 lines; no fixed
+  window there), friend cards same rule, ‹ › cycle buttons, Import validated + asks, marks in Export/Import, 3 spooky
+  looks, tour step 1.18.1 (TOUR_VERSION 1.18.1). Update notice E2E in the BUILT exe (throwaway --user-data-dir profile
+  + CDP): real fetch of the live version.json saved {1.18.0}, banner hidden; a pretend 1.99.0 showed the banner with
+  the note; Dismiss hid it and getUpdate() → null. 160 tests pass.
+  **First batch:**
   (1) the HUD is renamed **🎯 Next Droids Needed** everywhere (was "Upcoming RB Req's" on the toolbar and "Current
   Rebirth Requirements" in settings/hotkeys; README changelog entries keep the old name) and moves on as you mark:
   requirements.js `nextNeededLevel(cycle, currentLevel, ownedRank)` = first line after the rebirth level that isn't
