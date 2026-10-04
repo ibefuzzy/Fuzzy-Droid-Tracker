@@ -324,13 +324,13 @@ Stop test copies ONLY by that `--user-data-dir` in the process command line (Win
 never by exe path: the user may be running the app from `release\win-unpacked` too. Tell the
 user before launching; they may be in-game and close stray windows.
 
-## Current state (2026-10-04): v1.17.0 released (app), v1.18.0 in progress; web tracker last synced at v1.16.0; landing page redesigned 2026-10-01
+## Current state (2026-10-04): v1.18.0 pushed + release pre-filled (app); website pushed with it
 
-- **App v1.17.0 PUBLISHED 2026-10-01 05:00 UTC** ("Rarity written on each droid", below): `main` =
-  5011ca1 (clean, level with `origin/main`), release asset digest = local exe sha256 a285fba6…905fc4
-  (69,948,079 bytes). `release\` holds only 1.17.0 (+ win-unpacked; `release\next` is a leftover
-  copy of the same exe, recycle it once the app is closed). Snapshots: `_backup_v1.16.0_approved/`,
-  `_backup_v1.17.0_approved/` (each includes the DROID IMAGES*.png; 1.15.1's went to the Recycle Bin).
+- **App v1.18.0: source pushed 2026-10-04, release page pre-filled, waiting for the user to drag the exe in
+  and publish** (then check the asset digest = sha256 0bfa72fd…74050d8d, 71,783,791 bytes). `release\` holds
+  only 1.18.0 (+ win-unpacked; 1.17.0's exe went to the Recycle Bin, `release\next` is gone). Snapshots:
+  `_backup_v1.17.0_approved/`, `_backup_v1.18.0_approved/` (1.16.0's went to the Recycle Bin).
+- App v1.17.0 ("Rarity written on each droid", below) was published 2026-10-01 05:00 UTC.
 - **App v1.16.0** = 👥 Friends (friend codes, no server; tracker panel + HUD friend switch),
   coloured SELL flags, the new tutorial (tour.js/guide.js, skippable, "What's new" for updaters),
   💎 Nova Crystal rewards, and no default hotkeys for new installs (no hotkey list on launch).
@@ -345,9 +345,7 @@ user before launching; they may be in-game and close stray windows.
   in a cloud session**, so `git -C dev/web-tracker pull` before the next web edit (new `assets/`
   folder; scripts/validate-tracker-data.js gained Check 3b: the landing page loads
   `tracker/droid-data.js?v=X`, and X must equal the tracker's stamp, so bump both).
-- **v1.18.0 IN PROGRESS (2026-10-04, built + committed locally, NOT pushed, NOT released):** package.json is 1.18.0;
-  exe built at `release/next/Fuzzy's Droid Tracker 1.18.0.exe` (rebuilt 2026-10-04 with the LO fix + the ultrareview fix,
-  sha256 0bfa72fd…74050d8d, 71,783,791 bytes; the user has not tested it yet). Contents:
+- **v1.18.0 (2026-10-04, user-tested in-game: "all looks well"):** contents:
   (1) **Update notice**: update-check.js (pure: version compare, version.json parse, once-a-day rule) + main.js
   `checkForUpdate()` (net.fetch of https://ibefuzzy.github.io/version.json, 5 s after launch, silent on failure) +
   preload `getUpdate/dismissUpdate/openUpdatePage/onUpdateState` + tracker `#updateBanner` wired in overlay-controls.js;
@@ -364,29 +362,18 @@ user before launching; they may be in-game and close stray windows.
   against the Droidex cards: no other wrong picture. test/card-icons.test.js guards it. 145 tests pass.
   (5) **/code-review ultra (2026-10-04)** over the 3 unpushed commits found 1 nit, fixed: checkForUpdate cleared
   its 10 s abort timer only on success (now in a finally). Nothing else reported.
-  **Website (dev/web-tracker), committed locally, NOT pushed:** tracker/icons-data.js ICONS = the app's CARD_ICONS
-  for all 600 slots (the 6 LO fix + the 75 clean Kyber cut-outs it never got), stamps ?v=1.18.0 (tracker + landing
-  page), validator passes, .data-manifest.json updated. `version.json` there is still untracked.
-  **Before releasing:** the user tests the exe; push the website (it's live on push) incl. `version.json`
-  ({"version":"1.17.0","note":""}) FIRST, and set it to 1.18.0 + a note when the release is published; not yet done:
-  an end-to-end test of the built exe against a fake version.json, the web tracker's spooky looks (optional), a
-  snapshot `_backup_v1.18.0_approved/`, push `main`, pre-filled release. The 3 offline-earning-mockup*.png in the
-  root are a game-UI mockup, not part of the tracker (add to .gitignore).
-- **Next app work: bump package.json to 1.18.0 FIRST** (1.17.0 is published). A new feature also gets a tutorial step
+  **Website pushed 2026-10-04** (5a1d1c3): tracker/icons-data.js ICONS = the app's CARD_ICONS for all 600 slots
+  (the 6 LO fix + the 75 clean Kyber cut-outs it never got), stamps ?v=1.18.0 (tracker + landing page), and
+  `version.json` = {"version":"1.18.0", note}. Not done (optional): the web tracker's spooky looks. The 3
+  offline-earning-mockup*.png in the root are a game-UI mockup, not part of the tracker (left untracked).
+- **Every release from now on also updates `dev/web-tracker/version.json`** (version + a one-line note the user
+  words), pushed once the release is PUBLISHED: that file is what makes v1.18.0+ installs show the "new version"
+  banner. Only 1.18.0+ reads it (once a day, notify only, switch in ⚙ → Layout).
+- **Next app work: bump package.json to 1.19.0 FIRST** (1.18.0 is pushed). A new feature also gets a tutorial step
   (`since: '<version>'`) in guide.js AND the web's step lists (v1.17.0's step is app-only: the web
   tracker already had its own Rarity option, so there was nothing new to tell its visitors).
-- **Queued (discussed 2026-10-01, not built): "update available" notice in the app.** Plan: on launch,
-  at most once a day, GET a tiny `version.json` ({version, note}) from the GitHub Pages site (not
-  GitHub's API: no rate limits, and the user words the note); if newer than package.json's version,
-  the tracker shows a banner with a Download button that opens the release page. Notify only, NO
-  auto-update (portable unsigned exe, SmartScreen, can't swap a running exe). Read-only request,
-  sends nothing about the player. Needs a visible on/off setting + a README line saying exactly what
-  it does (the user cares about connections); default-on vs ask-once is the user's call. Publishing a
-  release then also means updating version.json on the site. Also needs a tutorial step, a test for
-  the version compare, and a mockup of the banner first. Small: could be v1.17.1 or 1.18.0, ahead of
-  live Friends (it also proves the app-to-web path). The web tracker needs nothing.
 - Players are starting to send feedback/requests (the crystals were the first); expect more.
-- **NEXT BIG TASK (the user's pick, 2026-09-30): LIVE 👥 Friends via Cloudflare Workers** (now v1.18.0;
+- **NEXT BIG TASK (the user's pick, 2026-09-30): LIVE 👥 Friends via Cloudflare Workers** (now v1.19.0;
   start after the weekly usage reset on Oct 3). The user chose it over Discord Rich Presence and
   webhooks/bots because it "takes less effort from users". Friends today are paste-only snapshots:
   no connection anywhere, which the user asked about for security. Keep that promise: live
@@ -412,7 +399,7 @@ user before launching; they may be in-game and close stray windows.
     offline, the same as today. Show "live · updated 3 min ago".
   - **Website:** the same GET for a `#live=` link view (and publishing from the web, optional).
   - **Also:** a README privacy note (what's sent, where, when; off by default), a tutorial step
-    `since: '1.18.0'` (app + web), and new release notes replacing the user's "NOT ONLINE" line.
+    `since: '1.19.0'` (app + web), and new release notes replacing the user's "NOT ONLINE" line.
     Tests: the code↔server payload validation, the debounce, and ID/key generation.
 - **v1.17.0 = "Rarity on each droid" (a player's idea), built 2026-10-01 in a cloud session** (merged
   as PR #1, then built locally and user-tested before publishing). One setting `overlayRarityStyle` ('color' default | 'text'; `rarityStyleOf()` in requirements.js), a
