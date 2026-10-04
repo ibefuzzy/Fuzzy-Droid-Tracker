@@ -660,6 +660,7 @@
   const themeHighlightBorderBtn = document.getElementById('themeHighlightBorderBtn');
   const themeResetBtn = document.getElementById('themeResetBtn');
   const overlaySnapCheckbox = document.getElementById('overlaySnapCheckbox');
+  const updateCheckCheckbox = document.getElementById('updateCheckCheckbox');
   const overlaySnapSizeCheckbox = document.getElementById('overlaySnapSizeCheckbox');
   const timersLayoutBtns = Array.from(document.querySelectorAll('[data-timers-layout]'));
   const timersScaleRange = document.getElementById('timersScaleRange');
@@ -713,6 +714,25 @@
     }
   });
   overlaySnapCheckbox.addEventListener('change', ()=> window.overlayAPI.setSettings({ overlaySnap: overlaySnapCheckbox.checked }));
+  updateCheckCheckbox.addEventListener('change', ()=>{
+    window.overlayAPI.setSettings({ updateCheck: updateCheckCheckbox.checked });
+    // off hides the banner now; on shows it again if one is waiting (the daily read happens next launch)
+    setTimeout(()=> window.overlayAPI.getUpdate().then(showUpdateBanner), 150);
+  });
+
+  // v1.18.0 update notice (update-check.js in main.js): textContent only, the note is never HTML
+  const updateBanner = document.getElementById('updateBanner');
+  function showUpdateBanner(info){
+    if(!info){ updateBanner.hidden = true; return; }
+    document.getElementById('updateVersion').textContent = info.version;
+    document.getElementById('updateNote').textContent = info.note ? ' ' + info.note : '';
+    window.overlayAPI.getAppVersion().then(v=>{ document.getElementById('updateCurrent').textContent = v; });
+    updateBanner.hidden = false;
+  }
+  document.getElementById('updateDownloadBtn').addEventListener('click', ()=> window.overlayAPI.openUpdatePage());
+  document.getElementById('updateDismissBtn').addEventListener('click', ()=> window.overlayAPI.dismissUpdate());
+  window.overlayAPI.onUpdateState(showUpdateBanner);
+  window.overlayAPI.getUpdate().then(showUpdateBanner);
   overlaySnapSizeCheckbox.addEventListener('change', ()=> window.overlayAPI.setSettings({ overlaySnapSize: overlaySnapSizeCheckbox.checked }));
   timersLayoutBtns.forEach(b => b.addEventListener('click', ()=> window.overlayAPI.setSettings({ timersLayout: b.dataset.timersLayout })));
   timersScaleRange.addEventListener('input', ()=>{
@@ -1043,6 +1063,7 @@
     renderPresets(s);
     renderAppLook(s);
     overlaySnapCheckbox.checked = s.overlaySnap !== false;
+    updateCheckCheckbox.checked = s.updateCheck !== false;
     overlaySnapSizeCheckbox.checked = s.overlaySnapSize !== false;
     timersLayoutBtns.forEach(b => b.classList.toggle('on', b.dataset.timersLayout === (s.timersLayout || 'row')));
     if(document.activeElement !== timersScaleRange){

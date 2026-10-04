@@ -386,6 +386,13 @@
   .sort-toggle .btn{border:0;border-radius:0;}
   .sort-toggle .btn + .btn{border-left:1px solid var(--line);}
 
+  /* v1.18.0 update notice: hidden until main.js finds a newer version.json (overlay-controls.js) */
+  .update-banner{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px;padding:10px 14px;border-radius:9px;border:1px solid rgba(var(--accent-rgb),.55);background:rgba(var(--accent-rgb),.09);color:var(--text);font-size:13.5px;line-height:1.4;}
+  .update-banner[hidden]{display:none;}
+  .update-banner .update-text{flex:1 1 260px;}
+  .update-banner .update-text b{color:rgb(var(--accent-rgb));}
+  .update-banner .update-note{display:block;color:var(--text-dim);font-size:12.5px;}
+  .update-banner .btn{padding:6px 12px;font-size:13px;}
   .level-note{font-size:12.5px;color:var(--text-dim);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:14px;line-height:1.45;}
 
   .level-group{margin-bottom:4px;}
@@ -986,6 +993,12 @@
     </div>
   </header>
 
+  <div class="update-banner" id="updateBanner" role="status" hidden>
+    <span class="update-text">🔔 <b>Version <span id="updateVersion"></span> is out</b> (you have <span id="updateCurrent"></span>).<span class="update-note" id="updateNote"></span></span>
+    <button class="btn" type="button" id="updateDownloadBtn">⬇ Download</button>
+    <button class="btn" type="button" id="updateDismissBtn" title="Hide this until the next version">✕ Dismiss</button>
+  </div>
+
   <div class="legend" id="legend"></div>
   <div class="level-note" id="levelNote" style="display:none;">Three droids per line, one line per level, all levels for the cycle you've picked below. Click a name to log it — dimmed names are already covered by a higher rarity you own.</div>
   <div class="cycle-picker-row" id="cyclePickerRow" style="display:none;">
@@ -1319,6 +1332,7 @@
           </div>
           <div class="sync-box">
             <label class="check-row"><input type="checkbox" id="overlaySnapCheckbox"><span><b>🧲 Snap overlays together</b><small>While dragging, an overlay snaps flush against another one (side by side or stacked, edges lined up) and to the screen edge.</small></span></label>
+            <label class="check-row"><input type="checkbox" id="updateCheckCheckbox"><span><b>🔔 Tell me when a new version is out</b><small>Once a day the app reads one small public file (version.json on ibefuzzy.github.io) and shows a banner if a newer version exists. It sends nothing about you, and never downloads or installs anything: the Download button just opens the releases page.</small></span></label>
             <label class="check-row"><input type="checkbox" id="overlaySnapSizeCheckbox"><span><b>📐 Match sizes</b><small>While resizing, a droid overlay snaps to another one's width and height, so two lists can be exactly the same size.</small></span></label>
           </div>
           <div class="pos-grid">

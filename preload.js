@@ -17,6 +17,12 @@ contextBridge.exposeInMainWorld('overlayAPI', {
   // at a glance instead of a guessing game.
   getAppVersion: () => ipcRenderer.invoke('app:getVersion'),
 
+  // v1.18.0 update notice (update-check.js): the banner's data, dismiss, and the Download button
+  getUpdate: () => ipcRenderer.invoke('update:get'),
+  dismissUpdate: () => ipcRenderer.invoke('update:dismiss'),
+  openUpdatePage: () => ipcRenderer.invoke('update:openPage'),
+  onUpdateState: (cb) => subscribe('update:state', cb), // cb(info | null)
+
   // shared JSON store (ownedRank, nameMerges, activeCycle, ...)
   storeGet: (key) => ipcRenderer.invoke('store:get', key),
   storeSet: (key, value) => ipcRenderer.invoke('store:set', key, value),

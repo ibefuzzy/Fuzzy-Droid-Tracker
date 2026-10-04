@@ -25,7 +25,8 @@
    window (or any overlay) shows up everywhere else immediately.
 --------------------------------------------------------------------------- */
 
-const { app, BrowserWindow, ipcMain, globalShortcut, screen, session, desktopCapturer, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, globalShortcut, screen, session, desktopCapturer, dialog, net, shell } = require('electron');
+const updateCheck = require('./update-check.js');
 const path = require('path');
 const fs = require('fs');
 const vm = require('vm');
@@ -108,6 +109,12 @@ const DEFAULT_SETTINGS = {
   missionWarnTimes: [],
   missionWarnSound: 'chime',
   missionWarnVolume: 0.35, // its own slider, like spawnAlertVolume
+  // v1.18.0 "update available" notice (update-check.js): once a day the app reads one small public
+  // file (version.json on the site). Notify only, on by default, switch in ⚙ Overlay Settings → Layout.
+  updateCheck: true,
+  updateLastCheck: 0,   // ms timestamp of the last successful read
+  updateInfo: null,     // {version, note} from the last read
+  updateDismissed: '',  // version whose banner the player closed
   timerSoundEnabled: false, // v1.10.2: sound notifications for timer expiry (default off for fresh installs)
   timerSoundVolume: 0.35,   // master volume, 0.1–0.8 range
   missionSoundVolumeOverride: false, // use per-timer override instead of master
@@ -1673,7 +1680,40 @@ function cycleMarkTarget(){
 }
 
 /* ---------------- IPC ---------------- */
+// v1.18.0: read version.json (outgoing HTTPS GET only, nothing about the player is sent), at most
+// once a day, then tell the tracker window. Any failure is silent: no banner, try again next launch.
+function pendingUpdateInfo(){
+  return updateCheck.pendingUpdate(settings.updateInfo, app.getVersion(), settings.updateDismissed);
+}
+function sendUpdateState(){
+  if(mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('update:state', settings.updateCheck === false ? null : pendingUpdateInfo());
+}
+async function checkForUpdate(){
+  if(settings.updateCheck === false) return;
+  if(!updateCheck.checkIsDue(settings.updateLastCheck, Date.now())) return;
+  try{
+    const ctl = new AbortController();
+    const timer = setTimeout(()=> ctl.abort(), 10000);
+    const res = await net.fetch(updateCheck.UPDATE_URL, { signal: ctl.signal, cache: 'no-store' });
+    const text = res.ok ? await res.text() : '';
+    clearTimeout(timer);
+    const info = updateCheck.parseUpdateInfo(text);
+    if(!info) return;
+    settings = { ...settings, updateLastCheck: Date.now(), updateInfo: info };
+    persistSettingsNow();
+    sendUpdateState();
+  }catch(e){ /* offline, blocked or malformed: stay quiet */ }
+}
+
 function wireIpc(){
+  ipcMain.handle('update:get', ()=> (settings.updateCheck === false ? null : pendingUpdateInfo()));
+  ipcMain.handle('update:dismiss', ()=>{
+    const info = settings.updateInfo;
+    settings = { ...settings, updateDismissed: info ? info.version : '' };
+    persistSettingsNow();
+    sendUpdateState();
+  });
+  ipcMain.handle('update:openPage', ()=> shell.openExternal(updateCheck.RELEASES_URL));
   // Reads straight from package.json's "version" field (Electron's own
   // app.getVersion() does this natively) — bump that one number on each
   // release and every place that displays it stays in sync automatically.
@@ -2346,6 +2386,7 @@ if(singleInstanceLock){
     mainWindow.webContents.once('did-finish-load', ()=>{
       createSecondaryWindows();
       reportHotkeyRegistrationFailures(hotkeyRegResults);
+      setTimeout(checkForUpdate, 5000);
     });
   } else {
     // Fallback if mainWindow failed to create (shouldn't happen, but just in case)

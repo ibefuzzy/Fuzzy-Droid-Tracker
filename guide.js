@@ -90,6 +90,33 @@
         Pick <b>Picture color</b> to go back.</p>`
     },
     {
+      // v1.18.0: opens ⚙ Overlay Settings on Appearance, where the presets live
+      since: '1.18.0', target: '#appLookGrid',
+      before: ()=>{
+        const panel = document.getElementById('overlaySettingsPanel');
+        if(panel && panel.hidden) document.getElementById('overlaySettingsBtn').click();
+        const tab = document.getElementById('setTab-borders');
+        if(tab) tab.click();
+      },
+      title: 'Spooky season looks',
+      body: `<p>Three Halloween looks: <b>Force Ghost</b>, <b>Sith Harvest</b> and <b>Nightsister</b>. Pick one here for this window,
+        or click its preset below to give every overlay the matching border too.</p>`
+    },
+    {
+      // v1.18.0: opens ⚙ Overlay Settings on Layout, where the switch lives
+      since: '1.18.0', target: '#updateCheckCheckbox',
+      before: ()=>{
+        const panel = document.getElementById('overlaySettingsPanel');
+        if(panel && panel.hidden) document.getElementById('overlaySettingsBtn').click();
+        const tab = document.getElementById('setTab-layout');
+        if(tab) tab.click();
+      },
+      title: 'New version notice',
+      body: `<p>Once a day the app reads one small public file on the website and, if a newer version is out, shows a banner at the top
+        with a <b>Download</b> button that opens the releases page. It sends nothing about you and never installs anything.
+        Don't want it? Untick this box (⚙ Overlay Settings → Layout).</p>`
+    },
+    {
       since: '1.0.0', target: '#guideOpenBtn',
       title: "You're all set",
       body: `<p>Your progress saves by itself as you go.</p>

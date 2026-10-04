@@ -314,7 +314,7 @@ Stop test copies ONLY by that `--user-data-dir` in the process command line (Win
 never by exe path: the user may be running the app from `release\win-unpacked` too. Tell the
 user before launching; they may be in-game and close stray windows.
 
-## Current state (2026-10-02): v1.17.0 released (app); web tracker last synced at v1.16.0; landing page redesigned 2026-10-01
+## Current state (2026-10-04): v1.17.0 released (app), v1.18.0 in progress; web tracker last synced at v1.16.0; landing page redesigned 2026-10-01
 
 - **App v1.17.0 PUBLISHED 2026-10-01 05:00 UTC** ("Rarity written on each droid", below): `main` =
   5011ca1 (clean, level with `origin/main`), release asset digest = local exe sha256 a285fba6…905fc4
@@ -335,6 +335,23 @@ user before launching; they may be in-game and close stray windows.
   in a cloud session**, so `git -C dev/web-tracker pull` before the next web edit (new `assets/`
   folder; scripts/validate-tracker-data.js gained Check 3b: the landing page loads
   `tracker/droid-data.js?v=X`, and X must equal the tracker's stamp, so bump both).
+- **v1.18.0 IN PROGRESS (2026-10-04, built + committed locally, NOT pushed, NOT released):** package.json is 1.18.0;
+  exe built at `release
+extFuzzy's Droid Tracker 1.18.0.exe` (the user has not tested it yet). Contents:
+  (1) **Update notice**: update-check.js (pure: version compare, version.json parse, once-a-day rule) + main.js
+  `checkForUpdate()` (net.fetch of https://ibefuzzy.github.io/version.json, 5 s after launch, silent on failure) +
+  preload `getUpdate/dismissUpdate/openUpdatePage/onUpdateState` + tracker `#updateBanner` wired in overlay-controls.js;
+  setting `updateCheck` (default ON, switch #updateCheckCheckbox in Layout), `updateLastCheck`, `updateInfo`,
+  `updateDismissed`. Notify only; the link is a fixed releases URL, never read from the file. Preview:
+  dev/update-banner-preview.html (real tracker.html + mock API). Tests: test/update-check.test.js.
+  (2) **Spooky themes**: skins/presets/app looks `forceghost`, `harvest`, `nightsister` (MDI ghost/halloween/spider
+  emblems); Imperial Crypt + Dark Moon were tried and cut. (3) Two tutorial steps `since: '1.18.0'`, README sections.
+  139 tests pass.
+  **Before releasing:** the user tests the exe; `dev/web-tracker/version.json` ({"version":"1.17.0","note":""}) exists
+  locally but is NOT pushed: push it to the site FIRST (and set its version to 1.18.0 + a note when the release is
+  published); not yet done: an end-to-end test of the built exe against a fake version.json, the web tracker's spooky
+  looks (optional), a snapshot `_backup_v1.18.0_approved/`, push `main`, pre-filled release. The 3
+  offline-earning-mockup*.png in the root are a game-UI mockup, not part of the tracker (add to .gitignore).
 - **Next app work: bump package.json to 1.18.0 FIRST** (1.17.0 is published). A new feature also gets a tutorial step
   (`since: '<version>'`) in guide.js AND the web's step lists (v1.17.0's step is app-only: the web
   tracker already had its own Rarity option, so there was nothing new to tell its visitors).

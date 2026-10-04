@@ -408,6 +408,33 @@ it can be corrected.
   Leftovers of the in-game "PREVIEW" banner, the card frame and the colored card glow are
   gone.
 
+## 🎃 Spooky season themes (v1.18.0)
+
+Three Halloween looks, each a border skin, a one-click overlay preset and a matching app look
+(⚙ Overlay Settings → Appearance):
+
+| Theme | Colors | Emblem |
+|---|---|---|
+| 👻 **Force Ghost** | cold spectral blue-white | ghost |
+| 🎃 **Sith Harvest** | pumpkin orange on night purple | jack-o'-lantern |
+| 🕷 **Nightsister** | toxic green with witch violet | spider |
+
+They work like every other preset: the skin shows on all overlays, **Presets switch the app look too**
+re-colors this window, and you can still fine-tune and save your own look from them.
+
+## 🔔 New version notice (v1.18.0)
+
+Once a day (a few seconds after launch) the app reads **one small public file**,
+`https://ibefuzzy.github.io/version.json`, and shows a banner at the top of the tracker if a newer
+version is out. **Download** opens the releases page in your browser; **Dismiss** hides it until the
+next version. That is all it does:
+
+- It is a plain read. Nothing about you, your progress or your PC is sent.
+- Nothing is downloaded or installed by the app. You choose whether to get the new exe.
+- If you're offline or the site is down, nothing happens and nothing is shown.
+- Don't want it? Untick **⚙ Overlay Settings → Layout → 🔔 Tell me when a new version is out**.
+  Then the app makes no connection for this at all.
+
 ## 🔤 Rarity written on each droid (v1.17.0)
 
 **A player's idea.** The color of a droid's picture frame has always been its rarity. If you'd
@@ -1097,7 +1124,7 @@ and testing everything above:
   First Order, Galactic Republic, Old Republic, Galactic Senate, Trade Federation,
   Jedi Crest): [Font Awesome Free](https://fontawesome.com) by Fonticons, Inc.,
   [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), used as SVG paths.
-- Death Star emblem: [Material Design Icons](https://pictogrammers.com/library/mdi/),
+- Death Star, ghost, pumpkin and spider emblems: [Material Design Icons](https://pictogrammers.com/library/mdi/),
   Apache License 2.0.
 - Star Wars and its insignia are trademarks of Lucasfilm Ltd. This is an unofficial
   fan-made tool, not affiliated with or endorsed by Lucasfilm, Disney or Epic Games.
