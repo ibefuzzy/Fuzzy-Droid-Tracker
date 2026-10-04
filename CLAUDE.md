@@ -328,10 +328,16 @@ user before launching; they may be in-game and close stray windows.
 ## Current state (2026-10-04): v1.18.0 published; v1.18.1 built + committed locally, waiting for the user's test
 
 - **v1.18.1 IN PROGRESS (committed locally, NOT pushed, NOT released).** The CURRENT exe is
-  `release/next2/Fuzzy's Droid Tracker 1.18.1.exe` (sha256 99d7a9b3…9811146e, 69,266,812 bytes; untested by the user).
+  `release/next3/Fuzzy's Droid Tracker 1.18.1.exe` (sha256 e04ccb5c…62041b5a, 69,266,478 bytes; untested; next2 = the
+  same minus the OCR fix, the user was testing it).
   `release/next/` holds the user's earlier test build (first batch only): recycle it once they've closed it, then move
   next2's exe + win-unpacked to `release\` (1.18.0's to the Recycle Bin). Website commit 960894b (dev/web-tracker) is
   also local only; push it with the release (it's live on push), then `node dev/bump-version-json.js "<note>"`.
+  **OCR fix (third batch):** Read Rebirth Screen read a clean "21" as "217": the crop was enlarged x6 (~230px); on
+  the user's real crop every height 50-200px reads "21" with every resize kernel. Now READ_HEIGHT 120 + a retry at
+  80 when doubtful, and requirements.js `parseRankText` returns only a real rank (217 -> 21; the old parser took the
+  LAST digits = 7). test/rank-read.test.js. Offline repro recipe: sharp + tesseract.js with
+  `langPath node_modules/@tesseract.js-data/eng/4.0.0_best_int, gzip: true`.
   **Second batch (the user's "do all of 1-9", same day):** ↶ Undo finish cycle (`lastFinish` snapshot in
   `resetCycleAndAdvance`, 10 min, in memory only; `#undoFinishBtn` next to Reset all + `undoFinishCycle` key);
   `rebirthLevelUp/Down` keys (rebirth-level-detect.js, game toast); HUD READY strip (overlay.html `hudState`: skipped
