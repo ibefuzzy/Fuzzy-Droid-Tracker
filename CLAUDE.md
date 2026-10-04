@@ -217,9 +217,11 @@ short on purpose so a fresh session can read it in one pass.
   user closes the running app before launching a new build.
 
 ## Tests
-`npm test` runs Node's built-in test runner over `test/**/*.test.js` (130 tests; plain
+`npm test` runs Node's built-in test runner over `test/**/*.test.js` (145 tests; plain
 `node --test` also sweeps _backup_* and the static server, so use npm test;
 test/sell-flags.test.js + test/friends.test.js cover v1.16.0; test/rarity-style.test.js covers v1.17.0;
+test/update-check.test.js + test/card-icons.test.js cover v1.18.0 (every slot has its own picture, one per
+droid + rarity, never shared by two droids);
 test/rebirth-credits.test.js checks all 40 credit costs display exactly as the game chart writes them;
 test/app-looks.test.js checks the app looks and bans default-colour literals in tracker.html's CSS;
 test/skins.test.js checks every skin/preset, test/appearance.test.js the looks and
@@ -279,6 +281,14 @@ site of a shared requirements.js function passes the right number of arguments.
   `droid-cards/rebirth/<VARIANT>/` (from `extract-droid-cards.js`), and rewrites ONLY the
   75 Kyber slots of `card-icons-data.js`. Back that file up first, then eyeball a
   contact sheet (recipe in COMMON_TASKS.md → "Regenerating Kyber card icons").
+- **Fill a slot that has no picture:** `node build-missing-card-icons.js` (v1.18.0, local-only, needs
+  `droid-cards/rebirth/`). It cuts the droid out of its own Droidex card for that rarity, exactly like the
+  Kyber builder (it imports that script's cut-out steps), and never touches an existing slot. Use it when
+  test/card-icons.test.js reports a missing slot (a new droid gonk.tools lacks; LO was the first). Then copy
+  card-icons-data.js's CARD_ICONS into the website's tracker/icons-data.js ICONS (same keys) and bump its stamps.
+  **Picture-identity check:** a contact sheet of every slot's picture over the Droidex card of the same droid
+  and rarity (sharp) is how the 2026-10-04 audit was done; a picture is keyed by POSITION, so an off-by-one
+  crop shows the neighbouring droid.
 - **Prove a CSS refactor changes nothing:** snapshot every element's computed style
   before, edit, snapshot after, diff (recipe in TEST_WITHOUT_ELECTRON.md → "Computed-style
   parity"). Used to prove v1.11.0's theme refactor was pixel-identical (853 elements).
@@ -336,8 +346,8 @@ user before launching; they may be in-game and close stray windows.
   folder; scripts/validate-tracker-data.js gained Check 3b: the landing page loads
   `tracker/droid-data.js?v=X`, and X must equal the tracker's stamp, so bump both).
 - **v1.18.0 IN PROGRESS (2026-10-04, built + committed locally, NOT pushed, NOT released):** package.json is 1.18.0;
-  exe built at `release
-extFuzzy's Droid Tracker 1.18.0.exe` (the user has not tested it yet). Contents:
+  exe built at `release/next/Fuzzy's Droid Tracker 1.18.0.exe` (rebuilt 2026-10-04 14:04 with the LO fix,
+  sha256 715e9e41…a0ae8dad, 71,785,232 bytes; the user has not tested it yet). Contents:
   (1) **Update notice**: update-check.js (pure: version compare, version.json parse, once-a-day rule) + main.js
   `checkForUpdate()` (net.fetch of https://ibefuzzy.github.io/version.json, 5 s after launch, silent on failure) +
   preload `getUpdate/dismissUpdate/openUpdatePage/onUpdateState` + tracker `#updateBanner` wired in overlay-controls.js;
@@ -346,12 +356,20 @@ extFuzzy's Droid Tracker 1.18.0.exe` (the user has not tested it yet). Contents:
   dev/update-banner-preview.html (real tracker.html + mock API). Tests: test/update-check.test.js.
   (2) **Spooky themes**: skins/presets/app looks `forceghost`, `harvest`, `nightsister` (MDI ghost/halloween/spider
   emblems); Imperial Crypt + Dark Moon were tried and cut. (3) Two tutorial steps `since: '1.18.0'`, README sections.
-  139 tests pass.
-  **Before releasing:** the user tests the exe; `dev/web-tracker/version.json` ({"version":"1.17.0","note":""}) exists
-  locally but is NOT pushed: push it to the site FIRST (and set its version to 1.18.0 + a note when the release is
-  published); not yet done: an end-to-end test of the built exe against a fake version.json, the web tracker's spooky
-  looks (optional), a snapshot `_backup_v1.18.0_approved/`, push `main`, pre-filled release. The 3
-  offline-earning-mockup*.png in the root are a game-UI mockup, not part of the tracker (add to .gitignore).
+  (4) **LO picture fix** (the user's report: C2 rebirth 34's LO showed RIC): gonk.tools has no LO, so LO's 6
+  non-Kyber slots had no CARD_ICONS picture and fell back to icons-data.js's old crops; 1-8-1 held Hov-R and 2-34-1
+  RIC (the neighbouring slot's droid). Now real LO cut-outs from its Droidex cards (`build-missing-card-icons.js`,
+  local-only, reusing build-kyber-card-icons.js's cut-out steps, which were factored out byte-identically), and
+  icons-data.js's 2 wrong crops hold the same cut-outs. All 62 droids x every rarity (and Kyber) were then eyeballed
+  against the Droidex cards: no other wrong picture. test/card-icons.test.js guards it. 145 tests pass.
+  **Website (dev/web-tracker), committed locally, NOT pushed:** tracker/icons-data.js ICONS = the app's CARD_ICONS
+  for all 600 slots (the 6 LO fix + the 75 clean Kyber cut-outs it never got), stamps ?v=1.18.0 (tracker + landing
+  page), validator passes, .data-manifest.json updated. `version.json` there is still untracked.
+  **Before releasing:** the user tests the exe; push the website (it's live on push) incl. `version.json`
+  ({"version":"1.17.0","note":""}) FIRST, and set it to 1.18.0 + a note when the release is published; not yet done:
+  an end-to-end test of the built exe against a fake version.json, the web tracker's spooky looks (optional), a
+  snapshot `_backup_v1.18.0_approved/`, push `main`, pre-filled release. The 3 offline-earning-mockup*.png in the
+  root are a game-UI mockup, not part of the tracker (add to .gitignore).
 - **Next app work: bump package.json to 1.18.0 FIRST** (1.17.0 is published). A new feature also gets a tutorial step
   (`since: '<version>'`) in guide.js AND the web's step lists (v1.17.0's step is app-only: the web
   tracker already had its own Rarity option, so there was nothing new to tell its visitors).
@@ -503,6 +521,8 @@ extFuzzy's Droid Tracker 1.18.0.exe` (the user has not tested it yet). Contents:
   still had month-old timers, no Kyber styling and a 105-slot cycle count, and nobody had
   noticed. When the app changes shared data, timers, looks (APP_LOOKS is copied into the
   web's `<head>`) or marks, check dev/web-tracker too (its notes list what's synced).
+  Pictures: since 2026-10-04 the web's tracker/icons-data.js `ICONS` is exactly the app's
+  card-icons-data.js `CARD_ICONS` (all 600 slots); keep it that way when either changes.
 - **Theme-colour refactors: prove "no visible change" with a computed-style parity
   snapshot** (TEST_WITHOUT_ELECTRON.md), comparing as a multiset when new elements shift
   positions. It caught nothing wrong twice (tracker, web) and made the change safe to ship.

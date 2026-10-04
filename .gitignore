@@ -50,6 +50,7 @@ Thumbs.db
 /extract-droid-cards.js
 /build-card-icons.js
 /build-kyber-card-icons.js
+/build-missing-card-icons.js
 /scrape-droidex.js
 /scrape-droidex-cards.js
 /capture-droid-variants.js

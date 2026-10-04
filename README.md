@@ -408,6 +408,16 @@ it can be corrected.
   Leftovers of the in-game "PREVIEW" banner, the card frame and the colored card glow are
   gone.
 
+## 🖼 LO shows its own picture (v1.18.0 fix)
+
+**LO is the only droid with no picture on the site the others came from**, so its six slots fell back to
+old screenshot crops, and two of those crops were the droid NEXT to it: **cycle 2, rebirth 34 (LO
+Stellar) showed RIC**, and **cycle 1, rebirth 8 (LO Gold) showed Hov-R**. All six LO slots now show
+LO itself at the right rarity, cut out from its in-game Droidex cards the same way the Kyber pictures
+are. Every other picture (all 62 droids at every rarity, Kyber included) was checked against the
+Droidex cards and is the right droid in the right colours. The website tracker has the same fix, and
+its Kyber pictures got the clean cut-outs the app has had since v1.11.0.
+
 ## 🎃 Spooky season themes (v1.18.0)
 
 Three Halloween looks, each a border skin, a one-click overlay preset and a matching app look
