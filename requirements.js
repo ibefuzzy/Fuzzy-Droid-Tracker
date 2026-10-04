@@ -774,6 +774,27 @@ function isValidImportPayload(parsed){
   return !Object.values(parsed.ownedRank).some(r => !Number.isInteger(r) || r < 0 || r >= RARITY_ORDER.length);
 }
 
+/* v1.18.1: Export/Import also carry the per-cycle marks that aren't ownership: Sneak Preview
+   "held" marks ('rebirth-heldMarks') and Safe to Retire marks ('rebirth-retired'), both
+   {cycle -> {normKey -> rank}}. A file's copy goes through this before it's stored: only
+   cycles 1-5, only valid ranks, everything else dropped. null = the file has no such field
+   (an export from before v1.18.1), so the caller keeps what it has. */
+/** Clean a {cycle -> {nk -> rank}} marks object from an import file; null when it isn't an object. */
+function cleanCycleMarks(marks){
+  const isObj = v => v !== null && typeof v === 'object' && !Array.isArray(v);
+  if(!isObj(marks)) return null;
+  const out = {};
+  for(const [c, perDroid] of Object.entries(marks)){
+    if(!/^[1-5]$/.test(c) || !isObj(perDroid)) continue;
+    const clean = {};
+    for(const [nk, r] of Object.entries(perDroid)){
+      if(typeof nk === 'string' && nk && Number.isInteger(r) && r >= 0 && r < RARITY_ORDER.length) clean[nk] = r;
+    }
+    if(Object.keys(clean).length) out[c] = clean;
+  }
+  return out;
+}
+
 /** Returns the count of real (non-placeholder) levels in a cycle. Stops at the first `"?"` placeholder. */
 function cycleRealLevelCount(cycle){
   if(!CYCLES[cycle]) return 0;

@@ -48,6 +48,7 @@
                                 "!build-card-icons.js",
                                 "!build-kyber-card-icons.js",
                                 "!build-missing-card-icons.js",
+                                "!icons-data.js",
                                 "!build-sound-data.js",
                                 "!sounds/*.mp3",
                                 "!DROID IMAGES*.png",

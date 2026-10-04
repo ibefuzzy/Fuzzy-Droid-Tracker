@@ -55,6 +55,7 @@ function loadShared(files = ['droid-data.js', 'requirements.js']) {
     isRetired: run('isRetired'),
     decideOwnedUpdate: run('decideOwnedUpdate'),
     isValidImportPayload: run('isValidImportPayload'),
+    cleanCycleMarks: run('cleanCycleMarks'),
     cleanMissionWarnTimes: run('cleanMissionWarnTimes'),
     missionWarningsDue: run('missionWarningsDue'),
     appLookFor: run('appLookFor'),

@@ -90,6 +90,19 @@
     display:flex; flex-direction:column; justify-content:center; gap:2px;
     box-shadow:0 2px 8px -3px rgba(0,0,0,0.5);
   }
+  /* v1.18.1 the READY strip (hudState): the lines skipped as fully marked, with the next rebirth's
+     credit cost. Slim and fixed-height; while it shows, 3 lines do instead of 4. Not a .block, so
+     the selection keys and the level-tag clicks never land on it. */
+  .ready-strip{
+    flex:none; display:flex; align-items:center; justify-content:space-between; gap:6px; min-width:0;
+    padding:3px 8px; border-radius:8px; animation:fdt-in .22s ease-out both;
+    background:rgba(var(--ov-backdrop-rgb), var(--ov-backdrop-alpha));
+    border:1px solid rgba(93,255,110,0.30); border-left:3px solid #5dff6e;
+  }
+  .ready-tag{
+    font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:800; letter-spacing:.06em;
+    color:#03170b; background:#5dff6e; border-radius:999px; padding:2px 8px; white-space:nowrap;
+  }
   .block.current{
     border-left-color: var(--accent);
     background:
@@ -242,7 +255,6 @@
     <div class="blocks" id="blocks"></div>
   </div>
 
-<script src="icons-data.js"></script>
 <script src="card-icons-data.js"></script>
 <script src="droid-data.js"></script>
 <script src="requirements.js"></script>
@@ -329,12 +341,28 @@
   // levels 1+ once the current cycle runs out, so this is never empty at the end of a
   // cycle; it previews the next cycle's first rebirths instead, same idea as Sneak Preview.
   // A friend's list (v1.16.0) follows the same rule with their marks.
-  function upcomingLines(){
+  // The lines it skipped (between the rebirth level and the top line) are fully marked: ready to
+  // rebirth. They become one slim "✓ READY" strip with the next rebirth's credit cost, and then
+  // only 3 lines show, so the fixed-size window never gets taller content than before.
+  function hudState(){
     const fr = viewingFriend();
     const cycle = fr ? fr.cycle : currentCycle;
     const level = fr ? fr.level : currentLevel;
     const owned = fr ? friendOwnedRank(fr.owned) : ownedRankLocal;
-    return getUpcomingLevels(cycle, nextNeededLevel(cycle, level, owned) - 1, owned, 4);
+    const top = nextNeededLevel(cycle, level, owned);
+    const firstReady = Math.max(0, level) + 1;
+    const ready = top > firstReady ? { cycle, from: firstReady, to: top - 1 } : null;
+    return { ready, lines: getUpcomingLevels(cycle, top - 1, owned, ready ? 3 : 4) };
+  }
+  function upcomingLines(){ return hudState().lines; }
+
+  function readyStripHtml(r){
+    if(!r) return '';
+    const range = r.from === r.to ? String(r.from) : (r.from + '–' + r.to);
+    const credits = rebirthCreditsFor(r.cycle, r.from);
+    const creditsHtml = credits === null ? '' : '<span class="credits" title="Credits needed to go through with Rebirth ' + r.from + '">' + formatCredits(credits) + '</span>';
+    return '<div class="ready-strip" title="Every droid for Rebirth ' + range + ' is marked: ready when you have the credits">' +
+      '<span class="ready-tag">✓ READY · RB ' + range + '</span><span class="head-chips">' + creditsHtml + '</span></div>';
   }
   let shownTop = ''; // the top line as "cycle-level": when the list moves on, the selection goes back to its first droid
 
@@ -342,14 +370,15 @@
     const blocksEl = document.getElementById('blocks');
     const fr = viewingFriend(); // v1.16.0: a friend's list, or yours
     const cycle = fr ? fr.cycle : currentCycle;
-    const upcoming = upcomingLines();
+    const st = hudState();
+    const upcoming = st.lines;
     const top = upcoming[0] ? upcoming[0].cycle + '-' + upcoming[0].level : '';
     if(top !== shownTop){ if(shownTop) selectedPos = { levelIndex: 0, slot: 0 }; shownTop = top; }
     document.documentElement.classList.toggle('friend-view', !!fr);
     document.getElementById('friendTag').innerHTML = fr
       ? ('👥 ' + fr.name.toUpperCase() + '<small>C' + fr.cycle + ' · RB ' + fr.level + ' · ' + friendAgeText(fr.time) + '</small>') : '';
 
-    blocksEl.innerHTML = upcoming.map((u, i)=>{
+    blocksEl.innerHTML = readyStripHtml(st.ready) + upcoming.map((u, i)=>{
       const isCurrent = i === 0;
       const cycleTag = u.cycle !== cycle ? (' · Cycle ' + u.cycle) : '';
       const tag = (isCurrent ? 'NOW · Lvl ' : 'Lvl ') + u.level + cycleTag;

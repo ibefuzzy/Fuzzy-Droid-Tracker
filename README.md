@@ -419,6 +419,9 @@ it can be corrected.
 - It **never jumps past a line that's still missing a droid**: if rebirth 25 is fully marked but 15
   isn't, the HUD stays on 15. A finished line further down just shows as done.
 - It stops at the cycle's last line; finish the cycle to move on.
+- Lines it skipped (every droid marked, but you haven't rebirthed yet) become one slim
+  **✓ READY · RB 21** strip at the top with that rebirth's credit cost, so you still see what it
+  costs; the next 3 lines you need follow.
 
 **New hotkeys** (⚙ Overlay Settings → Keybinds → 🔄 Cycle, unbound until you set them):
 
@@ -428,9 +431,23 @@ it can be corrected.
   the next cycle (your Sneak Preview marks for it are applied) and sets your rebirth level back to 0,
   the same as the app's "Cycle complete → Next Cycle". Other cycles' marks are kept, unlike
   **Reset all…**. The first press only shows a notice over the game, so a stray press changes nothing.
+- **↶ Undo finish cycle**: for 10 minutes after finishing a cycle (by the key or "Next Cycle"), puts it
+  back: its marks, Sneak Preview and retire marks, and rebirth level. Also a **↶** button next to
+  **Reset all…**. Marks made since are undone too.
+- **🔢 Rebirth level +1 / −1**: the − / + next to Rebirth Lvl, from in-game; the new level shows over
+  the game.
+
+**Export / Import** now also carry your 🔮 Sneak Preview marks and ♻ Safe to Retire marks (and the
+backup made before an import has them too). A file exported before v1.18.1 still imports; it just
+leaves those marks as they are.
+
+**Faster start:** the windows no longer load the old 3.8 MB picture file (every picture comes from
+the new set since v1.18.0), so each droid window starts lighter.
 
 **Fix:** finishing a cycle with "Cycle complete → Next Cycle" now also sets the rebirth level back to 0.
 Before, the new cycle kept the old cycle's level (e.g. 40), so the HUD showed the cycle after it.
+Also fixed: marking a droid you renamed or merged from the 🎯 HUD or 🧬 Rebirth Requirements saved it
+under its old name, and 🧬 Rebirth Requirements' highlighted droid could scroll out of view.
 
 ## 🖼 LO shows its own picture (v1.18.0 fix)
 

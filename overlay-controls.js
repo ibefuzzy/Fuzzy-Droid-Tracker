@@ -61,6 +61,9 @@
     ['cycleNextHotkeyBtn', 'cycleNextHotkey', 'Next Cycle'], // v1.18.1
     ['cyclePrevHotkeyBtn', 'cyclePrevHotkey', 'Previous Cycle'],
     ['finishCycleHotkeyBtn', 'finishCycleHotkey', 'Finish Cycle (press twice)'],
+    ['undoFinishCycleHotkeyBtn', 'undoFinishCycleHotkey', 'Undo Finish Cycle'],
+    ['rebirthLevelUpHotkeyBtn', 'rebirthLevelUpHotkey', 'Rebirth Level +1'],
+    ['rebirthLevelDownHotkeyBtn', 'rebirthLevelDownHotkey', 'Rebirth Level −1'],
     ['declutterHotkeyBtn', 'declutterHotkey', 'Toggle Safe to Retire List'],
     // v1.7.3: these page whichever of Safe to Retire / Rebirth Requirements
     // is open — one shared hotkey pair, not a separate one per overlay (the

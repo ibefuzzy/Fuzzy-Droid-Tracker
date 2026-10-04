@@ -1077,6 +1077,7 @@
         <button class="btn" id="exportBtn" title="Save your progress to a file">Export</button>
         <button class="btn" id="importBtn" title="Load progress from an exported file">Import</button>
         <button class="btn danger" id="resetBtn" title="Clear all tracked droid progress (asks first)">Reset all…</button>
+        <button class="btn" id="undoFinishBtn" hidden title="Put back the cycle you just finished: its marks, Sneak Preview and retire marks, and rebirth level">↶ Undo finish cycle</button>
         <input type="file" id="importFile" accept="application/json" style="display:none">
         <input type="file" id="bgFile" accept="image/*" style="display:none">
       </div>
@@ -1168,7 +1169,7 @@
 
           <!-- v1.18.1: cycle keys, handled by this window (setupCycleHotkeys below) -->
           <div class="kb-group" id="cycleKeysGroup">
-            <div class="kb-group-title">🔄 Cycle</div>
+            <div class="kb-group-title">🔄 Cycle &amp; rebirth level</div>
             <div class="kb-row">
               <div class="kb-label"><b>🔄 Next cycle</b><small>Switches the tracker and every overlay to the next cycle (5 goes back to 1). Nothing is cleared.</small></div>
               <button class="btn kb-key" id="cycleNextHotkeyBtn">(none set)</button>
@@ -1180,6 +1181,18 @@
             <div class="kb-row danger">
               <div class="kb-label"><b>🏁 Finish cycle</b><small>Press it twice within 3 seconds: clears this cycle's droid marks, moves to the next cycle (with your Sneak Preview marks) and sets your rebirth level back to 0, the same as the app's "Cycle complete → Next Cycle". Other cycles' marks are kept.</small></div>
               <button class="btn kb-key" id="finishCycleHotkeyBtn">(none set)</button>
+            </div>
+            <div class="kb-row">
+              <div class="kb-label"><b>↶ Undo finish cycle</b><small>Within 10 minutes of finishing a cycle: puts it back (its marks, Sneak Preview and retire marks, rebirth level). Marks made since are undone too. Same as the ↶ button next to Reset all.</small></div>
+              <button class="btn kb-key" id="undoFinishCycleHotkeyBtn">(none set)</button>
+            </div>
+            <div class="kb-row">
+              <div class="kb-label"><b>🔢 Rebirth level +1</b><small>The + next to Rebirth Lvl, from in-game: 🎯 Next Droids Needed starts at the line after it.</small></div>
+              <button class="btn kb-key" id="rebirthLevelUpHotkeyBtn">(none set)</button>
+            </div>
+            <div class="kb-row">
+              <div class="kb-label"><b>🔢 Rebirth level −1</b><small>The − next to Rebirth Lvl, to fix a level that went one too far.</small></div>
+              <button class="btn kb-key" id="rebirthLevelDownHotkeyBtn">(none set)</button>
             </div>
           </div>
 
@@ -1903,7 +1916,6 @@
   <button class="btn" id="suggestNo">Not this</button>
 </div>
 
-<script src="icons-data.js"></script>
 <script src="card-icons-data.js"></script>
 <script src="droid-data.js"></script>
 <script src="requirements.js"></script>
@@ -2075,13 +2087,52 @@ async function clearCycleMarks(cycle){
   if(retired[cycle]){ delete retired[cycle]; await storeSet('rebirth-retired', retired); }
 }
 
+/* v1.18.1 ↶ Undo finish cycle: resetCycleAndAdvance (the 🏁 key and "Next Cycle") keeps a copy
+   of everything it changes for UNDO_FINISH_MS; the button next to Reset all and the
+   undoFinishCycle key put it back. In memory only: a restart, an import or Reset all drops it.
+   Marks made after finishing are undone too (the copy is from before). */
+const UNDO_FINISH_MS = 10 * 60 * 1000;
+let lastFinish = null; // { at, cycle, owned, retired, held, level }
+let undoFinishTimer = null;
+function updateUndoFinishBtn(){
+  const btn = getEl('undoFinishBtn');
+  const live = !!lastFinish && Date.now() - lastFinish.at < UNDO_FINISH_MS;
+  if(!live) lastFinish = null;
+  if(btn){ btn.hidden = !live; if(live) btn.textContent = '↶ Undo finish cycle ' + lastFinish.cycle; }
+  clearTimeout(undoFinishTimer);
+  if(live) undoFinishTimer = setTimeout(updateUndoFinishBtn, UNDO_FINISH_MS - (Date.now() - lastFinish.at) + 50);
+}
+async function undoFinishCycle(){
+  updateUndoFinishBtn();
+  if(!lastFinish) return null;
+  const s = lastFinish; lastFinish = null;
+  ownedRank = s.owned;
+  await storeSet('rebirth-ownedRank-v2', ownedRank);
+  await storeSet('rebirth-retired', s.retired);
+  await storeSet('rebirth-heldMarks', s.held);
+  await storeSet('rebirth-currentLevel', s.level);
+  activeCycle = s.cycle; // not setActiveCycle(): that would apply the held marks a second time
+  await storeSet('rebirth-activeCycle', activeCycle);
+  const mainSel = getEl('cycleSelect'); if(mainSel) mainSel.value = String(activeCycle);
+  const reqSel = getEl('reqCycleSelect'); if(reqSel) reqSel.value = String(activeCycle);
+  updateUndoFinishBtn();
+  renderList(); renderStats();
+  showToast('Undone: back on Cycle ' + s.cycle + ' with its marks, rebirth level ' + s.level);
+  return s;
+}
+
 async function resetCycleAndAdvance(cycle){
+  const copy = v => JSON.parse(JSON.stringify(v));
+  lastFinish = { at: Date.now(), cycle, owned: copy(ownedRank),
+    retired: copy((await storeGet('rebirth-retired')) || {}), held: copy((await storeGet('rebirth-heldMarks')) || {}),
+    level: (await storeGet('rebirth-currentLevel')) || 0 };
   await clearCycleMarks(cycle);
   const next = cycleAfter(cycle);
   await storeSet('rebirth-currentLevel', 0); // v1.18.1: the new cycle starts at rebirth 0 (see the note above)
   const applied = await setActiveCycle(next); // persists rebirth-activeCycle, applies Sneak Preview marks, syncs both selects, renderList()
   renderStats();
   showToast('Cycle ' + cycle + ' reset — now on Cycle ' + next + (applied ? (' (+' + applied + ' marked in Sneak Preview)') : ''));
+  updateUndoFinishBtn();
 }
 
 // "Sneak Preview" choice: the same reset, but the tracker STAYS on the
@@ -2134,7 +2185,7 @@ async function maybeOfferCycleReset(cycle, coveredBefore){
     else showToast(title + (sub ? ' — ' + sub : ''));
   }
   window.overlayAPI.onHotkeyTriggered(async (name)=>{
-    if(name !== 'cycleNext' && name !== 'cyclePrev' && name !== 'finishCycle') return;
+    if(name !== 'cycleNext' && name !== 'cyclePrev' && name !== 'finishCycle' && name !== 'undoFinishCycle') return;
     if(busy || cyclePromptOpen) return; // one at a time; never under the cycle-complete box
     busy = true;
     try{
@@ -2152,6 +2203,12 @@ async function maybeOfferCycleReset(cycle, coveredBefore){
         return;
       }
       finishArmedUntil = 0; // any other cycle key cancels a pending Finish
+      if(name === 'undoFinishCycle'){
+        const s = await undoFinishCycle();
+        if(!s) notify('↶ Nothing to undo', 'Undo works for 10 minutes after finishing a cycle.', 'info', 3000);
+        else if(inGame()) notify('↶ Cycle ' + s.cycle + ' is back', 'Its marks are restored, rebirth level ' + s.level + '.', 'ok', 3500);
+        return;
+      }
       const c = name === 'cycleNext' ? cycleAfter(activeCycle) : cycleBefore(activeCycle);
       const applied = await setActiveCycle(c);
       notify('🔄 Now on Cycle ' + c, applied ? ('+' + applied + ' marked in Sneak Preview') : '', 'info', 2500);
@@ -2865,10 +2922,14 @@ document.getElementById('resetBtn').addEventListener('click', ()=>{
   storeSet('rebirth-ownedRank-v2', ownedRank);
   storeSet('rebirth-heldMarks', {});
   storeSet('rebirth-retired', {});
+  lastFinish = null; updateUndoFinishBtn(); // v1.18.1: nothing to undo into after a full reset
   renderList(); renderStats();
 });
-document.getElementById('exportBtn').addEventListener('click', ()=>{
-  const payload = { v:2, ownedRank:ownedRank, nameMerges:nameMerges, displayOverrides:displayOverrides };
+document.getElementById('undoFinishBtn').addEventListener('click', ()=>{ undoFinishCycle(); }); // v1.18.1
+document.getElementById('exportBtn').addEventListener('click', async ()=>{
+  // v1.18.1: + Sneak Preview held marks and Safe to Retire marks (cleanCycleMarks on import)
+  const payload = { v:2, ownedRank:ownedRank, nameMerges:nameMerges, displayOverrides:displayOverrides,
+    heldMarks: (await storeGet('rebirth-heldMarks')) || {}, retired: (await storeGet('rebirth-retired')) || {} };
   const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a'); a.href = url; a.download = 'droid-tycoon-progress.json'; a.click();
@@ -2902,7 +2963,8 @@ document.getElementById('importFile').addEventListener('change', (e)=>{
       // Safety copy of what we're about to overwrite, as a normal export
       // file the user can re-import to undo.
       if(nOld){
-        const bak = new Blob([JSON.stringify({ v:2, ownedRank, nameMerges, displayOverrides }, null, 2)], {type:'application/json'});
+        const bak = new Blob([JSON.stringify({ v:2, ownedRank, nameMerges, displayOverrides,
+          heldMarks: (await storeGet('rebirth-heldMarks')) || {}, retired: (await storeGet('rebirth-retired')) || {} }, null, 2)], {type:'application/json'});
         const u = URL.createObjectURL(bak); const a = document.createElement('a');
         a.href = u; a.download = 'droid-tycoon-progress-BACKUP-' + new Date().toISOString().slice(0,19).replace(/[:T]/g,'-') + '.json'; a.click();
         setTimeout(()=>URL.revokeObjectURL(u), 1000);
@@ -2913,6 +2975,11 @@ document.getElementById('importFile').addEventListener('change', (e)=>{
       await storeSet('rebirth-ownedRank-v2', ownedRank);
       await storeSet('rebirth-nameMerges', nameMerges);
       await storeSet('rebirth-displayOverrides', displayOverrides);
+      // v1.18.1: a file from before v1.18.1 has no marks fields, so the current ones stay
+      const held = cleanCycleMarks(parsed.heldMarks), retired = cleanCycleMarks(parsed.retired);
+      if(held) await storeSet('rebirth-heldMarks', held);
+      if(retired) await storeSet('rebirth-retired', retired);
+      lastFinish = null; updateUndoFinishBtn(); // an undo from before the import would bring the old progress back
       buildIndex();
       renderList(); renderStats();
     }catch(err){ alert('Could not read that file.'); }

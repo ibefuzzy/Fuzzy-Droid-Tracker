@@ -128,8 +128,8 @@
       title: '🎯 Next Droids Needed + cycle keys',
       body: `<p>The HUD is now called <b>🎯 Next Droids Needed</b> and moves on by itself: once every droid of its top line is marked,
         it shows the next line you still need. It never jumps past a line that's missing a droid, and it starts from your rebirth level.</p>
-        <p>New keys here: <b>🔄 Next / Previous cycle</b>, and <b>🏁 Finish cycle</b> (press it twice) to clear this cycle's marks and start
-        the next one without leaving the game.</p>`
+        <p>New keys here: <b>🔄 Next / Previous cycle</b>, <b>🏁 Finish cycle</b> (press it twice) to clear this cycle's marks and start
+        the next one without leaving the game, <b>↶ Undo</b> for 10 minutes after, and <b>🔢 Rebirth level +1 / −1</b>.</p>`
     },
     {
       since: '1.0.0', target: '#guideOpenBtn',

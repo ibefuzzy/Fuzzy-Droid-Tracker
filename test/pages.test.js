@@ -230,7 +230,7 @@ const ARITY_CHECKED = [
   'isValidImportPayload', 'getDeclutterList', 'getSneakPreview', 'getUpcomingLevels',
   'getLevelRequirements', 'cycleCeilings', 'cycleLastNeededLevel', 'borderIconSvg',
   'cycleRealLevelCount', 'cycleRealSlotCount', 'mergeHeldMarks', 'isRetired',
-  'rebirthCreditsFor', 'nextNeededLevel',
+  'rebirthCreditsFor', 'nextNeededLevel', 'cleanCycleMarks',
 ];
 const PROJECT_JS_AND_HTML = fs.readdirSync(ROOT).filter((f) => {
   if (!(f.endsWith('.js') || f.endsWith('.html'))) return false;

@@ -51,6 +51,9 @@ function loadSharedFunctions(){
     rankOf: run('rankOf'),
     decideOwnedUpdate: run('decideOwnedUpdate'),
     isRetired: run('isRetired'),
+    // v1.18.1: canonicalName() reads the player's renames/merges; the mark handlers set them
+    // from the store first, or a merged droid was marked under its un-merged key
+    setNameMerges: run('(m) => { nameMerges = (m && typeof m === "object" && !Array.isArray(m)) ? m : {}; }'),
   };
 }
 const shared = loadSharedFunctions();
@@ -275,6 +278,9 @@ const DEFAULT_SETTINGS = {
   cycleNextHotkey: '',
   cyclePrevHotkey: '',
   finishCycleHotkey: '',
+  undoFinishCycleHotkey: '', // v1.18.1: put the finished cycle back (10 minutes)
+  rebirthLevelUpHotkey: '',  // v1.18.1: the − / + rebirth level from in-game
+  rebirthLevelDownHotkey: '',
   // v1.11.1: the screen picked in "Choose a screen to share", reused by every
   // screen capture until 🖥 Change screen. Id = desktopCapturer display_id
   // (or source id where that's empty); name is shown in the reader.
@@ -1375,6 +1381,9 @@ const HOTKEY_HANDLERS = {
   cycleNext: () => sendToTracker('cycleNext'),
   cyclePrev: () => sendToTracker('cyclePrev'),
   finishCycle: () => sendToTracker('finishCycle'),
+  undoFinishCycle: () => sendToTracker('undoFinishCycle'),
+  rebirthLevelUp: () => sendToTracker('rebirthLevelUp'), // rebirth-level-detect.js owns the level
+  rebirthLevelDown: () => sendToTracker('rebirthLevelDown'),
   // v1.10.8: master lock — see toggleKeybindsLock()/applyKeybindsLock() above
   keybindsLock: () => toggleKeybindsLock()
 };
@@ -1461,6 +1470,9 @@ const HOTKEY_LABELS = {
   cycleNext: 'Next Cycle',
   cyclePrev: 'Previous Cycle',
   finishCycle: 'Finish Cycle (press twice)',
+  undoFinishCycle: 'Undo Finish Cycle',
+  rebirthLevelUp: 'Rebirth Level +1',
+  rebirthLevelDown: 'Rebirth Level −1',
   keybindsLock: 'Lock/Unlock All Keybinds'
 };
 const HOTKEY_SETTINGS_KEY = {
@@ -1505,6 +1517,9 @@ const HOTKEY_SETTINGS_KEY = {
   cycleNext: 'cycleNextHotkey',
   cyclePrev: 'cyclePrevHotkey',
   finishCycle: 'finishCycleHotkey',
+  undoFinishCycle: 'undoFinishCycleHotkey',
+  rebirthLevelUp: 'rebirthLevelUpHotkey',
+  rebirthLevelDown: 'rebirthLevelDownHotkey',
   keybindsLock: 'keybindsLockHotkey'
 };
 
@@ -1756,6 +1771,7 @@ function wireIpc(){
     const row = shared.CYCLES[cycle][level-1];
     if(!row || !row[slot]) return false;
     const [code, rawName] = row[slot];
+    shared.setNameMerges(storeData['rebirth-nameMerges']);
     const nk = shared.normKey(shared.canonicalName(rawName));
     const rank = shared.rankOf(code);
     const ownedRank = storeData['rebirth-ownedRank-v2'] || {};
@@ -1780,6 +1796,7 @@ function wireIpc(){
     const row = shared.CYCLES[cycle][level-1];
     if(!row) return false;
     const ownedRank = storeData['rebirth-ownedRank-v2'] || {};
+    shared.setNameMerges(storeData['rebirth-nameMerges']);
     row.forEach(d=>{
       const [code, rawName] = d;
       const nk = shared.normKey(shared.canonicalName(rawName));

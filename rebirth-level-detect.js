@@ -331,6 +331,18 @@
     setLevel(Math.min(maxLevel, currentLevel+1), 'manual');
   });
 
+  // v1.18.1: the same − / + from in-game (main.js sends rebirthLevelUp / rebirthLevelDown to
+  // this window only). While the game has focus the new level shows over it (game-toast.html).
+  if(window.overlayAPI && window.overlayAPI.onHotkeyTriggered) window.overlayAPI.onHotkeyTriggered((name)=>{
+    if(name !== 'rebirthLevelUp' && name !== 'rebirthLevelDown') return;
+    const maxLevel = CYCLES[1] ? cycleRealLevelCount(1) : 40;
+    const n = name === 'rebirthLevelUp' ? Math.min(maxLevel, currentLevel+1) : Math.max(0, currentLevel-1);
+    setLevel(n, 'hotkey');
+    if(!document.hasFocus() && window.overlayAPI.showGameToast){
+      window.overlayAPI.showGameToast({ title: '🔢 Rebirth level ' + n, sub: n >= maxLevel ? 'the last one this cycle' : '', tone: 'info', ms: 2000 });
+    }
+  });
+
   (async ()=>{
     currentLevel = (await storeGet('rebirth-currentLevel')) || 0;
     const disp = getEl('rlLevelDisplay');

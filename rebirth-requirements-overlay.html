@@ -213,7 +213,6 @@
     </div>
   </div>
 
-<script src="icons-data.js"></script>
 <script src="card-icons-data.js"></script>
 <script src="droid-data.js"></script>
 <script src="requirements.js"></script>
@@ -449,6 +448,7 @@
     const cells = document.querySelectorAll('.d-cell');
     selectedIndex = Math.max(0, Math.min(cells.length - 1, selectedIndex + delta));
     applyRebirthSelection();
+    if(cells[selectedIndex]) scroller.reveal(cells[selectedIndex]); // v1.18.1: keep it on screen, like Safe to Retire
   }
 
   function applyRebirthSelection(){
