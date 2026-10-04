@@ -48,7 +48,11 @@
   btn.hidden = false;
   if(recalibBtn) recalibBtn.hidden = false;
 
-  const UPSCALE = 6;
+  // v1.18.1: the crop is scaled to a set HEIGHT, not a fixed x6. Tesseract misread a clean "21"
+  // as "217" once the digits were ~230px tall (x6 of a 39px box); on that real crop every height
+  // from 50 to 200px read "21". READ_HEIGHT is the middle of that range; a doubtful first read
+  // (not a real rank, or under LOW_CONFIDENCE) gets a second one at RETRY_HEIGHT.
+  const READ_HEIGHT = 120, RETRY_HEIGHT = 80;
   const REGION_KEY = 'rebirth-screenRegion';
 
   let stream = null, video = null, region = null;
@@ -92,7 +96,7 @@
     try{
       worker = await Tesseract.createWorker('eng');
       // No digit whitelist: a box that includes the word "Rank" would get its
-      // letters coerced into look-alike digits. parseRank() picks the number.
+      // letters coerced into look-alike digits. parseRankText() (requirements.js) picks the number.
       await worker.setParameters({ tessedit_pageseg_mode: '7' });
       return worker;
     }catch(e){
@@ -257,35 +261,50 @@
     crop.width = w; crop.height = h;
     crop.getContext('2d').drawImage(video, region.x, region.y, w, h, 0, 0, w, h);
 
-    const big = document.createElement('canvas');
-    big.width = w * UPSCALE; big.height = h * UPSCALE;
-    const bctx = big.getContext('2d');
-    bctx.imageSmoothingEnabled = true;
-    bctx.drawImage(crop, 0, 0, big.width, big.height);
-    // Only near-white pixels count as text (the Rank label is white); the
-    // green glow/particles and Fortnite's faint stats overlay behind it fail
-    // min(r,g,b) and drop out. Drawn black-on-white, which Tesseract reads best.
-    try{
-      const img = bctx.getImageData(0,0,big.width,big.height);
-      const d = img.data;
-      for(let i=0;i<d.length;i+=4){
-        const v = Math.min(d[i], d[i+1], d[i+2]) > 170 ? 0 : 255;
-        d[i]=d[i+1]=d[i+2]=v;
-      }
-      bctx.putImageData(img, 0, 0);
-    }catch(e){ /* still fine without the threshold pass */ }
-    const readImage = big.toDataURL('image/png');
+    // The crop scaled to `height` px tall, as black-on-white PNG data.
+    function prepared(height){
+      const scale = Math.max(0.5, Math.min(8, height / h));
+      const big = document.createElement('canvas');
+      big.width = Math.max(1, Math.round(w * scale)); big.height = Math.max(1, Math.round(h * scale));
+      const bctx = big.getContext('2d');
+      bctx.imageSmoothingEnabled = true;
+      bctx.drawImage(crop, 0, 0, big.width, big.height);
+      // Only near-white pixels count as text (the Rank label is white); the
+      // green glow/particles and Fortnite's faint stats overlay behind it fail
+      // min(r,g,b) and drop out. Drawn black-on-white, which Tesseract reads best.
+      try{
+        const img = bctx.getImageData(0,0,big.width,big.height);
+        const d = img.data;
+        for(let i=0;i<d.length;i+=4){
+          const v = Math.min(d[i], d[i+1], d[i+2]) > 170 ? 0 : 255;
+          d[i]=d[i+1]=d[i+2]=v;
+        }
+        bctx.putImageData(img, 0, 0);
+      }catch(e){ /* still fine without the threshold pass */ }
+      return big.toDataURL('image/png');
+    }
+    const readImage = prepared(READ_HEIGHT);
+    const retryImage = prepared(RETRY_HEIGHT);
 
     stopSharing(); // one frame is all this needs — release the share right away
 
+    const cycle = (typeof activeCycle !== 'undefined' && activeCycle) ? activeCycle : 1;
+    const maxLevel = CYCLES[cycle] ? cycleRealLevelCount(cycle) : 40;
     const w2 = await ensureWorker();
     let guess = null, text = '', confidence = 0;
+    async function ocr(image){
+      const result = await w2.recognize(image);
+      const t = ((result && result.data && result.data.text) || '').trim();
+      return { text: t, confidence: (result && result.data && result.data.confidence) || 0, guess: parseRankText(t, maxLevel) };
+    }
     if(w2){
       try{
-        const result = await w2.recognize(readImage);
-        text = ((result && result.data && result.data.text) || '').trim();
-        confidence = (result && result.data && result.data.confidence) || 0;
-        guess = parseRank(text);
+        let best = await ocr(readImage);
+        if(best.guess === null || best.confidence < LOW_CONFIDENCE){
+          const again = await ocr(retryImage); // v1.18.1: a second look at another size
+          if(again.guess !== null && (best.guess === null || again.confidence > best.confidence)) best = again;
+        }
+        ({ text, confidence, guess } = best);
       }catch(e){ /* falls through to manual entry below */ }
     }
     if(mine !== session) return; // cancelled (or restarted) while reading
@@ -294,14 +313,7 @@
     showConfirm(guess, { image: readImage, text, confidence });
   }
 
-  // "Rank 2" -> 2. Without the word, take the LAST 1-2 digit number (stray
-  // digits from other on-screen text tend to sit before/around the label).
-  function parseRank(text){
-    const m = text.match(/rank\D{0,3}(\d{1,2})\b/i);
-    if(m) return parseInt(m[1], 10);
-    const all = text.match(/\d{1,2}/g);
-    return all ? parseInt(all[all.length - 1], 10) : null;
-  }
+  // "Rank 2" -> 2: parseRankText() in requirements.js (v1.18.1, tested in test/rank-read.test.js).
 
   const LOW_CONFIDENCE = 70;
 

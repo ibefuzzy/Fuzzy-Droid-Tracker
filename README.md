@@ -448,6 +448,9 @@ the new set since v1.18.0), so each droid window starts lighter.
 Before, the new cycle kept the old cycle's level (e.g. 40), so the HUD showed the cycle after it.
 Also fixed: marking a droid you renamed or merged from the 🎯 HUD or 🧬 Rebirth Requirements saved it
 under its old name, and 🧬 Rebirth Requirements' highlighted droid could scroll out of view.
+📸 **Read Rebirth Screen** read a clean "21" as "217" (and would have suggested 7): it enlarged the Rank box six
+times, and digits that big confuse the text reader. It now sizes the box to a height that reads reliably, takes a
+second look when unsure, and only ever suggests a rank that exists (1–40).
 
 ## 🖼 LO shows its own picture (v1.18.0 fix)
 

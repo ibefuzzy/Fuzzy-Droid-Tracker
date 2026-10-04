@@ -774,6 +774,28 @@ function isValidImportPayload(parsed){
   return !Object.values(parsed.ownedRank).some(r => !Number.isInteger(r) || r < 0 || r >= RARITY_ORDER.length);
 }
 
+/* v1.18.1 📸 Read Rebirth Screen: the rank from the text Tesseract read. "Rank 21" -> 21. Without
+   the word, the last number that is a real rank (1..maxLevel) wins; a run of 3+ digits ("217": a
+   phantom digit after the real ones, the misread the user reported) gives its leading 2 or 1
+   digits when they're a real rank. null = nothing usable (the player types it in). */
+/** Rank number from OCR text: 1..maxLevel, or null. */
+function parseRankText(text, maxLevel){
+  const ok = n => Number.isInteger(n) && n >= 1 && n <= maxLevel;
+  const s = String(text || '');
+  const m = s.match(/rank\D{0,3}(\d+)/i);
+  const runs = m ? [m[1]] : (s.match(/\d+/g) || []).reverse();
+  for(const run of runs){
+    const n = parseInt(run, 10);
+    if(run.length <= 2 && ok(n)) return n;
+    if(run.length > 2){
+      const two = parseInt(run.slice(0, 2), 10), one = parseInt(run.slice(0, 1), 10);
+      if(ok(two)) return two;
+      if(ok(one)) return one;
+    }
+  }
+  return null;
+}
+
 /* v1.18.1: Export/Import also carry the per-cycle marks that aren't ownership: Sneak Preview
    "held" marks ('rebirth-heldMarks') and Safe to Retire marks ('rebirth-retired'), both
    {cycle -> {normKey -> rank}}. A file's copy goes through this before it's stored: only
