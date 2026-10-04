@@ -324,12 +324,27 @@ Stop test copies ONLY by that `--user-data-dir` in the process command line (Win
 never by exe path: the user may be running the app from `release\win-unpacked` too. Tell the
 user before launching; they may be in-game and close stray windows.
 
-## Current state (2026-10-04): v1.18.0 pushed + release pre-filled (app); website pushed with it
+## Current state (2026-10-04): v1.18.0 published; v1.18.1 built + committed locally, waiting for the user's test
 
-- **App v1.18.0: source pushed 2026-10-04, release page pre-filled, waiting for the user to drag the exe in
-  and publish** (then check the asset digest = sha256 0bfa72fd…74050d8d, 71,783,791 bytes). `release\` holds
-  only 1.18.0 (+ win-unpacked; 1.17.0's exe went to the Recycle Bin, `release\next` is gone). Snapshots:
-  `_backup_v1.17.0_approved/`, `_backup_v1.18.0_approved/` (1.16.0's went to the Recycle Bin).
+- **v1.18.1 IN PROGRESS (committed locally, NOT pushed, NOT released; exe
+  `release/next/Fuzzy's Droid Tracker 1.18.1.exe`, sha256 fd3bc492…4d886eb1c6, 71,785,394 bytes, untested):**
+  (1) the HUD is renamed **🎯 Next Droids Needed** everywhere (was "Upcoming RB Req's" on the toolbar and "Current
+  Rebirth Requirements" in settings/hotkeys; README changelog entries keep the old name) and moves on as you mark:
+  requirements.js `nextNeededLevel(cycle, currentLevel, ownedRank)` = first line after the rebirth level that isn't
+  fully marked, never past an unfinished one (the user's rule: rb25 done + rb15 not → stay on 15), capped at the
+  cycle's last line; overlay.html `upcomingLines()` (friend view too; the old no-op `autoProgressIfComplete` is
+  gone). The user chose "start at the rebirth level, then skip" and kept − / + (it's the anchor, and drives Safe to
+  Retire + the friend code's RB). (2) hotkeys `cycleNext` / `cyclePrev` / `finishCycle` (sendToTracker; tracker.html
+  `setupCycleHotkeys`, Keybinds group `#cycleKeysGroup`): Finish = second press within 3 s → `resetCycleAndAdvance`.
+  (3) `resetCycleAndAdvance` (also the cycle-complete box's "Next Cycle") now sets `rebirth-currentLevel` to 0 (it
+  used to keep e.g. 40, so the HUD showed the cycle after the new one). Tutorial step `since: '1.18.1'` (app only;
+  the web's "Up next" didn't change). Tests: test/next-needed.test.js, test/hotkeys.test.js (all five hotkey wiring
+  places agree), 155 pass. Browser-checked: the real overlay.html (skip + never-past rule + selection follows) and
+  tracker.html (cycle keys incl. the double press, Keybinds group, tile name fits). Next: user tests the exe → move it
+  to `release\` (1.18.0 to the Recycle Bin), snapshot, push, pre-fill the release, then bump version.json.
+- **App v1.18.0 PUBLISHED 2026-10-04 19:02 UTC**, asset digest verified = sha256 0bfa72fd…74050d8d (71,783,791
+  bytes). `release\` holds 1.18.0 (+ win-unpacked). Snapshots: `_backup_v1.17.0_approved/`,
+  `_backup_v1.18.0_approved/` (1.16.0's went to the Recycle Bin).
 - App v1.17.0 ("Rarity written on each droid", below) was published 2026-10-01 05:00 UTC.
 - **App v1.16.0** = 👥 Friends (friend codes, no server; tracker panel + HUD friend switch),
   coloured SELL flags, the new tutorial (tour.js/guide.js, skippable, "What's new" for updaters),
@@ -369,7 +384,7 @@ user before launching; they may be in-game and close stray windows.
 - **Every release from now on also updates `dev/web-tracker/version.json`** (version + a one-line note the user
   words), pushed once the release is PUBLISHED: that file is what makes v1.18.0+ installs show the "new version"
   banner. Only 1.18.0+ reads it (once a day, notify only, switch in ⚙ → Layout).
-- **Next app work: bump package.json to 1.19.0 FIRST** (1.18.0 is pushed). A new feature also gets a tutorial step
+- **Next app work after 1.18.1: bump package.json to 1.19.0 FIRST** (1.18.1 is the patch in progress). A new feature also gets a tutorial step
   (`since: '<version>'`) in guide.js AND the web's step lists (v1.17.0's step is app-only: the web
   tracker already had its own Rarity option, so there was nothing new to tell its visitors).
 - Players are starting to send feedback/requests (the crystals were the first); expect more.

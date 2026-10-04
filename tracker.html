@@ -187,7 +187,7 @@
   .overlay-board .tile-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;}
   .overlay-board .led{width:8px;height:8px;border-radius:50%;background:var(--line-bright);flex:none;margin-left:auto;transition:background .15s, box-shadow .15s;}
   .overlay-board .tile.on .led{background:var(--accent);box-shadow:0 0 6px var(--accent);}
-  /* below ~980px a quarter-width tile no longer fits "🎯 Upcoming RB Req's" */
+  /* below ~980px a quarter-width tile no longer fits "🎯 Next Droids Needed" */
   @media (max-width:980px){ .overlay-board{grid-template-columns:repeat(2,minmax(0,1fr));} }
 
   /* ---- content row: main list + optional rebirth-requirements side panel ---- */
@@ -1058,7 +1058,7 @@
     <div class="console-row">
       <span class="console-row-label">Overlays</span>
       <div class="overlay-board">
-        <button class="btn tile" id="overlayToggleBtn" hidden aria-pressed="false" title="Show or hide the in-game HUD: your current rebirth level plus the next three (toggle with the hotkey too)"><span class="tile-name">🎯 Upcoming RB Req's</span><span class="led"></span></button>
+        <button class="btn tile" id="overlayToggleBtn" hidden aria-pressed="false" title="Show or hide the in-game HUD: the next 4 rebirth lines you still need droids for (toggle with the hotkey too)"><span class="tile-name">🎯 Next Droids Needed</span><span class="led"></span></button>
         <button class="btn tile" id="rebirthReqToggleBtn" hidden aria-pressed="false" title="Show or hide the Rebirth Requirements overlay: every droid this cycle needs, in-game (toggle with the hotkey too)"><span class="tile-name">🧬 Rebirth Reqs</span><span class="led"></span></button>
         <button class="btn tile" id="declutterToggleBtn" hidden aria-pressed="false" title="Show or hide the Safe to Retire list: droids you hold that this cycle will never ask for again (toggle with the hotkey too)"><span class="tile-name">♻ Safe to Retire</span><span class="led"></span></button>
         <button class="btn tile" id="sneakToggleBtn" hidden aria-pressed="false" title="Show or hide the Sneak Preview: next cycle's Mythic droids"><span class="tile-name">🔮 Sneak Preview</span><span class="led"></span></button>
@@ -1166,10 +1166,27 @@
             </div>
           </div>
 
+          <!-- v1.18.1: cycle keys, handled by this window (setupCycleHotkeys below) -->
+          <div class="kb-group" id="cycleKeysGroup">
+            <div class="kb-group-title">🔄 Cycle</div>
+            <div class="kb-row">
+              <div class="kb-label"><b>🔄 Next cycle</b><small>Switches the tracker and every overlay to the next cycle (5 goes back to 1). Nothing is cleared.</small></div>
+              <button class="btn kb-key" id="cycleNextHotkeyBtn">(none set)</button>
+            </div>
+            <div class="kb-row">
+              <div class="kb-label"><b>🔄 Previous cycle</b><small>Switches back one cycle (1 goes to 5). Nothing is cleared.</small></div>
+              <button class="btn kb-key" id="cyclePrevHotkeyBtn">(none set)</button>
+            </div>
+            <div class="kb-row danger">
+              <div class="kb-label"><b>🏁 Finish cycle</b><small>Press it twice within 3 seconds: clears this cycle's droid marks, moves to the next cycle (with your Sneak Preview marks) and sets your rebirth level back to 0, the same as the app's "Cycle complete → Next Cycle". Other cycles' marks are kept.</small></div>
+              <button class="btn kb-key" id="finishCycleHotkeyBtn">(none set)</button>
+            </div>
+          </div>
+
           <div class="kb-group">
             <div class="kb-group-title">Show / hide overlays</div>
             <div class="kb-row">
-              <div class="kb-label"><b>🎯 Current Rebirth Requirements</b><small>The HUD: your current level plus the next three.</small><span class="overlay-panel-hint" id="overlayHotkeyHint"></span></div>
+              <div class="kb-label"><b>🎯 Next Droids Needed</b><small>The HUD: 4 rebirth lines from your rebirth level, skipping lines you've fully marked.</small><span class="overlay-panel-hint" id="overlayHotkeyHint"></span></div>
               <button class="btn kb-key" id="overlayHotkeyBtn">(none set)</button>
             </div>
             <div class="kb-row">
@@ -1226,11 +1243,11 @@
             </div>
           </div>
 
-          <!-- v1.10.3: hotkey-based marking in Upcoming RB Req's overlay -->
+          <!-- v1.10.3: hotkey-based marking in Next Droids Needed overlay -->
           <div class="kb-group">
-            <div class="kb-group-title">🎯 Mark droids (Upcoming RB Req's overlay)</div>
+            <div class="kb-group-title">🎯 Mark droids (Next Droids Needed overlay)</div>
             <div class="kb-row">
-              <div class="kb-label"><b>Mark selected droid</b><small>Marks the highlighted droid as obtained in the Upcoming RB Req's overlay.</small></div>
+              <div class="kb-label"><b>Mark selected droid</b><small>Marks the highlighted droid as obtained in the Next Droids Needed overlay.</small></div>
               <button class="btn kb-key" id="markDroidBtn">(none set)</button>
             </div>
             <div class="kb-row">
@@ -1254,7 +1271,7 @@
               <button class="btn kb-key" id="markDownBtn">(none set)</button>
             </div>
             <div class="kb-row">
-              <div class="kb-label"><b>👥 Switch you / friends</b><small>Switches the Upcoming RB Req's overlay from your list to each friend in the 👥 Friends panel, then back to you. A name tag shows whose list it is, and marking is off while it shows a friend.</small></div>
+              <div class="kb-label"><b>👥 Switch you / friends</b><small>Switches the Next Droids Needed overlay from your list to each friend in the 👥 Friends panel, then back to you. A name tag shows whose list it is, and marking is off while it shows a friend.</small></div>
               <button class="btn kb-key" id="hudFriendHotkeyBtn">(none set)</button>
             </div>
           </div>
@@ -1337,7 +1354,7 @@
           </div>
           <div class="pos-grid">
             <div class="pos-card">
-              <div class="pos-title">🎯 Current Rebirth Requirements</div>
+              <div class="pos-title">🎯 Next Droids Needed</div>
               <div class="pos-hint">The HUD. Sits in the gap under the game's top-left stats by default.</div>
               <label class="pos-slider"><span>Background opacity</span><input type="range" id="overlayOpacityRange" min="0.2" max="0.92" step="0.02" value="0.55"></label>
               <div class="pos-actions">
@@ -1425,7 +1442,7 @@
             <label for="themeTargetSel"><b>Edit colors for</b></label>
             <select id="themeTargetSel">
               <option value="">All overlays</option>
-              <option value="overlay">🎯 Upcoming RB Req's (HUD)</option>
+              <option value="overlay">🎯 Next Droids Needed (HUD)</option>
               <option value="rebirthReq">🧬 Rebirth Requirements</option>
               <option value="declutter">♻ Safe to Retire</option>
               <option value="sneak">🔮 Sneak Preview</option>
@@ -1480,7 +1497,7 @@
           <div class="pos-actions" style="margin:6px 0 16px"><button class="btn" type="button" id="themeResetBtn">↺ Reset all colors</button></div>
           <div class="kb-group-title">Border skins</div>
           <div class="color-row" data-color-key="border">
-            <div class="color-row-label"><b>🎯 Current Rebirth Requirements</b><small>The HUD</small></div>
+            <div class="color-row-label"><b>🎯 Next Droids Needed</b><small>The HUD</small></div>
             <div class="color-swatches"></div>
           </div>
           <div class="color-row" data-color-key="declutterBorder">
@@ -2037,16 +2054,18 @@ async function markRowObtained(row, opts){
    never again just from re-rendering an already-105 cycle (the
    coveredBefore !== 105 guard below). Cycles wrap 5 -> 1.
 
-   Deliberately does NOT touch rebirth-currentLevel: that's the OCR/manual
-   rebirth counter owned entirely by rebirth-level-detect.js, and the game's
-   own on-screen counter is what actually resets it once the player rebirths
-   for real — this popup is about the tracker's droid marks, not that
-   counter, and stepping on it here would fight the OCR. */
+   v1.18.1: "Next Cycle" (and the 🏁 Finish cycle hotkey, setupCycleHotkeys below) also
+   sets rebirth-currentLevel back to 0. Before, the new cycle kept the old cycle's level
+   (e.g. 40), so the 🎯 HUD started past the end and showed the cycle AFTER the new one.
+   rebirth-level-detect.js follows the store change (its − / + display and OCR), and the
+   game's own counter starts the new cycle at 0 too. "Sneak Preview" leaves it alone: it
+   stays on the finished cycle. */
 /* cycleCoveredCount, cycleDroidKeys, removeCycleMarks, decideOwnedUpdate and
    isValidImportPayload now live in requirements.js (moved 2026-09-25 so
    they're testable) — do not redeclare them here. */
 
 function cycleAfter(cycle){ return (cycle >= 5) ? 1 : cycle + 1; }
+function cycleBefore(cycle){ return (cycle <= 1) ? 5 : cycle - 1; } // v1.18.1 (Previous cycle key)
 
 async function clearCycleMarks(cycle){
   ownedRank = removeCycleMarks(cycle, ownedRank);
@@ -2059,6 +2078,7 @@ async function clearCycleMarks(cycle){
 async function resetCycleAndAdvance(cycle){
   await clearCycleMarks(cycle);
   const next = cycleAfter(cycle);
+  await storeSet('rebirth-currentLevel', 0); // v1.18.1: the new cycle starts at rebirth 0 (see the note above)
   const applied = await setActiveCycle(next); // persists rebirth-activeCycle, applies Sneak Preview marks, syncs both selects, renderList()
   renderStats();
   showToast('Cycle ' + cycle + ' reset — now on Cycle ' + next + (applied ? (' (+' + applied + ' marked in Sneak Preview)') : ''));
@@ -2098,6 +2118,46 @@ async function maybeOfferCycleReset(cycle, coveredBefore){
   if(choice === 'next') await resetCycleAndAdvance(cycle);
   else if(choice === 'sneak') await resetCycleForSneakPreview(cycle);
 }
+
+/* v1.18.1 in-game cycle keys (⚙ Overlay Settings → Keybinds → 🔄 Cycle). main.js sends
+   cycleNext / cyclePrev / finishCycle to this window only (sendToTracker), because this
+   window owns the active cycle and the cycle reset. 🏁 Finish needs a second press within
+   3 s: there's no dialog in-game, and it clears marks. While the game has focus, every key
+   answers with the in-game notice (game-toast.html); in the app, with the usual toast. */
+(function setupCycleHotkeys(){
+  if(!(window.overlayAPI && window.overlayAPI.onHotkeyTriggered)) return;
+  const CONFIRM_MS = 3000;
+  let finishArmedUntil = 0, busy = false;
+  const inGame = () => !document.hasFocus() && !!window.overlayAPI.showGameToast;
+  function notify(title, sub, tone, ms){
+    if(inGame()) window.overlayAPI.showGameToast({ title, sub, tone, ms });
+    else showToast(title + (sub ? ' — ' + sub : ''));
+  }
+  window.overlayAPI.onHotkeyTriggered(async (name)=>{
+    if(name !== 'cycleNext' && name !== 'cyclePrev' && name !== 'finishCycle') return;
+    if(busy || cyclePromptOpen) return; // one at a time; never under the cycle-complete box
+    busy = true;
+    try{
+      if(name === 'finishCycle'){
+        const now = Date.now();
+        if(now > finishArmedUntil){
+          finishArmedUntil = now + CONFIRM_MS;
+          notify('🏁 Finish Cycle ' + activeCycle + '?', 'Press again within 3 s to clear its marks and start Cycle ' + cycleAfter(activeCycle) + '.', 'warn', CONFIRM_MS);
+          return;
+        }
+        finishArmedUntil = 0;
+        const done = activeCycle;
+        await resetCycleAndAdvance(done); // shows its own toast in the app
+        if(inGame()) notify('✓ Cycle ' + done + ' finished', 'Now on Cycle ' + activeCycle + ', rebirth level 0.', 'ok', 4000);
+        return;
+      }
+      finishArmedUntil = 0; // any other cycle key cancels a pending Finish
+      const c = name === 'cycleNext' ? cycleAfter(activeCycle) : cycleBefore(activeCycle);
+      const applied = await setActiveCycle(c);
+      notify('🔄 Now on Cycle ' + c, applied ? ('+' + applied + ' marked in Sneak Preview') : '', 'info', 2500);
+    }finally{ busy = false; }
+  });
+})();
 
 /* ---------------- MIGRATION FROM V1 ---------------- */
 async function migrate(){

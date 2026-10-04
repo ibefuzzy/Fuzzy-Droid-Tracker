@@ -408,6 +408,30 @@ it can be corrected.
   Leftovers of the in-game "PREVIEW" banner, the card frame and the colored card glow are
   gone.
 
+## 🎯 Next Droids Needed + cycle hotkeys (v1.18.1)
+
+**The HUD is now called 🎯 Next Droids Needed** (it was "Upcoming RB Req's" on the toolbar and
+"Current Rebirth Requirements" in the settings) and **moves on as you mark**:
+
+- It starts at the line after your rebirth level (set with − / + or 📸 Read Rebirth Screen), as before.
+- When every droid of a line is marked, that line drops off the top and the next line you still need
+  takes its place.
+- It **never jumps past a line that's still missing a droid**: if rebirth 25 is fully marked but 15
+  isn't, the HUD stays on 15. A finished line further down just shows as done.
+- It stops at the cycle's last line; finish the cycle to move on.
+
+**New hotkeys** (⚙ Overlay Settings → Keybinds → 🔄 Cycle, unbound until you set them):
+
+- **🔄 Next cycle / Previous cycle**: switch the tracker and every overlay one cycle up or down
+  (5 goes back to 1). Nothing is cleared.
+- **🏁 Finish cycle**: press it **twice within 3 seconds**. It clears this cycle's droid marks, moves to
+  the next cycle (your Sneak Preview marks for it are applied) and sets your rebirth level back to 0,
+  the same as the app's "Cycle complete → Next Cycle". Other cycles' marks are kept, unlike
+  **Reset all…**. The first press only shows a notice over the game, so a stray press changes nothing.
+
+**Fix:** finishing a cycle with "Cycle complete → Next Cycle" now also sets the rebirth level back to 0.
+Before, the new cycle kept the old cycle's level (e.g. 40), so the HUD showed the cycle after it.
+
 ## 🖼 LO shows its own picture (v1.18.0 fix)
 
 **LO is the only droid with no picture on the site the others came from**, so its six slots fell back to
@@ -869,7 +893,7 @@ Star, Tatooine**, plus **Default look** to put everything back. Tweak any color
 afterwards, and the preset simply stops being highlighted. Your saved skins
 carry over from earlier versions.
 
-Defaults: Jedi for 🎯 Upcoming RB Req's (the HUD), Grogu for ♻ Safe to
+Defaults: Jedi for 🎯 Next Droids Needed (the HUD), Grogu for ♻ Safe to
 Retire, Mandalorian for 🧬 Rebirth Requirements, Rebel for 🔮 Sneak Preview,
 Tatooine for ⚡ Optimal Crit Guide. Applies live — no restart needed.
 
@@ -940,7 +964,7 @@ old defaults are in the last column.
 | Hotkey | Action | Default before v1.16.0 |
 |---|---|---|
 | Hide All Overlays | Turns every overlay off — one-way only, never toggles back on | `Ctrl+Shift+1` |
-| Toggle Current Rebirth Requirements | Show/hide the rebirth-requirements HUD | `Ctrl+Shift+3` |
+| Toggle Next Droids Needed | Show/hide the 🎯 HUD (called Current Rebirth Requirements / Upcoming RB Req's before v1.18.1) | `Ctrl+Shift+3` |
 | Toggle Timers | Show/hide the Stellar/Mythic/Kyber/Mission banners | `Alt+Shift+T` |
 | Toggle Hotkey List | Show/hide this reference card | `Ctrl+Shift+2` |
 | Toggle Safe to Retire List | Show/hide the ♻ Safe to Retire droid list | `Ctrl+Shift+4` |
@@ -957,6 +981,8 @@ old defaults are in the last column.
 | Tier Filter: Toggle Default / Rare / Epic / Legendary / Mythic | Show or hide that one tier in both the Safe to Retire and Rebirth Requirements overlays | *(unbound, one each)* |
 | Switch Mark Keys to the Next Open List | With two or more of 🧬 Rebirth Requirements / ♻ Safe to Retire / 🔮 Sneak Preview open, moves the mark & navigate keys to the next one (v1.11.1) | *(unbound)* |
 | Read Rebirth Screen: Apply / Cancel | Accept the rank it just read, or close the reader without changing anything (v1.11.1) | *(unbound, one each)* |
+| Next Cycle / Previous Cycle | Switch the tracker and every overlay one cycle up or down (5 → 1, 1 → 5); nothing is cleared (v1.18.1) | *(unbound, one each)* |
+| Finish Cycle (press twice) | Press twice within 3 s: clears this cycle's marks, moves to the next cycle and sets the rebirth level to 0, like "Cycle complete → Next Cycle" (v1.18.1) | *(unbound)* |
 
 Unbound hotkeys have no key combo until you set one; they only appear on the on-screen hotkey list once you have.
 
@@ -1111,7 +1137,7 @@ and testing everything above:
 
 ## Using the overlay
 
-- **Toggle Current Rebirth Requirements**: `Ctrl+Shift+3` by default, works
+- **Toggle Next Droids Needed** (the 🎯 HUD): `Ctrl+Shift+3` on installs from before v1.16.0, works
   even while Fortnite has focus. Change it from the tracker's
   **⚙ Overlay Settings** panel. See **⌨ Hotkey reference list** above for
   the full set of hotkeys.

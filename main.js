@@ -270,6 +270,11 @@ const DEFAULT_SETTINGS = {
   // v1.11.1: answer the Read Rebirth Screen result from in-game (unbound).
   rebirthScreenApplyHotkey: '',
   rebirthScreenCancelHotkey: '',
+  // v1.18.1: switch cycle / finish the cycle from in-game (unbound). The tracker window does
+  // the work (setActiveCycle / resetCycleAndAdvance); Finish asks for a second press.
+  cycleNextHotkey: '',
+  cyclePrevHotkey: '',
+  finishCycleHotkey: '',
   // v1.11.1: the screen picked in "Choose a screen to share", reused by every
   // screen capture until 🖥 Change screen. Id = desktopCapturer display_id
   // (or source id where that's empty); name is shown in the reader.
@@ -1366,6 +1371,10 @@ const HOTKEY_HANDLERS = {
   // tracker window owns that dialog (rebirth-screen-read.js).
   rebirthScreenApply: () => sendToTracker('rebirthScreenApply'),
   rebirthScreenCancel: () => sendToTracker('rebirthScreenCancel'),
+  // v1.18.1: cycle keys. The tracker owns the active cycle and the cycle reset.
+  cycleNext: () => sendToTracker('cycleNext'),
+  cyclePrev: () => sendToTracker('cyclePrev'),
+  finishCycle: () => sendToTracker('finishCycle'),
   // v1.10.8: master lock — see toggleKeybindsLock()/applyKeybindsLock() above
   keybindsLock: () => toggleKeybindsLock()
 };
@@ -1405,7 +1414,7 @@ function registerHotkeyFor(name, accelerator){
    other place in this file already refers to hotkeys by their short name. */
 const HOTKEY_LABELS = {
   hideAll: 'Hide All Overlays',
-  overlay: 'Toggle Current Rebirth Requirements',
+  overlay: 'Toggle Next Droids Needed', // the HUD; was "Current Rebirth Requirements" / "Upcoming RB Req's" until v1.18.1
   timers: 'Toggle Timers',
   rebirthScreen: 'Trigger Read Rebirth Screen',
   hotkeyList: 'Toggle Hotkey List',
@@ -1440,7 +1449,7 @@ const HOTKEY_LABELS = {
   markRight: 'Navigate Right',
   markUp: 'Navigate Up',
   markDown: 'Navigate Down',
-  hudFriend: "Upcoming RB Req's: Switch You / Friends",
+  hudFriend: 'Next Droids Needed: Switch You / Friends',
   rebirthMarkDroid: 'Mark Selected Droid (Rebirth Reqs / Sneak Preview / Safe to Retire)',
   rebirthMarkLeft: 'Navigate Left (Rebirth Reqs / Sneak Preview / Safe to Retire)',
   rebirthMarkRight: 'Navigate Right (Rebirth Reqs / Sneak Preview / Safe to Retire)',
@@ -1449,6 +1458,9 @@ const HOTKEY_LABELS = {
   markTarget: 'Switch Mark Keys to the Next Open List',
   rebirthScreenApply: 'Read Rebirth Screen: Apply',
   rebirthScreenCancel: 'Read Rebirth Screen: Cancel',
+  cycleNext: 'Next Cycle',
+  cyclePrev: 'Previous Cycle',
+  finishCycle: 'Finish Cycle (press twice)',
   keybindsLock: 'Lock/Unlock All Keybinds'
 };
 const HOTKEY_SETTINGS_KEY = {
@@ -1490,6 +1502,9 @@ const HOTKEY_SETTINGS_KEY = {
   markTarget: 'markTargetHotkey',
   rebirthScreenApply: 'rebirthScreenApplyHotkey',
   rebirthScreenCancel: 'rebirthScreenCancelHotkey',
+  cycleNext: 'cycleNextHotkey',
+  cyclePrev: 'cyclePrevHotkey',
+  finishCycle: 'finishCycleHotkey',
   keybindsLock: 'keybindsLockHotkey'
 };
 

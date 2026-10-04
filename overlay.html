@@ -323,15 +323,28 @@
     '</div>';
   }
 
+  // v1.18.1 "🎯 Next Droids Needed": the 4 lines shown, starting at the first one still
+  // needed (requirements.js nextNeededLevel: from the rebirth level on, fully marked lines
+  // skipped, never past an unfinished one). getUpcomingLevels wraps to the next cycle's
+  // levels 1+ once the current cycle runs out, so this is never empty at the end of a
+  // cycle; it previews the next cycle's first rebirths instead, same idea as Sneak Preview.
+  // A friend's list (v1.16.0) follows the same rule with their marks.
+  function upcomingLines(){
+    const fr = viewingFriend();
+    const cycle = fr ? fr.cycle : currentCycle;
+    const level = fr ? fr.level : currentLevel;
+    const owned = fr ? friendOwnedRank(fr.owned) : ownedRankLocal;
+    return getUpcomingLevels(cycle, nextNeededLevel(cycle, level, owned) - 1, owned, 4);
+  }
+  let shownTop = ''; // the top line as "cycle-level": when the list moves on, the selection goes back to its first droid
+
   function render(){
     const blocksEl = document.getElementById('blocks');
-    // getUpcomingLevels wraps to the next cycle's levels 1+ once the current
-    // cycle runs out, so this is never empty at 35/35 — it previews the next
-    // cycle's first rebirths instead, same idea as Sneak Preview.
     const fr = viewingFriend(); // v1.16.0: a friend's list, or yours
     const cycle = fr ? fr.cycle : currentCycle;
-    const upcoming = fr ? getUpcomingLevels(fr.cycle, fr.level, friendOwnedRank(fr.owned), 4)
-                        : getUpcomingLevels(currentCycle, currentLevel, ownedRankLocal, 4);
+    const upcoming = upcomingLines();
+    const top = upcoming[0] ? upcoming[0].cycle + '-' + upcoming[0].level : '';
+    if(top !== shownTop){ if(shownTop) selectedPos = { levelIndex: 0, slot: 0 }; shownTop = top; }
     document.documentElement.classList.toggle('friend-view', !!fr);
     document.getElementById('friendTag').innerHTML = fr
       ? ('👥 ' + fr.name.toUpperCase() + '<small>C' + fr.cycle + ' · RB ' + fr.level + ' · ' + friendAgeText(fr.time) + '</small>') : '';
@@ -384,43 +397,7 @@
     const cycle = parseInt(block.dataset.cycle, 10);
     const level = parseInt(block.dataset.level, 10);
     await window.overlayAPI.markLevelFromOverlay({ cycle, level });
-    // Auto-progression: after marking, check if level is complete and scroll to next incomplete
-    setTimeout(() => autoProgressIfComplete(cycle, level), 100);
-  }
-
-  function autoProgressIfComplete(cycle, level){
-    // Check if all 3 droids in this level are now owned at their required ranks
-    const row = CYCLES[cycle][level-1];
-    if(!row) return;
-    const allOwned = row.every(d=>{
-      const nk = normKey(canonicalName(d[1]));
-      const rank = rankOf(d[0]);
-      return ownedRankLocal[nk] !== undefined && ownedRankLocal[nk] >= rank;
-    });
-    if(!allOwned) return;
-
-    // Level is complete, find the next level with missing droids
-    const upcoming = getUpcomingLevels(currentCycle, currentLevel, ownedRankLocal, 4);
-    let nextIncompleteLevel = null;
-    for(const u of upcoming){
-      const isIncomplete = u.droids.some(d=>!d.owned);
-      if(isIncomplete){
-        nextIncompleteLevel = u;
-        break;
-      }
-    }
-    if(!nextIncompleteLevel) return;
-
-    // Scroll to the next incomplete level's block
-    const blocks = document.querySelectorAll('.block');
-    for(const block of blocks){
-      const blockCycle = parseInt(block.dataset.cycle, 10);
-      const blockLevel = parseInt(block.dataset.level, 10);
-      if(blockCycle === nextIncompleteLevel.cycle && blockLevel === nextIncompleteLevel.level){
-        block.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        break;
-      }
-    }
+    // v1.18.1: the store change re-renders, and a finished top line moves the list on (upcomingLines)
   }
 
   async function fullReload(){
@@ -454,7 +431,7 @@
     window.overlayAPI.setOverlayLocked(true);
   });
 
-  // v1.10.3: hotkey-based marking in Upcoming RB Req's overlay
+  // v1.10.3: hotkey-based marking in this overlay (the HUD, 🎯 Next Droids Needed since v1.18.1)
   window.overlayAPI.onHotkeyTriggered(async (name)=>{
     // v1.16.0 👥: you -> each friend -> you. Marking is off while a friend shows.
     if(name === 'hudFriend'){
@@ -473,7 +450,7 @@
   });
 
   function moveSelection(slotDelta, levelDelta){
-    const upcoming = getUpcomingLevels(currentCycle, currentLevel, ownedRankLocal, 4);
+    const upcoming = upcomingLines();
     // Clamp to boundaries (no wrapping) — Math.max/min prevent going out of bounds
     selectedPos.slot = Math.max(0, Math.min(2, selectedPos.slot + slotDelta));
     selectedPos.levelIndex = Math.max(0, Math.min(upcoming.length - 1, selectedPos.levelIndex + levelDelta));
@@ -496,7 +473,7 @@
   }
 
   async function markSelected(){
-    const upcoming = getUpcomingLevels(currentCycle, currentLevel, ownedRankLocal, 4);
+    const upcoming = upcomingLines();
     if(selectedPos.levelIndex >= upcoming.length) return;
     const level = upcoming[selectedPos.levelIndex];
     const droid = level.droids[selectedPos.slot];
@@ -509,10 +486,11 @@
   }
 
   async function markCurrentLevel(){
-    const upcoming = getUpcomingLevels(currentCycle, currentLevel, ownedRankLocal, 4);
+    const upcoming = upcomingLines();
     if(selectedPos.levelIndex >= upcoming.length) return;
     const level = upcoming[selectedPos.levelIndex];
-    // Mark all 3 droids in this level
+    // Mark all 3 droids in this level; the store changes re-render, and a finished
+    // top line moves the list on (v1.18.1, upcomingLines)
     for(const droid of level.droids){
       await window.overlayAPI.markDroidFromOverlay({
         cycle: droid.cycle,
@@ -520,8 +498,6 @@
         slot: droid.slot,
       });
     }
-    // Auto-progress: after marking, check if level is complete and scroll to next incomplete
-    setTimeout(() => autoProgressIfComplete(level.cycle, level.level), 100);
   }
 
   (async function init(){

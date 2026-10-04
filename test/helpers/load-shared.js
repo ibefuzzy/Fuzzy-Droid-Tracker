@@ -41,6 +41,7 @@ function loadShared(files = ['droid-data.js', 'requirements.js']) {
     cycleLastNeededLevel: run('cycleLastNeededLevel'),
     getLevelRequirements: run('getLevelRequirements'),
     getUpcomingLevels: run('getUpcomingLevels'),
+    nextNeededLevel: run('nextNeededLevel'),
     getDroidRarityClass: run('getDroidRarityClass'),
     getDeclutterList: run('getDeclutterList'),
     nextCycleOf: run('nextCycleOf'),

@@ -169,6 +169,25 @@ function getUpcomingLevels(cycle, currentLevel, ownedRank, count){
   return out;
 }
 
+/* v1.18.1 "🎯 Next Droids Needed" (the HUD): its top line. Starts at the line after the
+   player's rebirth level (currentLevel = last rebirth COMPLETED, set by − / + or the
+   screen reader), then skips lines whose droids are all marked at the rarity they need,
+   stopping at the FIRST line still missing one, so a finished rb25 never lets the list
+   jump past an unfinished rb15. Never skips past the cycle's last real level (that line
+   then shows above the next cycle's preview); once currentLevel is already at the end it
+   returns currentLevel + 1 as before, and getUpcomingLevels() wraps into the next cycle. */
+/** The HUD's top level: the first level after currentLevel in `cycle` that isn't fully marked, capped at the cycle's last real level. */
+function nextNeededLevel(cycle, currentLevel, ownedRank){
+  const start = Math.max(0, currentLevel) + 1;
+  const last = cycleRealLevelCount(cycle);
+  if(start > last) return start;
+  for(let l = start; l <= last; l++){
+    const req = getLevelRequirements(cycle, l, ownedRank);
+    if(!req || req.some(d => !d.owned)) return l;
+  }
+  return last;
+}
+
 /* ---------------- DECLUTTER LIST: "safe to retire" droids ----------------
    For the active cycle, the LAST (highest-numbered) level that still
    requires a given droid, at ANY rarity. Once currentLevel has passed this

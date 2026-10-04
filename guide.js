@@ -39,7 +39,7 @@
       title: 'Overlays: your lists on top of the game',
       body: `<p>Click a tile to put that list on top of the game; its light shows it's on. The main ones:</p>
         <ul>
-          <li><b>🎯 Upcoming RB Req's</b>: your rebirth and the next 3, with credit costs and Nova Crystal rewards.</li>
+          <li><b>🎯 Next Droids Needed</b>: the next 4 rebirth lines you still need droids for, with credit costs and Nova Crystal rewards.</li>
           <li><b>🧬 Rebirth Reqs</b>: every droid this cycle needs.</li>
           <li><b>♻ Safe to Retire</b>: what you can let go of.</li>
           <li><b>⏱ Timers</b> and <b>📡 Spawn Alert</b>: countdowns, and each new spawn shown big.</li>
@@ -115,6 +115,21 @@
       body: `<p>Once a day the app reads one small public file on the website and, if a newer version is out, shows a banner at the top
         with a <b>Download</b> button that opens the releases page. It sends nothing about you and never installs anything.
         Don't want it? Untick this box (⚙ Overlay Settings → Layout).</p>`
+    },
+    {
+      // v1.18.1: opens ⚙ Overlay Settings on Keybinds, at the new 🔄 Cycle keys
+      since: '1.18.1', target: '#cycleKeysGroup',
+      before: ()=>{
+        const panel = document.getElementById('overlaySettingsPanel');
+        if(panel && panel.hidden) document.getElementById('overlaySettingsBtn').click();
+        const tab = document.getElementById('setTab-keys');
+        if(tab) tab.click();
+      },
+      title: '🎯 Next Droids Needed + cycle keys',
+      body: `<p>The HUD is now called <b>🎯 Next Droids Needed</b> and moves on by itself: once every droid of its top line is marked,
+        it shows the next line you still need. It never jumps past a line that's missing a droid, and it starts from your rebirth level.</p>
+        <p>New keys here: <b>🔄 Next / Previous cycle</b>, and <b>🏁 Finish cycle</b> (press it twice) to clear this cycle's marks and start
+        the next one without leaving the game.</p>`
     },
     {
       since: '1.0.0', target: '#guideOpenBtn',

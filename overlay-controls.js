@@ -52,12 +52,15 @@
      way the startup-failure notice does. */
   const HOTKEY_BUTTONS = [
     ['hideAllHotkeyBtn', 'hideAllHotkey', 'Hide All Overlays'],
-    ['overlayHotkeyBtn', 'hotkey', 'Toggle Current Rebirth Requirements'],
+    ['overlayHotkeyBtn', 'hotkey', 'Toggle Next Droids Needed'],
     ['timersHotkeyBtn', 'timersHotkey', 'Toggle Timers'],
     ['rebirthScreenHotkeyBtn', 'rebirthScreenHotkey', 'Trigger Read Rebirth Screen'],
     ['rebirthScreenApplyHotkeyBtn', 'rebirthScreenApplyHotkey', 'Read Rebirth Screen: Apply'], // v1.11.1
     ['rebirthScreenCancelHotkeyBtn', 'rebirthScreenCancelHotkey', 'Read Rebirth Screen: Cancel'], // v1.11.1
     ['hotkeyListHotkeyBtn', 'hotkeyListHotkey', 'Toggle Hotkey List'],
+    ['cycleNextHotkeyBtn', 'cycleNextHotkey', 'Next Cycle'], // v1.18.1
+    ['cyclePrevHotkeyBtn', 'cyclePrevHotkey', 'Previous Cycle'],
+    ['finishCycleHotkeyBtn', 'finishCycleHotkey', 'Finish Cycle (press twice)'],
     ['declutterHotkeyBtn', 'declutterHotkey', 'Toggle Safe to Retire List'],
     // v1.7.3: these page whichever of Safe to Retire / Rebirth Requirements
     // is open — one shared hotkey pair, not a separate one per overlay (the
@@ -80,14 +83,14 @@
     ['critGuideScrollUpHotkeyBtn', 'critGuideScrollUpHotkey', 'Scroll Crit Guide Up'],
     ['critGuideScrollDownHotkeyBtn', 'critGuideScrollDownHotkey', 'Scroll Crit Guide Down'],
     ['spawnAlertHotkeyBtn', 'spawnAlertHotkey', 'Turn Spawn Alert On / Off'],
-    // v1.10.3: hotkey-based marking in Upcoming RB Req's overlay
+    // v1.10.3: hotkey-based marking in Next Droids Needed overlay
     ['markDroidBtn', 'markDroid', 'Mark Selected Droid'],
     ['markLevelBtn', 'markLevel', 'Mark Entire Level'],
     ['markLeftBtn', 'markLeft', 'Navigate Left'],
     ['markRightBtn', 'markRight', 'Navigate Right'],
     ['markUpBtn', 'markUp', 'Navigate Up'],
     ['markDownBtn', 'markDown', 'Navigate Down'],
-    ['hudFriendHotkeyBtn', 'hudFriendHotkey', "Upcoming RB Req's: Switch You / Friends"], // v1.16.0
+    ['hudFriendHotkeyBtn', 'hudFriendHotkey', 'Next Droids Needed: Switch You / Friends'], // v1.16.0
     // v1.10.3: hotkey-based marking in Rebirth Requirements overlay
     ['rebirthMarkDroidBtn', 'rebirthMarkDroid', 'Mark Selected Droid (Rebirth Reqs / Sneak Preview / Safe to Retire)'],
     ['rebirthMarkLeftBtn', 'rebirthMarkLeft', 'Navigate Left (Rebirth Reqs / Sneak Preview / Safe to Retire)'],
