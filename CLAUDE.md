@@ -325,13 +325,11 @@ Stop test copies ONLY by that `--user-data-dir` in the process command line (Win
 never by exe path: the user may be running the app from `release\win-unpacked` too. Tell the
 user before launching; they may be in-game and close stray windows.
 
-## Current state (2026-10-04): v1.18.1 pushed + release pre-filled; website pushed with it
+## Current state (2026-10-04): v1.18.1 published; next is v1.19.0 (live Friends)
 
-- **v1.18.1: user-tested ("good to push"), source + website pushed 2026-10-04, release page pre-filled, waiting for
-  the user to drag the exe in and publish** (then check the asset digest = sha256 e04ccb5c…62041b5a, 69,266,478
-  bytes), THEN `node dev/bump-version-json.js "<note>"` + push dev/web-tracker: that is what makes 1.18.0 installs
-  show the first-ever update banner. `release\` holds only 1.18.1 (+ win-unpacked; next/next2/next3 and 1.18.0's exe
-  went to the Recycle Bin). Snapshots: `_backup_v1.18.0_approved/`, `_backup_v1.18.1_approved/` (1.17.0's recycled).
+- **v1.18.1 PUBLISHED 2026-10-04 23:25 UTC**, asset digest verified = sha256 e04ccb5c…62041b5a (69,266,478 bytes);
+  version.json = 1.18.1 (live), so 1.18.0 installs get the first-ever update banner. `release` holds only 1.18.1 (+
+  win-unpacked). Snapshots: `_backup_v1.18.0_approved/`, `_backup_v1.18.1_approved/`.
   **Next: v1.19.0 = LIVE 👥 Friends via Cloudflare** (bump package.json first).
   **OCR fix (third batch):** Read Rebirth Screen read a clean "21" as "217": the crop was enlarged x6 (~230px); on
   the user's real crop every height 50-200px reads "21" with every resize kernel. Now READ_HEIGHT 120 + a retry at
