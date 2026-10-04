@@ -325,14 +325,14 @@ Stop test copies ONLY by that `--user-data-dir` in the process command line (Win
 never by exe path: the user may be running the app from `release\win-unpacked` too. Tell the
 user before launching; they may be in-game and close stray windows.
 
-## Current state (2026-10-04): v1.18.0 published; v1.18.1 built + committed locally, waiting for the user's test
+## Current state (2026-10-04): v1.18.1 pushed + release pre-filled; website pushed with it
 
-- **v1.18.1 IN PROGRESS (committed locally, NOT pushed, NOT released).** The CURRENT exe is
-  `release/next3/Fuzzy's Droid Tracker 1.18.1.exe` (sha256 e04ccb5c…62041b5a, 69,266,478 bytes; untested; next2 = the
-  same minus the OCR fix, the user was testing it).
-  `release/next/` holds the user's earlier test build (first batch only): recycle it once they've closed it, then move
-  next2's exe + win-unpacked to `release\` (1.18.0's to the Recycle Bin). Website commit 960894b (dev/web-tracker) is
-  also local only; push it with the release (it's live on push), then `node dev/bump-version-json.js "<note>"`.
+- **v1.18.1: user-tested ("good to push"), source + website pushed 2026-10-04, release page pre-filled, waiting for
+  the user to drag the exe in and publish** (then check the asset digest = sha256 e04ccb5c…62041b5a, 69,266,478
+  bytes), THEN `node dev/bump-version-json.js "<note>"` + push dev/web-tracker: that is what makes 1.18.0 installs
+  show the first-ever update banner. `release\` holds only 1.18.1 (+ win-unpacked; next/next2/next3 and 1.18.0's exe
+  went to the Recycle Bin). Snapshots: `_backup_v1.18.0_approved/`, `_backup_v1.18.1_approved/` (1.17.0's recycled).
+  **Next: v1.19.0 = LIVE 👥 Friends via Cloudflare** (bump package.json first).
   **OCR fix (third batch):** Read Rebirth Screen read a clean "21" as "217": the crop was enlarged x6 (~230px); on
   the user's real crop every height 50-200px reads "21" with every resize kernel. Now READ_HEIGHT 120 + a retry at
   80 when doubtful, and requirements.js `parseRankText` returns only a real rank (217 -> 21; the old parser took the
@@ -407,7 +407,7 @@ user before launching; they may be in-game and close stray windows.
 - **Every release from now on also updates `dev/web-tracker/version.json`** (version + a one-line note the user
   words), pushed once the release is PUBLISHED: that file is what makes v1.18.0+ installs show the "new version"
   banner. Only 1.18.0+ reads it (once a day, notify only, switch in ⚙ → Layout).
-- **Next app work after 1.18.1: bump package.json to 1.19.0 FIRST** (1.18.1 is the patch in progress). A new feature also gets a tutorial step
+- **Next app work: bump package.json to 1.19.0 FIRST** (1.18.1 is pushed). A new feature also gets a tutorial step
   (`since: '<version>'`) in guide.js AND the web's step lists (v1.17.0's step is app-only: the web
   tracker already had its own Rarity option, so there was nothing new to tell its visitors).
 - Players are starting to send feedback/requests (the crystals were the first); expect more.
