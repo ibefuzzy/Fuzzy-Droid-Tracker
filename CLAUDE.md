@@ -409,8 +409,14 @@ user before launching; they may be in-game and close stray windows.
   (`since: '<version>'`) in guide.js AND the web's step lists (v1.17.0's step is app-only: the web
   tracker already had its own Rarity option, so there was nothing new to tell its visitors).
 - Players are starting to send feedback/requests (the crystals were the first); expect more.
-- **NEXT BIG TASK (the user's pick, 2026-09-30): LIVE 👥 Friends via Cloudflare Workers** (now v1.19.0;
-  start after the weekly usage reset on Oct 3). The user chose it over Discord Rich Presence and
+- **START HERE NEXT SESSION: v1.19.0 = LIVE 👥 Friends via Cloudflare Workers.** Status 2026-10-04: **the user has
+  CREATED the Cloudflare account** (free plan); nothing is built yet; v1.18.1 is published and every repo is clean and
+  pushed. The user picked **Opus 5.5 (medium effort)** for this: the Worker's security (key check, rate limits, CORS)
+  is the risky part; raise effort for one final security review of the Worker before it goes live. First steps:
+  bump package.json to 1.19.0, re-check the current Workers/KV/D1 free limits, confirm the plan below with the user,
+  then a mockup of the Friends "🌐 Live" UI (they pick by eye) before building. The user does every dashboard step
+  themselves (Claude never logs in or enters credentials): give click-by-click steps + the Worker code to paste.
+  Original pick (2026-09-30): The user chose it over Discord Rich Presence and
   webhooks/bots because it "takes less effort from users". Friends today are paste-only snapshots:
   no connection anywhere, which the user asked about for security. Keep that promise: live
   sharing must be opt-in and add only outgoing HTTPS. Plan (confirm with the user, mockup first):
