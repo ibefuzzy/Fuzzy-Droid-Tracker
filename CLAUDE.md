@@ -225,7 +225,7 @@ short on purpose so a fresh session can read it in one pass.
   user closes the running app before launching a new build.
 
 ## Tests
-`npm test` runs Node's built-in test runner over `test/**/*.test.js` (145 tests; plain
+`npm test` runs Node's built-in test runner over `test/**/*.test.js` (210 tests as of v1.20.0; plain
 `node --test` also sweeps _backup_* and the static server, so use npm test;
 test/sell-flags.test.js + test/friends.test.js cover v1.16.0; test/rarity-style.test.js covers v1.17.0;
 test/update-check.test.js + test/card-icons.test.js cover v1.18.0 (every slot has its own picture, one per
@@ -333,236 +333,31 @@ Stop test copies ONLY by that `--user-data-dir` in the process command line (Win
 never by exe path: the user may be running the app from `release\win-unpacked` too. Tell the
 user before launching; they may be in-game and close stray windows.
 
-## Current state (2026-10-05): v1.20.0 IN PROGRESS (package.json bumped; uncommitted)
+## Current state (2026-10-05): v1.20.0 PUBLISHED — project paused, pick up another time
 
-- **v1.20.0 = overlay backgrounds (30, all user-approved in the lab) + motion + per-overlay colour modes +
-  holo foil on Stellar/Kyber** (built, 204 tests pass, checked end to end in dev/backgrounds-app-check.html).
-  The spooky presets now carry their backgrounds. Tutorial step `since:'1.20.0'` (app only: the web has no
-  overlays).
-- **💰 Droid prices (a player's request, also v1.20.0, built + tested):** droid-data.js `DROID_BASE_PRICES` (62, keyed
-  like DROID_RARITY_CLASS) x `PRICE_LADDER` (per class) + `KYBER_ACTIVATION_CRYSTALS`; requirements.js
-  `droidPriceFor(code, nk)` / `droidPriceHtml` / `pricesOn` (setting `overlayPrices`, default ON). A STILL-NEEDED
-  droid's `.d-owned` line becomes the price on the HUD, Rebirth Reqs, Sneak Preview (Sneak adds a `.rar-label` so
-  "Written under the name" keeps the rarity); the HUD adds a `.price-total` Σ chip after the tag and shortens the top
-  tag to "NOW 36" (the badge sits mid-header: the right side had no room). Data: Nackz droidex (MIT, notice in
-  licenses/) = DubTrackr on all 600 slots; test/prices.test.js. Lab: dev/prices-lab.html (its own injected mock,
-  pre-build). Tutorial got a 💰 step, the HUD bullet and the 1.18.1 READY strip.
-- **Built 2026-10-05: `release\next\Fuzzy's Droid Tracker 1.20.0.exe`** (103,619,031 bytes, sha256 AFC0E989...4E211793;
-  asar checked). 210 tests pass. Next: user's in-game test -> move to release\ (1.19.0 to the Recycle Bin) -> snapshot
-  `_backup_v1.20.0_approved/` -> commit + push -> pre-fill the release -> publish -> digest -> bump version.json. Also picked for later (memory
-  project_overlay_customization_next.md): seasonal auto-themes, own picture as background, event effects,
-  panel shapes, overlay fonts, theme packs. Not built yet: the exe, the in-game test (motion CPU cost!).
+- **v1.20.0 PUBLISHED 2026-10-05 07:17 UTC** (main eea0f18; asset digest = sha256 afc0e989…4e211793, 103,619,031 bytes);
+  version.json 1.20.0 live ("30 overlay backgrounds, holo foil and droid prices"). Contents: 30 overlay backgrounds (+ motion,
+  colour modes, per overlay), holo foil on Stellar/Kyber, 💰 droid prices (a player's request), tutorial steps (+ the 1.18.1
+  READY strip). User tested in-game: "No issues!". `release\` = 1.20.0 only; snapshots `_backup_v1.19.0_approved/` +
+  `_backup_v1.20.0_approved/`. Both repos clean and level with origin (the web only got version.json).
+  The detailed v1.17.0–v1.20.0 notes (incl. the Live Friends Worker + its security review) are in CLAUDE_HISTORY.md.
+- **Next (the user's picks, none started):** seasonal auto-themes (Oct Halloween, Dec Hoth, May 4th), your own picture as a
+  background, event effects (cycle done / mark / level up; mock them in a lab first: distraction + CPU), panel shapes,
+  bundled overlay fonts (OFL), theme packs (all of it as one shareable preset). Bump package.json first (1.21.0).
+  Deferred until the community grows: leaderboards/stats, Discord/Slack webhooks.
+- **Live Friends server:** Cloudflare Worker https://fdt-live.ibefuzzy.workers.dev + D1 `fdt-live` (worker/, steps in
+  worker/SETUP-STEPS.md). The user does every dashboard step; Workers Logs off; 2FA on the Cloudflare account is ON (2026-10-05).
+- **Prices:** if the game changes a price or adds a droid, update DROID_BASE_PRICES / PRICE_LADDER /
+  KYBER_ACTIVATION_CRYSTALS (droid-data.js) and re-check against DubTrackr's public game-data file (memory
+  project_droid_prices_idea.md has where + how). The web tracker has no prices or backgrounds (optional future port).
+- **Labs from this release:** dev/overlay-backgrounds-lab.html, dev/card-foil-lab.html, dev/prices-lab.html,
+  dev/backgrounds-app-check.html (the real tracker + overlays sharing one mock settings store: a tracker click reaches the
+  overlays), dev/bg-gif-stage.html + dev/record-bg-gif.js (shareable GIFs: headless Chrome over CDP + sharp's animated GIF
+  join; this PC has no ffmpeg). Headless Chrome screenshots of a dev page are how to SEE a layout when the Browser pane is narrow.
 
-## Previous: v1.19.0 PUBLISHED (Live Friends + bundled OCR/fonts + Electron 44)
-
-- **v1.19.0 PUBLISHED 2026-10-05**, asset digest verified = sha256 cb877d42...bfc0658 (103,604,388 bytes); version.json =
-  1.19.0 (live); website Live Friends live (CORS checked from the real origin). Snapshot `_backup_v1.19.0_approved/`.
-  **Still to do: remind the user to turn on 2FA for the Cloudflare account.** Next: move the v1.19.0 detail below into
-  CLAUDE_HISTORY.md.
-
-- **v1.19.0 in progress (uncommitted, package.json = 1.19.0).** The user picked D1 (not KV: 1k writes/day total),
-  90 s refresh, web view + publish, and layout **A** (switch line above your code) from dev/live-friends-mockup.html.
-  - **Server:** `worker/live-friends-worker.mjs` (repo, `!worker/**` keeps it out of the exe), pasted into the
-    Cloudflare dashboard, D1 bound as `DB`; creates its own tables. GET /p?ids= (≤30), PUT/DELETE /p/<12-char id>
-    with `Bearer <43-char key>`; first PUT registers sha256(key); 1 save/ID/min (429), 300 new IDs/day (503),
-    14-day expiry (tidied on the day's first sign-up), CORS = ibefuzzy.github.io + localhost:5178/5179.
-    test/live-worker.test.js runs it on node:sqlite. The built-in Rate Limiting binding is wrangler-only: not used.
-  - **App:** live-sync.js (pure rules) + main.js "🌐 LIVE FRIENDS" block (main builds your code from the store via
-    `shared`, saves on change: 8 s settle, ≥2 min gap, once per launch; `live-identity` {id,key} in the store, refused
-    by store:get/set; polls 'rebirth-liveFriends' while a window called watchLiveFriends(true); DELETE on switch-off,
-    retried at launch if offline). Setting `liveFriends` (default false). requirements.js `parseLiveCode`,
-    `cleanLiveFriends`, LIVE_* consts. tracker.html `#friendLiveRow` + live cards; overlay.html HUD cycles live
-    friends too (green tag). guide.js step `since:'1.19.0'`, README "🌐 Live Friends" + privacy list.
-    test/update-check.test.js now pins exactly TWO net.fetch calls (update file + LIVE_SERVER).
-  - **Web (dev/web-tracker, uncommitted):** same switch/cards, key in localStorage `fdt-liveIdentity`, `#live=` link
-    view, TOUR_VERSION 1.19.0 + steps. Previews: dev/live-friends-preview.html (real tracker, mock API).
-  - **Worker LIVE 2026-10-05: https://fdt-live.ibefuzzy.workers.dev** (user deployed it; D1 `fdt-live` bound as DB;
-    setup steps in worker/SETUP-STEPS.md). LIVE_SERVER set in live-sync.js + the web. E2E passed: curl round trip
-    (save/read/403/429/400/delete/CORS), the app from source in a throwaway profile over CDP (on → saved in 14 s,
-    own live code as a friend, rebirth 5→6 reached the server after the 2-min gap, off → deleted, window can't read
-    the key), and the web page from localhost:5178. NOT yet checked: the HUD friend hotkey on a live friend (in-game).
-  - **Security review (2026-10-05, max effort):** fixed: (1) ID takeover: switch-off/14-day expiry used to FREE the ID, so
-    anyone knowing a live code could re-register it and show friends anything; now the row stays reserved (code blanked to
-    ''), freed after a year (RESERVE_MS); (2) tidy ran only on days with a NEW sign-up; now on the first save of each UTC
-    day (`tidyOncePerDay`, marker row n=0 in `daily`); (3) Electron net.fetch FORWARDS Authorization across a cross-origin
-    redirect (proven with a local 2-server test) -> `redirect:'error'`, `credentials:'omit'` (app + web); (4) responses
-    read through `readCapped` (16 KB); (5) web sent 31 IDs (30 friends + a #live= link) -> 400; capped at 30; (6) daily
-    new-ID cap 300 -> 1000. User actions: re-paste the Worker, switch OFF Workers Logs (on by default for new Workers;
-    may log IPs/headers), 2FA on the Cloudflare account is their call. Accepted risk: anyone can flood the free 100k
-    requests/day (Live pauses until 00:00 UTC; app shows offline, nothing billed).
-  - **After the review (2026-10-05):** the user re-pasted the Worker and switched Workers Logs OFF (Settings ->
-    Observability -> the Logs switch); the live re-test passed (a stranger gets 403 after a switch-off). Polling now slows
-    to every 5 min after 4 quiet checks (`pollDelay`, the `livePollSoon` chain in main.js; same on the web), back to 90 s
-    on a change, panel open, focus or a new friend. Built `release\next\Fuzzy's Droid Tracker 1.19.0.exe` (69,275,452
-    bytes, sha256 8a6983b1...6133e682); asar contents checked; the built exe smoke-tested over CDP (throwaway profile,
-    windows moved to monitor 2). 188 tests pass. Nothing committed yet.
-  - **In-game test PASSED (user, 2026-10-05: "Everything looks great"); publishing 2026-10-06.** The user asked for proof
-    it's SAFE, so a second pass: all windows contextIsolation on + nodeIntegration off, no TLS bypass, no remote pages;
-    Retry-After now clamped to 30 s..1 h (a hostile server could have made the app retry every 2 s); test/live-hostile.test.js
-    (hostile names built byte by byte, hostile JSON answers) + `dev/live-hostile-check.html` (the REAL tracker, HUD and web
-    fed hostile codes, every element scanned for injected handlers/tags: PASS). 191 tests pass.
-  - **Then the user asked to fold both follow-ups into v1.19.0 (2026-10-05, "if it's gonna be part of the app"):**
-    (1) **OCR + fonts ship with the app.** `ocr-options.js` `ocrWorkerOptions()` for all 3 createWorker calls; main.js
-    registers the privileged `fdt` scheme (before ready) + `protocol.handle('fdt', serveAppFile)`: `fdt://ocr/<name>` serves
-    ONLY the 4 `OCR_FILES` (worker.min.js, the simd-lstm + lstm `.wasm.js` cores, eng 4.0.0_best_int .gz; a worker can't
-    fetch() file://), `fdt://app/fonts/<file>` serves only files in fonts/ (for the Pop out PiP window, which starts as
-    about:blank and can't read disk). `@tesseract.js-data/eng` 1.0.0 is now a saved dependency; build.files lists the
-    OCR files + `fonts/**`. `fonts/` = Google's exact woff2 files for the same css2 request (31 files, all subsets, 760 KB)
-    + `fonts.css` + OFL-*.txt; pages link `fonts/fonts.css`. Proven: spawn harness 6 alerts via local http paths; in
-    Electron with ALL internet blocked (`--proxy-server=http://127.0.0.1:9`) OCR read a test line and every page's font
-    faces loaded; fdt:// refuses unlisted paths and `../`. The PiP fonts could NOT be seen under CDP (a CDP-opened PiP
-    window is 0x0/hidden): the user eyeballs Pop out. test/offline-assets.test.js; update-check test now allows the local
-    file net.fetch. (2) **Electron 32.3.3 -> 44.5.1** (latest stable; Electron 42+ downloads its binary on first run of
-    the bin: run `npx electron --version` after npm install). package.json edited in place (npm would reformat it);
-    package-lock churned (Electron 32's download helpers dropped). electron-builder stays 25.1.8. Checked on 44 over CDP
-    with a SEEDED throwaway profile (overlay positions on monitor 2, empty store so the old-app-folder migration can't copy
-    real data in): all 9 windows reload with no errors, fonts, OCR, hotkey register/clear, overlay toggle, screen capture
-    via the picker (1920x1080 real pixels; the saved screen is reused without the picker), game toast; a monitor-2
-    screenshot shows the transparent overlays correct. 195 tests pass. NOT checkable here: overlay drag/resize across
-    monitors, hotkeys in-game, Spawn Alert live, Pop out fonts: the user's in-game test.
-  - **Built `release\next3\Fuzzy's Droid Tracker 1.19.0.exe` on Electron 44** (103,604,388 bytes, sha256 CB877D42...
-    BFC0658; was ~69 MB on 32). Lesson caught by the asar check: electron-builder NESTS a transitive dependency under its
-    parent in the exe (node_modules/tesseract.js/node_modules/tesseract.js-core), so `tesseract.js-core` 5.1.1 is now a
-    DIRECT dependency (test/offline-assets.test.js enforces "every served package is direct"). The built exe passed:
-    offline (all 9 windows clean, fonts, OCR from fdt://) and online (Live on -> server has it -> off -> gone).
-  - **Left:** user in-game test of release\next3 (drag/resize on both monitors, hotkeys, Read Rebirth Screen, Spawn
-    Alert, sounds, Pop out fonts, Live + HUD friend hotkey) -> move that exe to release\ (1.18.1 + release\next +
-    release\next2 to the Recycle Bin) -> snapshot `_backup_v1.19.0_approved/` -> commit + push the app (incl. worker/) and the web
-    (tracker/index.html) -> check both level with origin -> pre-fill the release (replace the "NOT ONLINE" line) -> user
-    publishes -> check the digest -> `node dev/bump-version-json.js` + web push -> remind the user to turn on 2FA on the
-    Cloudflare account (they chose to do it at the very end).
-
-- **v1.18.1 PUBLISHED 2026-10-04 23:25 UTC**, asset digest verified = sha256 e04ccb5c…62041b5a (69,266,478 bytes);
-  version.json = 1.18.1 (live), so 1.18.0 installs get the first-ever update banner. `release` holds only 1.18.1 (+
-  win-unpacked). Snapshots: `_backup_v1.18.0_approved/`, `_backup_v1.18.1_approved/`.
-  **Next: v1.19.0 = LIVE 👥 Friends via Cloudflare** (bump package.json first).
-  **OCR fix (third batch):** Read Rebirth Screen read a clean "21" as "217": the crop was enlarged x6 (~230px); on
-  the user's real crop every height 50-200px reads "21" with every resize kernel. Now READ_HEIGHT 120 + a retry at
-  80 when doubtful, and requirements.js `parseRankText` returns only a real rank (217 -> 21; the old parser took the
-  LAST digits = 7). test/rank-read.test.js. Offline repro recipe: sharp + tesseract.js with
-  `langPath node_modules/@tesseract.js-data/eng/4.0.0_best_int, gzip: true`.
-  **Second batch (the user's "do all of 1-9", same day):** ↶ Undo finish cycle (`lastFinish` snapshot in
-  `resetCycleAndAdvance`, 10 min, in memory only; `#undoFinishBtn` next to Reset all + `undoFinishCycle` key);
-  `rebirthLevelUp/Down` keys (rebirth-level-detect.js, game toast); HUD READY strip (overlay.html `hudState`: skipped
-  lines = one `.ready-strip` + 3 lines; measured unclipped at 340x370 in both rarity styles, dev/hud-ready-preview.html);
-  Export/Import + pre-import backup carry `heldMarks` + `retired` (requirements.js `cleanCycleMarks`; null = old file,
-  keep current); no page loads icons-data.js and the exe leaves it out (test/marks-and-merges.test.js); main.js mark
-  handlers set nameMerges first (`shared.setNameMerges`); Rebirth Reqs `scroller.reveal`; `dev/bump-version-json.js`
-  (version.json from package.json + a note, refuses non-newer). Web: Up next skip + READY strip (4 lines; no fixed
-  window there), friend cards same rule, ‹ › cycle buttons, Import validated + asks, marks in Export/Import, 3 spooky
-  looks, tour step 1.18.1 (TOUR_VERSION 1.18.1). Update notice E2E in the BUILT exe (throwaway --user-data-dir profile
-  + CDP): real fetch of the live version.json saved {1.18.0}, banner hidden; a pretend 1.99.0 showed the banner with
-  the note; Dismiss hid it and getUpdate() → null. 160 tests pass.
-  **First batch:**
-  (1) the HUD is renamed **🎯 Next Droids Needed** everywhere (was "Upcoming RB Req's" on the toolbar and "Current
-  Rebirth Requirements" in settings/hotkeys; README changelog entries keep the old name) and moves on as you mark:
-  requirements.js `nextNeededLevel(cycle, currentLevel, ownedRank)` = first line after the rebirth level that isn't
-  fully marked, never past an unfinished one (the user's rule: rb25 done + rb15 not → stay on 15), capped at the
-  cycle's last line; overlay.html `upcomingLines()` (friend view too; the old no-op `autoProgressIfComplete` is
-  gone). The user chose "start at the rebirth level, then skip" and kept − / + (it's the anchor, and drives Safe to
-  Retire + the friend code's RB). (2) hotkeys `cycleNext` / `cyclePrev` / `finishCycle` (sendToTracker; tracker.html
-  `setupCycleHotkeys`, Keybinds group `#cycleKeysGroup`): Finish = second press within 3 s → `resetCycleAndAdvance`.
-  (3) `resetCycleAndAdvance` (also the cycle-complete box's "Next Cycle") now sets `rebirth-currentLevel` to 0 (it
-  used to keep e.g. 40, so the HUD showed the cycle after the new one). Tutorial step `since: '1.18.1'` (app only;
-  the web's "Up next" didn't change). Tests: test/next-needed.test.js, test/hotkeys.test.js (all five hotkey wiring
-  places agree), 155 pass. Browser-checked: the real overlay.html (skip + never-past rule + selection follows) and
-  tracker.html (cycle keys incl. the double press, Keybinds group, tile name fits). Next: user tests the exe → move it
-  to `release\` (1.18.0 to the Recycle Bin), snapshot, push, pre-fill the release, then bump version.json.
-- **App v1.18.0 PUBLISHED 2026-10-04 19:02 UTC**, asset digest verified = sha256 0bfa72fd…74050d8d (71,783,791
-  bytes). `release\` holds 1.18.0 (+ win-unpacked). Snapshots: `_backup_v1.17.0_approved/`,
-  `_backup_v1.18.0_approved/` (1.16.0's went to the Recycle Bin).
-- App v1.17.0 ("Rarity written on each droid", below) was published 2026-10-01 05:00 UTC.
-- **App v1.16.0** = 👥 Friends (friend codes, no server; tracker panel + HUD friend switch),
-  coloured SELL flags, the new tutorial (tour.js/guide.js, skippable, "What's new" for updaters),
-  💎 Nova Crystal rewards, and no default hotkeys for new installs (no hotkey list on launch).
-  The design decisions are in CLAUDE_HISTORY.md (2026-09-30). Published 2026-09-30 20:14 UTC. The
-  user added to its release notes' Friends paragraph: "FEATURE IS NOT ONLINE - MANUAL UPDATE NEEDED
-  VIA NEW CODE GENERATED WHEN YOU REACH NEW REBIRTHS. POSSIBLE ONLINE FEATURE TBD."
-- **Web tracker** got the same features (Friends + `#friend=` link view, SELL colours, tutorial
-  with phone steps, crystals; data `?v=1.16.0`). The local copy `dev/web-tracker/` == live
-  `main` (its own git repo since 2026-09-30); run `git -C dev/web-tracker pull` before the
-  next web edit if the site may have changed. Its own notes: dev/web-tracker/CLAUDE.md.
-  **The site's `main` moved on 2026-10-01 (56cade4): the landing page (root index.html) was redesigned
-  in a cloud session**, so `git -C dev/web-tracker pull` before the next web edit (new `assets/`
-  folder; scripts/validate-tracker-data.js gained Check 3b: the landing page loads
-  `tracker/droid-data.js?v=X`, and X must equal the tracker's stamp, so bump both).
-- **v1.18.0 (2026-10-04, user-tested in-game: "all looks well"):** contents:
-  (1) **Update notice**: update-check.js (pure: version compare, version.json parse, once-a-day rule) + main.js
-  `checkForUpdate()` (net.fetch of https://ibefuzzy.github.io/version.json, 5 s after launch, silent on failure) +
-  preload `getUpdate/dismissUpdate/openUpdatePage/onUpdateState` + tracker `#updateBanner` wired in overlay-controls.js;
-  setting `updateCheck` (default ON, switch #updateCheckCheckbox in Layout), `updateLastCheck`, `updateInfo`,
-  `updateDismissed`. Notify only; the link is a fixed releases URL, never read from the file. Preview:
-  dev/update-banner-preview.html (real tracker.html + mock API). Tests: test/update-check.test.js.
-  (2) **Spooky themes**: skins/presets/app looks `forceghost`, `harvest`, `nightsister` (MDI ghost/halloween/spider
-  emblems); Imperial Crypt + Dark Moon were tried and cut. (3) Two tutorial steps `since: '1.18.0'`, README sections.
-  (4) **LO picture fix** (the user's report: C2 rebirth 34's LO showed RIC): gonk.tools has no LO, so LO's 6
-  non-Kyber slots had no CARD_ICONS picture and fell back to icons-data.js's old crops; 1-8-1 held Hov-R and 2-34-1
-  RIC (the neighbouring slot's droid). Now real LO cut-outs from its Droidex cards (`build-missing-card-icons.js`,
-  local-only, reusing build-kyber-card-icons.js's cut-out steps, which were factored out byte-identically), and
-  icons-data.js's 2 wrong crops hold the same cut-outs. All 62 droids x every rarity (and Kyber) were then eyeballed
-  against the Droidex cards: no other wrong picture. test/card-icons.test.js guards it. 145 tests pass.
-  (5) **/code-review ultra (2026-10-04)** over the 3 unpushed commits found 1 nit, fixed: checkForUpdate cleared
-  its 10 s abort timer only on success (now in a finally). Nothing else reported.
-  **Website pushed 2026-10-04** (5a1d1c3): tracker/icons-data.js ICONS = the app's CARD_ICONS for all 600 slots
-  (the 6 LO fix + the 75 clean Kyber cut-outs it never got), stamps ?v=1.18.0 (tracker + landing page), and
-  `version.json` = {"version":"1.18.0", note}. Not done (optional): the web tracker's spooky looks. The 3
-  offline-earning-mockup*.png in the root are a game-UI mockup, not part of the tracker (left untracked).
-- **Every release from now on also updates `dev/web-tracker/version.json`** (version + a one-line note the user
-  words), pushed once the release is PUBLISHED: that file is what makes v1.18.0+ installs show the "new version"
-  banner. Only 1.18.0+ reads it (once a day, notify only, switch in ⚙ → Layout).
-- **Next app work: bump package.json to 1.19.0 FIRST** (1.18.1 is pushed). A new feature also gets a tutorial step
-  (`since: '<version>'`) in guide.js AND the web's step lists (v1.17.0's step is app-only: the web
-  tracker already had its own Rarity option, so there was nothing new to tell its visitors).
-- Players are starting to send feedback/requests (the crystals were the first); expect more.
-- **START HERE NEXT SESSION: v1.19.0 = LIVE 👥 Friends via Cloudflare Workers.** Status 2026-10-04: **the user has
-  CREATED the Cloudflare account** (free plan); nothing is built yet; v1.18.1 is published and every repo is clean and
-  pushed. The user picked **Opus 5.5 (medium effort)** for this: the Worker's security (key check, rate limits, CORS)
-  is the risky part; raise effort for one final security review of the Worker before it goes live. First steps:
-  bump package.json to 1.19.0, re-check the current Workers/KV/D1 free limits, confirm the plan below with the user,
-  then a mockup of the Friends "🌐 Live" UI (they pick by eye) before building. The user does every dashboard step
-  themselves (Claude never logs in or enters credentials): give click-by-click steps + the Worker code to paste.
-  Original pick (2026-09-30): The user chose it over Discord Rich Presence and
-  webhooks/bots because it "takes less effort from users". Friends today are paste-only snapshots:
-  no connection anywhere, which the user asked about for security. Keep that promise: live
-  sharing must be opt-in and add only outgoing HTTPS. Plan (confirm with the user, mockup first):
-  - **Server:** a Cloudflare Worker on the FREE plan (no credit card = can't be billed; over the
-    daily limit it just stops answering). **The user creates the Cloudflare account; Claude can't.**
-    Claude writes the Worker (paste into the dashboard, no build tools) and walks them through it.
-    The Worker URL is public, not a secret.
-  - **API:** `PUT /p/<shareId>` (body = the existing friend code, header with the player's secret
-    key; the first write registers sha256(key), later writes must match), `GET /p/<shareId>` →
-    {code, updatedAt}. The share ID is random (≥10 base62 chars, unguessable) and is what friends
-    add. The secret key (32 random bytes) never leaves the player's PC (store key, not settings).
-  - **Limits:** entries ≤ 200 bytes and must decode as a friend code, rate-limit writes per ID,
-    expire untouched entries after ~14 days, CORS for the site + app only. No names beyond the
-    code's own, no IPs stored.
-  - **Storage:** Workers KV free is ~1,000 writes/day, so the app must save only on change,
-    debounced (at most every ~2 min). If the community grows, use D1 or a Durable Object (much
-    higher free write limits). **Check the current free limits at build time.**
-  - **App:** a "🌐 Live" switch in 👥 Friends (off by default). While on, it publishes your code on
-    change and on launch. It re-fetches live friends about every 60-120 s, only while the Friends
-    panel or the HUD friend view is showing (or when the window gets focus). A live friend is added
-    by a live code/link (e.g. `FDTL1.<shareId>` / `#live=<shareId>`). Snapshot codes keep working
-    offline, the same as today. Show "live · updated 3 min ago".
-  - **Website:** the same GET for a `#live=` link view (and publishing from the web, optional).
-  - **Also:** a README privacy note (what's sent, where, when; off by default), a tutorial step
-    `since: '1.19.0'` (app + web), and new release notes replacing the user's "NOT ONLINE" line.
-    Tests: the code↔server payload validation, the debounce, and ID/key generation.
-- **v1.17.0 = "Rarity on each droid" (a player's idea), built 2026-10-01 in a cloud session** (merged
-  as PR #1, then built locally and user-tested before publishing). One setting `overlayRarityStyle` ('color' default | 'text'; `rarityStyleOf()` in requirements.js), a
-  two-button row in ⚙ Overlay Settings → Appearance (`#rarityStyleRow`), applied by overlay-theme.js as
-  `html.rarity-text`; the CSS lives in overlay-theme.css (`.rar-label`, `.d-owned.need/.has`, `.have-word`).
-  HUD + Rebirth Reqs get a hidden-by-default "NEED X" line; Sneak/Retire reuse their status line.
-  **Safe to Retire keeps its frame + dot** (they show the droid's CLASS, not a rarity; the user chose that).
-  In 'text' mode the HUD picture is 28px (was 34) and block padding 1px tighter so the extra line fits the
-  fixed window; verified by rendering the real pages in headless Chromium: 'color' mode is
-  byte-identical to before (PNG hashes), 'text' clips nothing. Tutorial step `since: '1.17.0'` added.
-- The user may have turned on GitHub 2FA (required by Nov 4, 2026). Never change account
-  security settings for them.
+- GitHub 2FA (required by Nov 4, 2026) and Cloudflare 2FA: the user handles account security; never change it for them.
 - Candidate next ideas (offered 2026-09-29 and 2026-09-30, none picked yet):
-  - App: an "update available" notice (checks GitHub releases); Spawn Alert "adjust box" for
-    screens other than 1920x1080; Export/Import that also carries held/retired marks (app
-    AND web); rebirth history + pace ("time per rebirth"); a spawn log; a hotkey to cycle
+  - App: Spawn Alert "adjust box" for screens other than 1920x1080; rebirth history + pace ("time per rebirth"); a spawn log; a hotkey to cycle
     looks in-game; the two small fixes under Known follow-ups.
   - Credits: read the cost off the Rebirth screen with the existing OCR, if it's shown there
     (would confirm the per-cycle assumption). Needs a screenshot from the user.
@@ -664,6 +459,9 @@ user before launching; they may be in-game and close stray windows.
   positions. It caught nothing wrong twice (tracker, web) and made the change safe to ship.
 - **Test a page's real render path, not just its math:** the HUD chip looked fine in code
   but cut 2px off the cards (found by measuring scrollHeight vs clientHeight per block).
+- **A `background-attachment: fixed` picture repeats per element under ANY transform** (even translateY(0) left
+  by an animation's fill "both"): the HUD showed a moon in every level block until fdt-in used fill "backwards"
+  (overlay-backgrounds.js). Recording the share GIF is what caught it: look at the real render.
 - **Electron off-screen capture doesn't run from this shell** (exits -1 before the script
   starts, even with --no-sandbox); for images to send the user, render a dev page in their
   Chrome and use screenshot/zoom with `save_to_disk`.
