@@ -25,8 +25,11 @@
    window (or any overlay) shows up everywhere else immediately.
 --------------------------------------------------------------------------- */
 
-const { app, BrowserWindow, ipcMain, globalShortcut, screen, session, desktopCapturer, dialog, net, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, globalShortcut, screen, session, desktopCapturer, dialog, net, shell, protocol } = require('electron');
+const { pathToFileURL } = require('url');
 const updateCheck = require('./update-check.js');
+const liveSync = require('./live-sync.js'); // v1.19.0 🌐 Live Friends
+const crypto = require('crypto');
 const path = require('path');
 const fs = require('fs');
 const vm = require('vm');
@@ -37,7 +40,7 @@ const { snapMove, snapResize } = require('./overlay-snap');
 // same pattern as test/helpers/load-shared.js, so the overlay:markDroid and
 // overlay:markLevel handlers can use normKey(), canonicalName(), rankOf(), and decideOwnedUpdate()
 function loadSharedFunctions(){
-  const ctx = vm.createContext({ console });
+  const ctx = vm.createContext({ console, TextEncoder, TextDecoder, atob, btoa }); // the friend code needs these
   for(const f of ['droid-data.js', 'requirements.js']){
     const src = fs.readFileSync(path.join(__dirname, f), 'utf8');
     vm.runInContext(src, ctx, { filename: f });
@@ -54,9 +57,51 @@ function loadSharedFunctions(){
     // v1.18.1: canonicalName() reads the player's renames/merges; the mark handlers set them
     // from the store first, or a merged droid was marked under its un-merged key
     setNameMerges: run('(m) => { nameMerges = (m && typeof m === "object" && !Array.isArray(m)) ? m : {}; }'),
+    // v1.19.0 🌐 Live Friends: main.js builds your friend code itself, to save it while Live is on
+    encodeFriendCode: run('encodeFriendCode'),
+    friendOwnedFromMine: run('friendOwnedFromMine'),
+    cleanFriendName: run('cleanFriendName'),
+    cycleRealLevelCount: run('cycleRealLevelCount'),
+    cleanLiveFriends: run('cleanLiveFriends'),
+    LIVE_CODE_PREFIX: run('LIVE_CODE_PREFIX'),
+    LIVE_ID_RE: run('LIVE_ID_RE'),
+    LIVE_FRIENDS_MAX: run('LIVE_FRIENDS_MAX'),
   };
 }
 const shared = loadSharedFunctions();
+
+/* v1.19.0: the OCR engine's own files, shipped with the app instead of downloaded from
+   cdn.jsdelivr.net at first use. tesseract.js loads them inside a web worker with
+   importScripts() and fetch(), and a worker can't fetch() a file:// URL, so they get a private
+   address: fdt://ocr/<name> (ocr-options.js). Only the files listed here are served, read from
+   the app's own folder; anything else is a 404. The scheme must be registered before 'ready'. */
+const OCR_FILES = {
+  'worker.min.js': 'node_modules/tesseract.js/dist/worker.min.js',
+  'core/tesseract-core-simd-lstm.wasm.js': 'node_modules/tesseract.js-core/tesseract-core-simd-lstm.wasm.js',
+  'core/tesseract-core-lstm.wasm.js': 'node_modules/tesseract.js-core/tesseract-core-lstm.wasm.js',
+  'lang/eng.traineddata.gz': 'node_modules/@tesseract.js-data/eng/4.0.0_best_int/eng.traineddata.gz'
+};
+// The app's own fonts (fonts/, v1.19.0) for the one window that can't read them from disk: the
+// tracker's Pop out (a picture-in-picture window starts as about:blank). Only files in fonts/.
+const FONT_FILES = new Set((()=>{
+  try{ return fs.readdirSync(path.join(__dirname, 'fonts')).filter(f => /^[a-z0-9-]+\.(woff2|css)$/.test(f)); }catch(e){ return []; }
+})());
+const APP_FILE_TYPES = { '.js': 'text/javascript', '.css': 'text/css', '.woff2': 'font/woff2' };
+protocol.registerSchemesAsPrivileged([{ scheme: 'fdt', privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true } }]);
+async function serveAppFile(request){
+  let rel = null;
+  try{
+    const u = new URL(request.url);
+    const name = u.pathname.slice(1);
+    if(u.host === 'ocr' && Object.prototype.hasOwnProperty.call(OCR_FILES, name)) rel = OCR_FILES[name];
+    else if(u.host === 'app' && name.startsWith('fonts/') && FONT_FILES.has(name.slice(6))) rel = name;
+  }catch(e){ /* not a URL: 404 below */ }
+  if(!rel) return new Response('', { status: 404 });
+  const res = await net.fetch(pathToFileURL(path.join(__dirname, rel)).toString());
+  // .gz stays compressed (tesseract unzips it itself); CORS for the worker's fetch() and for fonts
+  return new Response(res.body, { status: res.ok ? 200 : 404, headers: { 'Content-Type': APP_FILE_TYPES[path.extname(rel)] || 'application/octet-stream',
+    'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' } });
+}
 
 // Two instances would each independently load their own copy of the JSON
 // store/settings into memory and each debounce-write to the SAME files on
@@ -118,6 +163,8 @@ const DEFAULT_SETTINGS = {
   updateLastCheck: 0,   // ms timestamp of the last successful read
   updateInfo: null,     // {version, note} from the last read
   updateDismissed: '',  // version whose banner the player closed
+  // v1.19.0 🌐 Live Friends (live-sync.js): off until the player switches it on in 👥 Friends
+  liveFriends: false,
   timerSoundEnabled: false, // v1.10.2: sound notifications for timer expiry (default off for fresh installs)
   timerSoundVolume: 0.35,   // master volume, 0.1–0.8 range
   missionSoundVolumeOverride: false, // use per-timer override instead of master
@@ -690,6 +737,8 @@ function createMainWindow(){
     }
   });
   mainWindow.loadFile(path.join(__dirname, 'tracker.html'));
+  // v1.19.0 🌐: coming back to the tracker refreshes watched live friends (at most every 15 s)
+  mainWindow.on('focus', ()=>{ if(live.watchers.size) liveWakePolling(); });
   mainWindow.on('closed', ()=>{
     mainWindow = null;
     app.quit();
@@ -1628,6 +1677,8 @@ function broadcast(channel, payload){
   BrowserWindow.getAllWindows().forEach(w=>{
     if(!w.isDestroyed()) w.webContents.send(channel, payload);
   });
+  // v1.19.0 🌐: every store change passes here (store:set and the overlay mark handlers alike)
+  if(channel === 'store:changed' && payload && LIVE_SOURCE_KEYS.has(payload.key)) liveSchedule();
 }
 function notify(message){
   broadcast('app:notify', message);
@@ -1737,7 +1788,185 @@ async function checkForUpdate(){
   }catch(e){ /* offline, blocked or malformed: stay quiet */ }
 }
 
+/* ---------------- 🌐 LIVE FRIENDS (v1.19.0) ----------------
+   Opt-in (settings.liveFriends). live-sync.js holds the rules; this is the plumbing. While on,
+   your friend code is built HERE from the store (the same code 📋 Copy my code gives) and saved
+   to the Friends server when it changes. Live friends ('rebirth-liveFriends') are read only
+   while a window watches them (the Friends panel, the HUD friend view). The secret key in
+   'live-identity' never reaches a window: store:get/store:set refuse that key. */
+const LIVE_IDENTITY = 'live-identity';
+const LIVE_SOURCE_KEYS = new Set(['rebirth-ownedRank-v2', 'rebirth-activeCycle', 'rebirth-currentLevel', 'rebirth-friendName', 'rebirth-nameMerges']);
+const live = { savedContent: null, savedAt: 0, retryAt: 0, timer: null, saving: false, state: 'off', newIdTries: 0,
+  watchers: new Set(), knownSenders: new Set(), pollTimer: null, polledAt: 0, polling: false, unchanged: 0, friendsOffline: false };
+
+function liveIdentity(){
+  if(!liveSync.isIdentity(storeData[LIVE_IDENTITY])){
+    storeData[LIVE_IDENTITY] = { id: liveSync.makeShareId(crypto.randomBytes), key: liveSync.makeSecretKey(crypto.randomBytes) };
+    persistStoreDebounced();
+  }
+  return storeData[LIVE_IDENTITY];
+}
+// your friend code as of `time`; at time 0 it's the "has anything changed?" fingerprint
+function myFriendCodeAt(time){
+  shared.setNameMerges(storeData['rebirth-nameMerges']);
+  const c = storeData['rebirth-activeCycle'];
+  const cycle = (Number.isInteger(c) && c >= 1 && c <= 5) ? c : 1;
+  const level = Math.max(0, Math.min(parseInt(storeData['rebirth-currentLevel'], 10) || 0, shared.cycleRealLevelCount(cycle)));
+  return shared.encodeFriendCode({ name: shared.cleanFriendName(storeData['rebirth-friendName']) || 'Friend', cycle, level,
+    owned: shared.friendOwnedFromMine(storeData['rebirth-ownedRank-v2'] || {}), time });
+}
+function liveStateForWindow(){
+  const idn = settings.liveFriends ? liveIdentity() : null;
+  return { on: !!settings.liveFriends, server: !!liveSync.LIVE_SERVER, id: idn ? idn.id : null,
+    code: idn ? shared.LIVE_CODE_PREFIX + idn.id : null, state: settings.liveFriends ? live.state : 'off',
+    savedAt: live.savedAt || null, friendsOffline: live.friendsOffline };
+}
+function sendLiveState(){
+  if(mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('live:state', liveStateForWindow());
+}
+// one request to the Friends server -> {status (0 = no answer), text, retryAfter}
+async function liveRequest(method, p, opts){
+  if(!liveSync.LIVE_SERVER) return { status: 0 };
+  const ctl = new AbortController();
+  const timer = setTimeout(()=> ctl.abort(), 10000);
+  try{
+    const headers = {};
+    if(opts && opts.key) headers.Authorization = 'Bearer ' + opts.key;
+    if(opts && opts.body !== undefined) headers['Content-Type'] = 'text/plain;charset=utf-8';
+    // security review: never follow a redirect (the key must only ever go to LIVE_SERVER), no cookies,
+    // and read at most MAX_RESPONSE_BYTES of the answer
+    const res = await net.fetch(liveSync.LIVE_SERVER + p, { method, headers, body: opts && opts.body, signal: ctl.signal,
+      cache: 'no-store', redirect: 'error', credentials: 'omit' });
+    return { status: res.status, text: await liveSync.readCapped(res, liveSync.MAX_RESPONSE_BYTES), retryAfter: res.headers.get('Retry-After') };
+  }catch(e){
+    return { status: 0 };
+  }finally{ clearTimeout(timer); }
+}
+
+// a change (or launch / switching on, force) -> one save, after the settle time and the 2-min gap
+function liveSchedule(force){
+  if(!settings.liveFriends || !liveSync.LIVE_SERVER) return;
+  if(force) live.savedContent = null;
+  if(live.timer || live.saving) return; // the pending save reads the newest code when it runs
+  if(live.savedContent === myFriendCodeAt(0)) return;
+  live.timer = setTimeout(liveSaveNow, liveSync.saveDelay(live.savedAt, live.retryAt, Date.now()));
+}
+async function liveSaveNow(){
+  live.timer = null;
+  if(!settings.liveFriends) return;
+  const content = myFriendCodeAt(0);
+  if(content === live.savedContent) return;
+  const idn = liveIdentity();
+  const sentAt = Date.now();
+  live.saving = true; live.state = 'saving'; sendLiveState();
+  const r = await liveRequest('PUT', '/p/' + idn.id, { key: idn.key, body: myFriendCodeAt(sentAt) });
+  live.saving = false;
+  if(!settings.liveFriends) return; // switched off meanwhile: liveStop() already asked for the delete
+  const out = liveSync.saveOutcome(r.status, r.retryAfter, Date.now());
+  live.retryAt = out.retryAt || 0;
+  if(out.state === 'ok'){ live.savedContent = content; live.savedAt = sentAt; live.state = 'ok'; live.newIdTries = 0; }
+  else if(out.state === 'newId' && live.newIdTries < 2){ live.newIdTries++; delete storeData[LIVE_IDENTITY]; liveIdentity(); live.state = 'saving'; }
+  else live.state = out.state === 'newId' ? 'error' : out.state;
+  sendLiveState();
+  if(live.state !== 'error') liveSchedule(); // a retry, or marks made while it was saving
+}
+// switched off: forget the schedule and delete the entry (retried at the next launch if offline)
+async function liveStop(){
+  if(live.timer){ clearTimeout(live.timer); live.timer = null; }
+  live.savedContent = null; live.savedAt = 0; live.retryAt = 0; live.state = 'off';
+  sendLiveState();
+  const idn = storeData[LIVE_IDENTITY];
+  if(!liveSync.isIdentity(idn)) return;
+  const r = await liveRequest('DELETE', '/p/' + idn.id, { key: idn.key });
+  if(settings.liveFriends) return; // switched back on meanwhile
+  storeData[LIVE_IDENTITY] = { id: idn.id, key: idn.key, deletePending: r.status !== 200 };
+  persistStoreDebounced();
+}
+function liveStartup(){
+  if(settings.liveFriends) liveSchedule(true);
+  else if(storeData[LIVE_IDENTITY] && storeData[LIVE_IDENTITY].deletePending) liveStop();
+}
+
+function liveFriendList(){ return shared.cleanLiveFriends(storeData['rebirth-liveFriends']); }
+function liveSetFriends(list){
+  storeData['rebirth-liveFriends'] = list;
+  persistStoreDebounced();
+  broadcast('store:changed', { key: 'rebirth-liveFriends', value: list });
+}
+async function liveFetchFriends(){
+  const ids = liveFriendList().map(e => e.id);
+  if(live.polling || !ids.length || !liveSync.LIVE_SERVER) return;
+  live.polling = true; live.polledAt = Date.now();
+  const r = await liveRequest('GET', '/p?ids=' + ids.join(','));
+  live.polling = false;
+  const found = r.status === 200 ? liveSync.parseFriendsResponse(r.text, ids) : null;
+  if(live.friendsOffline !== !found){ live.friendsOffline = !found; sendLiveState(); }
+  if(!found){ live.unchanged++; return; }
+  const merged = liveSync.mergeFetched(liveFriendList(), found, ids); // the list may have changed meanwhile
+  live.unchanged = merged.changed ? 0 : live.unchanged + 1;           // quiet friends -> check less often
+  if(merged.changed) liveSetFriends(merged.list);
+}
+// poll while any window watches and there's someone to watch: every 90 s, every 5 min once quiet
+function liveWantPolling(){ return live.watchers.size > 0 && liveFriendList().length > 0 && !!liveSync.LIVE_SERVER; }
+function livePollSoon(ms){
+  if(live.pollTimer) clearTimeout(live.pollTimer);
+  const handle = setTimeout(async ()=>{
+    await liveFetchFriends();
+    if(live.pollTimer !== handle) return; // stopped or restarted meanwhile
+    live.pollTimer = null;
+    if(liveWantPolling()) livePollSoon(liveSync.pollDelay(live.unchanged));
+  }, ms);
+  live.pollTimer = handle;
+}
+function liveUpdatePolling(){
+  if(liveWantPolling()){
+    if(!live.pollTimer) livePollSoon(Date.now() - live.polledAt > 30000 ? 0 : liveSync.pollDelay(live.unchanged));
+  } else if(live.pollTimer){
+    clearTimeout(live.pollTimer); live.pollTimer = null;
+  }
+}
+// someone looks again (panel opened, HUD friend view, window focus, new friend): back to every 90 s
+function liveWakePolling(){
+  live.unchanged = 0;
+  if(!liveWantPolling()){ liveUpdatePolling(); return; }
+  const since = Date.now() - live.polledAt;          // checked moments ago: the next check 90 s after that one
+  livePollSoon(since > 15000 ? 0 : liveSync.POLL_MS - since);
+}
+function liveWatch(sender, on){
+  const id = sender.id;
+  const isNew = on && !live.watchers.has(id);
+  if(on){
+    live.watchers.add(id);
+    if(!live.knownSenders.has(id)){
+      live.knownSenders.add(id);
+      sender.once('destroyed', ()=>{ live.watchers.delete(id); live.knownSenders.delete(id); liveUpdatePolling(); });
+    }
+  } else live.watchers.delete(id);
+  if(isNew) liveWakePolling(); else liveUpdatePolling();
+}
+
 function wireIpc(){
+  // v1.19.0 🌐 Live Friends
+  ipcMain.handle('live:get', ()=> liveStateForWindow());
+  ipcMain.handle('live:watch', (evt, on)=>{ liveWatch(evt.sender, !!on); });
+  ipcMain.handle('live:refresh', ()=>{ live.unchanged = 0; if(Date.now() - live.polledAt > 15000) liveFetchFriends(); });
+  ipcMain.handle('live:addFriend', (evt, id)=>{
+    if(typeof id !== 'string' || !shared.LIVE_ID_RE.test(id)) return false;
+    const list = liveFriendList();
+    const old = list.find(e => e.id === id);
+    const next = [old || { id, code: null, updatedAt: null, state: 'new' }, ...list.filter(e => e.id !== id)].slice(0, shared.LIVE_FRIENDS_MAX);
+    liveSetFriends(next);
+    live.polledAt = 0;
+    live.unchanged = 0;
+    if(liveWantPolling()) livePollSoon(0); else liveFetchFriends();
+    return true;
+  });
+  ipcMain.handle('live:removeFriend', (evt, id)=>{
+    liveSetFriends(liveFriendList().filter(e => e.id !== id));
+    liveUpdatePolling();
+    return true;
+  });
+
   ipcMain.handle('update:get', ()=> (settings.updateCheck === false ? null : pendingUpdateInfo()));
   ipcMain.handle('update:dismiss', ()=>{
     const info = settings.updateInfo;
@@ -1756,8 +1985,10 @@ function wireIpc(){
   // before (see the timer-banner saga in the project history).
   ipcMain.handle('app:getVersion', ()=> app.getVersion());
 
-  ipcMain.handle('store:get', (evt, key)=> (key in storeData ? storeData[key] : null));
+  // v1.19.0: the 🌐 Live secret key stays in this process (never read or written by a window)
+  ipcMain.handle('store:get', (evt, key)=> (key !== LIVE_IDENTITY && key in storeData ? storeData[key] : null));
   ipcMain.handle('store:set', (evt, key, value)=>{
+    if(key === LIVE_IDENTITY) return false;
     storeData[key] = value;
     persistStoreDebounced();
     broadcast('store:changed', { key, value });
@@ -1863,8 +2094,15 @@ function wireIpc(){
     const prevHotkeys = {};
     Object.keys(HOTKEY_SETTINGS_KEY).forEach(name=>{ prevHotkeys[name] = settings[HOTKEY_SETTINGS_KEY[name]]; });
     const prevKeybindsLocked = settings.keybindsLocked;
+    const prevLiveFriends = settings.liveFriends;
     settings = { ...settings, ...partial };
     persistSettingsNow();
+
+    // v1.19.0 🌐 Live switched on (save now) or off (delete the entry)
+    if('liveFriends' in partial && !!partial.liveFriends !== !!prevLiveFriends){
+      if(settings.liveFriends){ live.newIdTries = 0; liveSchedule(true); sendLiveState(); }
+      else liveStop();
+    }
 
     // v1.10.8: lock toggled from the toolbar button (not the hotkey path,
     // which calls applyKeybindsLock itself via toggleKeybindsLock()).
@@ -2401,6 +2639,7 @@ function createSecondaryWindows(){
 /* ---------------- lifecycle ---------------- */
 if(singleInstanceLock){
   app.whenReady().then(()=>{
+    protocol.handle('fdt', serveAppFile); // v1.19.0: the bundled OCR files (OCR_FILES)
     migrateUserDataFromOldAppName();
     storeData = loadJson(STORE_PATH, {});
     settings = loadJson(SETTINGS_PATH, DEFAULT_SETTINGS);
@@ -2421,6 +2660,7 @@ if(singleInstanceLock){
       createSecondaryWindows();
       reportHotkeyRegistrationFailures(hotkeyRegResults);
       setTimeout(checkForUpdate, 5000);
+      setTimeout(liveStartup, 7000); // v1.19.0 🌐: one save per launch keeps the entry from expiring
     });
   } else {
     // Fallback if mainWindow failed to create (shouldn't happen, but just in case)

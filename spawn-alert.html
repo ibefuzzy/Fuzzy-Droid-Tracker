@@ -110,6 +110,7 @@
 <script src="sounds/good-news-data.js"></script>
 <script src="alert-sound.js"></script>
 <script src="node_modules/tesseract.js/dist/tesseract.min.js"></script>
+<script src="ocr-options.js"></script>
 <script>
 (function(){
   if(!window.overlayAPI) return;
@@ -277,7 +278,7 @@
   async function ensureWorker(){
     if(worker) return worker;
     if(typeof Tesseract === 'undefined') throw new Error("text recognition didn't load");
-    const w = await Tesseract.createWorker('eng');
+    const w = await Tesseract.createWorker('eng', 1, ocrWorkerOptions()); // v1.19.0: shipped with the app (ocr-options.js)
     await w.setParameters({ tessedit_pageseg_mode: '4' }); // one column of lines: the feed (read the most lines, fastest)
     worker = w;
     return w;
@@ -360,7 +361,7 @@
       ensureWorker().catch(err => {
         console.error('Spawn Alert OCR failed to start', err);
         stop();
-        notice("Spawn Alert couldn't start", 'Text recognition failed to load (the first run needs the internet once).');
+        notice("Spawn Alert couldn't start", 'Text recognition failed to load. Try restarting the app.');
       });
     }catch(err){
       console.error('Spawn Alert capture failed', err);

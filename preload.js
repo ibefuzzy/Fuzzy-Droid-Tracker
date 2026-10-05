@@ -23,6 +23,14 @@ contextBridge.exposeInMainWorld('overlayAPI', {
   openUpdatePage: () => ipcRenderer.invoke('update:openPage'),
   onUpdateState: (cb) => subscribe('update:state', cb), // cb(info | null)
 
+  // v1.19.0 🌐 Live Friends (main.js + live-sync.js). On/off is settings.liveFriends.
+  getLiveState: () => ipcRenderer.invoke('live:get'),          // -> {on, server, id, code, state, savedAt, friendsOffline}
+  onLiveState: (cb) => subscribe('live:state', cb),
+  watchLiveFriends: (on) => ipcRenderer.invoke('live:watch', on), // this window shows live friends: poll while true
+  refreshLiveFriends: () => ipcRenderer.invoke('live:refresh'),
+  addLiveFriend: (id) => ipcRenderer.invoke('live:addFriend', id),
+  removeLiveFriend: (id) => ipcRenderer.invoke('live:removeFriend', id),
+
   // shared JSON store (ownedRank, nameMerges, activeCycle, ...)
   storeGet: (key) => ipcRenderer.invoke('store:get', key),
   storeSet: (key, value) => ipcRenderer.invoke('store:set', key, value),

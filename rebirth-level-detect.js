@@ -94,8 +94,8 @@
       return;
     }
     try{
-      getEl('rlGuess').textContent = 'loading text recognition… (first run needs internet once)';
-      worker = await Tesseract.createWorker('eng');
+      getEl('rlGuess').textContent = 'loading text recognition…';
+      worker = await Tesseract.createWorker('eng', 1, ocrWorkerOptions()); // v1.19.0: shipped with the app (ocr-options.js)
       await worker.setParameters({
         tessedit_char_whitelist: '0123456789',
         tessedit_pageseg_mode: '7' // treat the crop as a single line of text

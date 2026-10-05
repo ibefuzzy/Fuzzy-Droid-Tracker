@@ -71,6 +71,8 @@ function loadShared(files = ['droid-data.js', 'requirements.js']) {
     decodeFriendCode: run('decodeFriendCode'),
     friendOwnedFromMine: run('friendOwnedFromMine'),
     friendOwnedRank: run('friendOwnedRank'),
+    parseLiveCode: run('parseLiveCode'),              // v1.19.0
+    cleanLiveFriends: run('cleanLiveFriends'),
     // live views of the mutable module state (re-read after buildIndex())
     get DROID_INDEX() { return run('DROID_INDEX'); },
     get nameMerges() { return run('nameMerges'); },

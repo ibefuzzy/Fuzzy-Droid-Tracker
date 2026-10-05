@@ -1,6 +1,6 @@
 # Fuzzy's Droid Tracker — notes for Claude
 
-Electron 32 app (tracker window + always-on-top overlays) for Droid Tycoon rebirth
+Electron 44 app (tracker window + always-on-top overlays; was Electron 32 until v1.19.0) for Droid Tycoon rebirth
 tracking. README.md is the user-facing doc AND the changelog — it has the full
 version history; this file is architecture + rules + current state only, kept
 short on purpose so a fresh session can read it in one pass.
@@ -325,7 +325,79 @@ Stop test copies ONLY by that `--user-data-dir` in the process command line (Win
 never by exe path: the user may be running the app from `release\win-unpacked` too. Tell the
 user before launching; they may be in-game and close stray windows.
 
-## Current state (2026-10-04): v1.18.1 published; next is v1.19.0 (live Friends)
+## Current state (2026-10-05): v1.19.0 (🌐 Live Friends) built, E2E-tested, security-reviewed; exe in release\next, waiting for the in-game test
+
+- **v1.19.0 in progress (uncommitted, package.json = 1.19.0).** The user picked D1 (not KV: 1k writes/day total),
+  90 s refresh, web view + publish, and layout **A** (switch line above your code) from dev/live-friends-mockup.html.
+  - **Server:** `worker/live-friends-worker.mjs` (repo, `!worker/**` keeps it out of the exe), pasted into the
+    Cloudflare dashboard, D1 bound as `DB`; creates its own tables. GET /p?ids= (≤30), PUT/DELETE /p/<12-char id>
+    with `Bearer <43-char key>`; first PUT registers sha256(key); 1 save/ID/min (429), 300 new IDs/day (503),
+    14-day expiry (tidied on the day's first sign-up), CORS = ibefuzzy.github.io + localhost:5178/5179.
+    test/live-worker.test.js runs it on node:sqlite. The built-in Rate Limiting binding is wrangler-only: not used.
+  - **App:** live-sync.js (pure rules) + main.js "🌐 LIVE FRIENDS" block (main builds your code from the store via
+    `shared`, saves on change: 8 s settle, ≥2 min gap, once per launch; `live-identity` {id,key} in the store, refused
+    by store:get/set; polls 'rebirth-liveFriends' while a window called watchLiveFriends(true); DELETE on switch-off,
+    retried at launch if offline). Setting `liveFriends` (default false). requirements.js `parseLiveCode`,
+    `cleanLiveFriends`, LIVE_* consts. tracker.html `#friendLiveRow` + live cards; overlay.html HUD cycles live
+    friends too (green tag). guide.js step `since:'1.19.0'`, README "🌐 Live Friends" + privacy list.
+    test/update-check.test.js now pins exactly TWO net.fetch calls (update file + LIVE_SERVER).
+  - **Web (dev/web-tracker, uncommitted):** same switch/cards, key in localStorage `fdt-liveIdentity`, `#live=` link
+    view, TOUR_VERSION 1.19.0 + steps. Previews: dev/live-friends-preview.html (real tracker, mock API).
+  - **Worker LIVE 2026-10-05: https://fdt-live.ibefuzzy.workers.dev** (user deployed it; D1 `fdt-live` bound as DB;
+    setup steps in worker/SETUP-STEPS.md). LIVE_SERVER set in live-sync.js + the web. E2E passed: curl round trip
+    (save/read/403/429/400/delete/CORS), the app from source in a throwaway profile over CDP (on → saved in 14 s,
+    own live code as a friend, rebirth 5→6 reached the server after the 2-min gap, off → deleted, window can't read
+    the key), and the web page from localhost:5178. NOT yet checked: the HUD friend hotkey on a live friend (in-game).
+  - **Security review (2026-10-05, max effort):** fixed: (1) ID takeover: switch-off/14-day expiry used to FREE the ID, so
+    anyone knowing a live code could re-register it and show friends anything; now the row stays reserved (code blanked to
+    ''), freed after a year (RESERVE_MS); (2) tidy ran only on days with a NEW sign-up; now on the first save of each UTC
+    day (`tidyOncePerDay`, marker row n=0 in `daily`); (3) Electron net.fetch FORWARDS Authorization across a cross-origin
+    redirect (proven with a local 2-server test) -> `redirect:'error'`, `credentials:'omit'` (app + web); (4) responses
+    read through `readCapped` (16 KB); (5) web sent 31 IDs (30 friends + a #live= link) -> 400; capped at 30; (6) daily
+    new-ID cap 300 -> 1000. User actions: re-paste the Worker, switch OFF Workers Logs (on by default for new Workers;
+    may log IPs/headers), 2FA on the Cloudflare account is their call. Accepted risk: anyone can flood the free 100k
+    requests/day (Live pauses until 00:00 UTC; app shows offline, nothing billed).
+  - **After the review (2026-10-05):** the user re-pasted the Worker and switched Workers Logs OFF (Settings ->
+    Observability -> the Logs switch); the live re-test passed (a stranger gets 403 after a switch-off). Polling now slows
+    to every 5 min after 4 quiet checks (`pollDelay`, the `livePollSoon` chain in main.js; same on the web), back to 90 s
+    on a change, panel open, focus or a new friend. Built `release\next\Fuzzy's Droid Tracker 1.19.0.exe` (69,275,452
+    bytes, sha256 8a6983b1...6133e682); asar contents checked; the built exe smoke-tested over CDP (throwaway profile,
+    windows moved to monitor 2). 188 tests pass. Nothing committed yet.
+  - **In-game test PASSED (user, 2026-10-05: "Everything looks great"); publishing 2026-10-06.** The user asked for proof
+    it's SAFE, so a second pass: all windows contextIsolation on + nodeIntegration off, no TLS bypass, no remote pages;
+    Retry-After now clamped to 30 s..1 h (a hostile server could have made the app retry every 2 s); test/live-hostile.test.js
+    (hostile names built byte by byte, hostile JSON answers) + `dev/live-hostile-check.html` (the REAL tracker, HUD and web
+    fed hostile codes, every element scanned for injected handlers/tags: PASS). 191 tests pass.
+  - **Then the user asked to fold both follow-ups into v1.19.0 (2026-10-05, "if it's gonna be part of the app"):**
+    (1) **OCR + fonts ship with the app.** `ocr-options.js` `ocrWorkerOptions()` for all 3 createWorker calls; main.js
+    registers the privileged `fdt` scheme (before ready) + `protocol.handle('fdt', serveAppFile)`: `fdt://ocr/<name>` serves
+    ONLY the 4 `OCR_FILES` (worker.min.js, the simd-lstm + lstm `.wasm.js` cores, eng 4.0.0_best_int .gz; a worker can't
+    fetch() file://), `fdt://app/fonts/<file>` serves only files in fonts/ (for the Pop out PiP window, which starts as
+    about:blank and can't read disk). `@tesseract.js-data/eng` 1.0.0 is now a saved dependency; build.files lists the
+    OCR files + `fonts/**`. `fonts/` = Google's exact woff2 files for the same css2 request (31 files, all subsets, 760 KB)
+    + `fonts.css` + OFL-*.txt; pages link `fonts/fonts.css`. Proven: spawn harness 6 alerts via local http paths; in
+    Electron with ALL internet blocked (`--proxy-server=http://127.0.0.1:9`) OCR read a test line and every page's font
+    faces loaded; fdt:// refuses unlisted paths and `../`. The PiP fonts could NOT be seen under CDP (a CDP-opened PiP
+    window is 0x0/hidden): the user eyeballs Pop out. test/offline-assets.test.js; update-check test now allows the local
+    file net.fetch. (2) **Electron 32.3.3 -> 44.5.1** (latest stable; Electron 42+ downloads its binary on first run of
+    the bin: run `npx electron --version` after npm install). package.json edited in place (npm would reformat it);
+    package-lock churned (Electron 32's download helpers dropped). electron-builder stays 25.1.8. Checked on 44 over CDP
+    with a SEEDED throwaway profile (overlay positions on monitor 2, empty store so the old-app-folder migration can't copy
+    real data in): all 9 windows reload with no errors, fonts, OCR, hotkey register/clear, overlay toggle, screen capture
+    via the picker (1920x1080 real pixels; the saved screen is reused without the picker), game toast; a monitor-2
+    screenshot shows the transparent overlays correct. 195 tests pass. NOT checkable here: overlay drag/resize across
+    monitors, hotkeys in-game, Spawn Alert live, Pop out fonts: the user's in-game test.
+  - **Built `release\next3\Fuzzy's Droid Tracker 1.19.0.exe` on Electron 44** (103,604,388 bytes, sha256 CB877D42...
+    BFC0658; was ~69 MB on 32). Lesson caught by the asar check: electron-builder NESTS a transitive dependency under its
+    parent in the exe (node_modules/tesseract.js/node_modules/tesseract.js-core), so `tesseract.js-core` 5.1.1 is now a
+    DIRECT dependency (test/offline-assets.test.js enforces "every served package is direct"). The built exe passed:
+    offline (all 9 windows clean, fonts, OCR from fdt://) and online (Live on -> server has it -> off -> gone).
+  - **Left:** user in-game test of release\next3 (drag/resize on both monitors, hotkeys, Read Rebirth Screen, Spawn
+    Alert, sounds, Pop out fonts, Live + HUD friend hotkey) -> move that exe to release\ (1.18.1 + release\next +
+    release\next2 to the Recycle Bin) -> snapshot `_backup_v1.19.0_approved/` -> commit + push the app (incl. worker/) and the web
+    (tracker/index.html) -> check both level with origin -> pre-fill the release (replace the "NOT ONLINE" line) -> user
+    publishes -> check the digest -> `node dev/bump-version-json.js` + web push -> remind the user to turn on 2FA on the
+    Cloudflare account (they chose to do it at the very end).
 
 - **v1.18.1 PUBLISHED 2026-10-04 23:25 UTC**, asset digest verified = sha256 e04ccb5c…62041b5a (69,266,478 bytes);
   version.json = 1.18.1 (live), so 1.18.0 installs get the first-ever update banner. `release` holds only 1.18.1 (+

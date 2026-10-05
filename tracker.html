@@ -4,8 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Fuzzy's Droid Tracker — Keep or Let Go</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="fonts/fonts.css"><!-- v1.19.0: shipped with the app, was Google Fonts -->
 <style>
   :root{
     /* v1.15.0 app looks: the colours a look changes, as r,g,b so rgba() can add an alpha.
@@ -518,6 +517,24 @@
   .fr-bad{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--amber);padding:6px 10px;margin-bottom:10px;
     border:1px dashed var(--amber);border-radius:8px;}
   .fr-bad span{flex:1;}
+  /* v1.19.0 🌐 Live: the switch line above your code, and live friends' status */
+  .fr-live-row{display:flex;align-items:center;gap:8px;margin:0 0 8px;font:600 14px 'Rajdhani',sans-serif;letter-spacing:.04em;cursor:pointer;user-select:none;}
+  .fr-live-row:focus-visible{outline:1px solid var(--accent);outline-offset:2px;border-radius:4px;}
+  .fr-sw{position:relative;width:34px;height:18px;border-radius:999px;background:rgba(0,0,0,.35);border:1px solid var(--line-bright);flex:none;}
+  .fr-sw::after{content:'';position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;background:var(--text-dim);transition:left .15s;}
+  .fr-live-row.on .fr-sw{background:rgba(var(--accent-rgb),.25);border-color:var(--accent-dim);}
+  .fr-live-row.on .fr-sw::after{left:18px;background:var(--accent);box-shadow:0 0 6px var(--accent);}
+  .fr-live-st{flex:1;font:10.5px 'IBM Plex Mono',monospace;color:var(--text-dim);letter-spacing:0;text-align:right;}
+  .fr-live-st.ok{color:var(--accent);}
+  .fr-live-st.warn{color:var(--amber);}
+  .fr-code.live{color:var(--accent);border-color:var(--accent-dim);font-size:13px;letter-spacing:.04em;text-align:center;}
+  .fr-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px var(--accent);margin-right:5px;vertical-align:1px;animation:frPulse 2s infinite;}
+  .fr-dot.grey{background:var(--text-dim);box-shadow:none;animation:none;}
+  .fr-dot.amber{background:var(--amber);box-shadow:0 0 6px var(--amber);animation:none;}
+  @keyframes frPulse{0%,100%{opacity:1}50%{opacity:.35}}
+  .fr-who small.live{color:var(--accent);}
+  .fr-who small.warn{color:var(--amber);}
+  .fr-avatar.live{box-shadow:0 0 0 2px var(--bg),0 0 0 3.5px var(--accent);}
   .fr-paste{display:flex;gap:6px;margin-top:4px;}
   .fr-paste input{font:12px 'IBM Plex Mono',monospace;}
   .fr-paste-msg{font-size:11.5px;color:var(--amber);min-height:15px;margin-top:4px;}
@@ -1780,12 +1797,16 @@
       </div>
       <div class="fr-mine">
         <div class="fr-mine-top"><label for="friendMyName">Your name</label><input id="friendMyName" maxlength="16" placeholder="Name your friends will see"></div>
+        <!-- v1.19.0 🌐 Live: off by default; on = your code saves itself to the Friends server -->
+        <div class="fr-live-row" id="friendLiveRow" role="switch" aria-checked="false" tabindex="0" hidden
+          title="On: your friend code saves itself to the Friends server when it changes, and friends who add your live code stay up to date. Off: nothing is sent, and your saved code is deleted.">
+          <span class="fr-sw"></span>🌐 Live<span class="fr-live-st" id="friendLiveStatus"></span></div>
         <div class="fr-code" id="friendMyCode" title="Your friend code: your cycle, rebirth and logged droids"></div>
         <div class="fr-mine-btns">
           <button class="btn" id="friendCopyCode" title="Copy your code to paste in Discord">📋 Copy my code</button>
           <button class="btn" id="friendCopyLink" title="Copy a website link that opens your progress in any browser, no app needed">🔗 Copy link</button>
         </div>
-        <p class="rebirth-sub">A snapshot of right now: send a new code when you've moved on.</p>
+        <p class="rebirth-sub" id="friendMineNote">A snapshot of right now: send a new code when you've moved on.</p>
       </div>
       <div id="friendsList"></div>
       <div class="fr-paste">
@@ -2734,7 +2755,7 @@ function friendReqsHtml(owned, ceilings, onlyNeeds){
   }
   return '<div class="fr-rq">' + (html || '<div class="fr-empty">✓ They have everything this cycle needs.</div>') + '</div>';
 }
-function friendCardHtml(f, st){
+function friendCardHtml(f, st, live){
   const owned = friendOwnedRank(f.owned);
   const upcoming = getUpcomingLevels(f.cycle, f.level, owned, 4);
   const old = Date.now() - f.time > 86400000;
@@ -2751,19 +2772,80 @@ function friendCardHtml(f, st){
         (st.tab === 'reqs' ? '<label class="fr-only"><input type="checkbox" data-only' + (st.only ? ' checked' : '') + '>only needs</label>' : '') + '</div>' +
       (st.tab === 'reqs' ? friendReqsHtml(owned, ceilings, st.only) : friendUpNextHtml(f, upcoming));
   }
-  return '<div class="fr-card" data-code="' + f.code + '">' +
+  // v1.19.0 🌐: a live friend's card is keyed "live:<id>" and says how fresh it is instead of the code's age
+  const status = live
+    ? (liveState.friendsOffline ? '<small class="warn"><span class="fr-dot amber"></span>offline · from ' + liveAgo(live.updatedAt) + '</small>'
+      : live.state === 'gone' ? '<small><span class="fr-dot grey"></span>last seen ' + liveAgo(live.updatedAt) + '</small>'
+      : '<small class="live"><span class="fr-dot"></span>live · ' + liveAgo(live.updatedAt) + '</small>')
+    : '<small' + (old ? ' class="old"' : '') + '>code from ' + friendAgeText(f.time) + (old ? ' · ask for a new one' : '') + '</small>';
+  return '<div class="fr-card" data-code="' + (live ? 'live:' + live.id : f.code) + '">' +
     '<div class="fr-row" data-toggle><span class="fr-chev">' + (st.open ? '▾' : '▸') + '</span>' +
-      '<div class="fr-avatar">' + f.name.charAt(0).toUpperCase() + '</div>' +
-      '<div class="fr-who"><b>' + f.name + '</b><small>C' + f.cycle + ' · Rebirth ' + f.level + '</small>' +
-        '<small' + (old ? ' class="old"' : '') + '>code from ' + friendAgeText(f.time) + (old ? ' · ask for a new one' : '') + '</small></div>' +
+      '<div class="fr-avatar' + (live && live.state === 'ok' && !liveState.friendsOffline ? ' live' : '') + '">' + f.name.charAt(0).toUpperCase() + '</div>' +
+      '<div class="fr-who"><b>' + f.name + '</b><small>C' + f.cycle + ' · Rebirth ' + f.level + '</small>' + status + '</div>' +
       '<div class="fr-now">' + nowIcons + '</div>' +
       '<button class="fr-x" data-remove title="Remove ' + f.name + '">✕</button></div>' +
     body + '</div>';
 }
+/* v1.19.0 🌐 Live Friends: main.js does the talking to the Friends server (live-sync.js);
+   this page shows the switch + your live code, and the live friends main.js keeps in
+   'rebirth-liveFriends'. Live friends come first in the list, then pasted snapshot codes. */
+let liveState = { on:false, server:false };
+let liveFriends = [];
+const hasLive = !!(window.overlayAPI && window.overlayAPI.getLiveState);
+function liveAgo(t){ return Date.now() - t < 60000 ? 'just now' : friendAgeText(t); }
+function liveStatusText(){
+  if(!liveState.on) return { text:'off: snapshot codes', cls:'' };
+  if(!liveState.server) return { text:'not available yet', cls:'warn' };
+  if(liveState.state === 'ok' && liveState.savedAt) return { text:'saved ' + liveAgo(liveState.savedAt), cls:'ok', dot:true };
+  if(liveState.state === 'offline') return { text:'offline · will retry', cls:'warn' };
+  if(liveState.state === 'busy') return { text:'server busy · will retry', cls:'warn' };
+  if(liveState.state === 'error') return { text:'couldn\'t save', cls:'warn' };
+  return { text:'saving…', cls:'ok' };
+}
+function renderLiveMine(){
+  const row = getEl('friendLiveRow');
+  row.hidden = !hasLive;
+  const on = hasLive && liveState.on && !!liveState.code;
+  row.classList.toggle('on', on);
+  row.setAttribute('aria-checked', on ? 'true' : 'false');
+  const st = liveStatusText(), stEl = getEl('friendLiveStatus');
+  stEl.className = 'fr-live-st' + (st.cls ? ' ' + st.cls : '');
+  stEl.innerHTML = (st.dot ? '<span class="fr-dot"></span>' : '') + st.text;
+  getEl('friendMyCode').classList.toggle('live', on);
+  getEl('friendCopyCode').textContent = on ? '📋 Copy my live code' : '📋 Copy my code';
+  getEl('friendMineNote').textContent = on
+    ? 'Give it once: friends who add it stay up to date. Switching off stops sharing and deletes your saved code.'
+    : 'A snapshot of right now: send a new code when you\'ve moved on.';
+  return on;
+}
+// A friend you now follow live doesn't also need their old pasted snapshot (same name)
+function dropSnapshotsOfLiveFriends(){
+  const liveNames = new Set(liveFriends.map(e => e.code && decodeFriendCode(e.code)).filter(f => f && !f.error).map(f => f.name));
+  const kept = friendCodes.filter(c => { const f = decodeFriendCode(c); return f.error || !liveNames.has(f.name); });
+  if(kept.length !== friendCodes.length){ friendCodes = kept; storeSet('rebirth-friends', friendCodes); }
+}
+async function setLiveOn(on){
+  if(!hasLive) return;
+  await window.overlayAPI.setSettings({ liveFriends: on });
+  if(on) showToast('🌐 Live on: your friend code saves itself to the Friends server when it changes');
+}
 async function renderFriends(){
   if(!showFriendsPanel) return;
-  getEl('friendMyCode').textContent = await myFriendCode();
+  const liveOn = renderLiveMine();
+  getEl('friendMyCode').textContent = liveOn ? liveState.code : await myFriendCode();
   let html = '';
+  liveFriends.forEach(e=>{
+    const key = 'live:' + e.id;
+    const f = e.code ? decodeFriendCode(e.code) : null;
+    if(!f || f.error){
+      const why = f && f.error ? (f.name ? f.name + ': ' : '') + f.error
+        : e.state === 'gone' ? 'Live friend ' + e.id + ' isn\'t sharing right now (Live switched off, or not played for 2 weeks).'
+        : 'Loading live friend ' + e.id + '…';
+      html += '<div class="fr-bad" data-code="' + key + '">' + (e.state === 'new' && !f ? '🌐' : '⚠') + ' <span>' + why + '</span><button class="fr-x" data-remove title="Remove">✕</button></div>';
+      return;
+    }
+    html += friendCardHtml(f, friendUi[key] || (friendUi[key] = { open:false, tab:'next', only:false }), e);
+  });
   friendCodes.forEach(code=>{
     const f = decodeFriendCode(code);
     if(f.error){
@@ -2776,8 +2858,19 @@ async function renderFriends(){
 }
 async function addFriendCode(){
   const input = getEl('friendPasteInput'), msg = getEl('friendPasteMsg');
-  const f = decodeFriendCode(input.value);
   msg.classList.remove('ok');
+  const liveId = parseLiveCode(input.value); // v1.19.0 🌐: a live code or #live= link
+  if(liveId){
+    if(!hasLive){ msg.textContent = 'Live codes work in the app and on the website.'; return; }
+    const known = liveFriends.some(e => e.id === liveId);
+    await window.overlayAPI.addLiveFriend(liveId);
+    friendUi['live:' + liveId] = { open:true, tab:'next', only:false };
+    input.value = '';
+    msg.textContent = known ? 'You already have that live friend.' : 'Added a live friend: they update by themselves.';
+    msg.classList.add('ok');
+    return;
+  }
+  const f = decodeFriendCode(input.value);
   if(f.error){ msg.textContent = f.error; return; }
   const same = friendCodes.findIndex(c => decodeFriendCode(c).name === f.name);
   if(same !== -1){
@@ -2795,8 +2888,9 @@ async function addFriendCode(){
   renderFriends();
 }
 async function copyMyFriendCode(asLink){
-  const code = await myFriendCode();
-  const text = asLink ? FRIEND_LINK_BASE + code : code;
+  const liveOn = hasLive && liveState.on && liveState.code; // v1.19.0 🌐: the live code / link while Live is on
+  const code = liveOn ? liveState.code : await myFriendCode();
+  const text = asLink ? (liveOn ? LIVE_LINK_BASE + liveState.id : FRIEND_LINK_BASE + code) : code;
   const fallback = ()=>{
     const el = getEl('friendMyCode');
     el.textContent = text;
@@ -2804,13 +2898,16 @@ async function copyMyFriendCode(asLink){
     const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
     showToast('Press Ctrl+C to copy it');
   };
-  const done = ()=> showToast(asLink ? 'Link copied: it opens your progress on the website' : 'Your friend code is copied: paste it to a friend');
+  const done = ()=> showToast(liveOn
+    ? (asLink ? 'Live link copied: it shows your progress on the website, kept up to date' : 'Your live code is copied: give it to a friend once')
+    : (asLink ? 'Link copied: it opens your progress on the website' : 'Your friend code is copied: paste it to a friend'));
   if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback);
   else fallback();
 }
 async function toggleFriendsPanel(force){
   showFriendsPanel = (force !== undefined) ? force : !showFriendsPanel;
   applyReqPanelVisibility();
+  if(hasLive) window.overlayAPI.watchLiveFriends(showFriendsPanel); // v1.19.0 🌐: refreshed only while shown
   renderFriends();
   await storeSet('rebirth-showFriendsPanel', showFriendsPanel);
 }
@@ -2819,6 +2916,9 @@ document.getElementById('friendsPanelClose').addEventListener('click', ()=> togg
 document.getElementById('friendCopyCode').addEventListener('click', ()=> copyMyFriendCode(false));
 document.getElementById('friendCopyLink').addEventListener('click', ()=> copyMyFriendCode(true));
 document.getElementById('friendAddBtn').addEventListener('click', addFriendCode);
+document.getElementById('friendLiveRow').addEventListener('click', ()=> setLiveOn(!liveState.on));
+document.getElementById('friendLiveRow').addEventListener('keydown', e=>{ if(e.key === ' ' || e.key === 'Enter'){ e.preventDefault(); setLiveOn(!liveState.on); } });
+setInterval(()=>{ if(showFriendsPanel && (liveState.on || liveFriends.length)) renderFriends(); }, 60000); // "3 min ago" texts
 document.getElementById('friendPasteInput').addEventListener('keydown', e=>{ if(e.key === 'Enter') addFriendCode(); });
 document.getElementById('friendMyName').addEventListener('input', e=>{
   myFriendName = cleanFriendName(e.target.value);
@@ -2830,6 +2930,7 @@ document.getElementById('friendsList').addEventListener('click', async e=>{
   if(!card) return;
   const code = card.dataset.code;
   if(e.target.closest('[data-remove]')){
+    if(code.startsWith('live:')){ if(hasLive) await window.overlayAPI.removeLiveFriend(code.slice(5)); return; }
     friendCodes = friendCodes.filter(c => c !== code);
     await storeSet('rebirth-friends', friendCodes);
     renderFriends();
@@ -3092,8 +3193,9 @@ document.getElementById('bgDimRange').addEventListener('change', async (e)=>{
     const styleTag = document.querySelector('style');
     pipWin.document.head.innerHTML =
       '<meta charset="UTF-8">' +
-      '<link rel="preconnect" href="https://fonts.googleapis.com">' +
-      '<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">' +
+      // v1.19.0: the app's own fonts (fonts/fonts.css). This window starts as about:blank and may not read
+      // files from disk, so in the app main.js serves them on fdt://app/fonts/; a browser preview uses its server.
+      '<link rel="stylesheet" href="' + (location.protocol === 'file:' ? 'fdt://app/fonts/fonts.css' : new URL('fonts/fonts.css', document.baseURI).href) + '">' +
       '<style>' + styleTag.textContent + '</style>';
     pipWin.document.body.style.margin = '0';
     pipWin.document.body.style.padding = '18px';
@@ -3384,6 +3486,12 @@ applyNovaCrystalIcon(); // v1.16.0: the icon for By Rebirth Level's crystal rewa
   showReqPanel = !!(await storeGet('rebirth-showReqPanel'));
   showFriendsPanel = !!(await storeGet('rebirth-showFriendsPanel')); // v1.16.0
   friendCodes = cleanFriendCodes(await storeGet('rebirth-friends'));
+  liveFriends = cleanLiveFriends(await storeGet('rebirth-liveFriends')); // v1.19.0 🌐
+  if(hasLive){
+    liveState = await window.overlayAPI.getLiveState();
+    window.overlayAPI.onLiveState(s=>{ liveState = s || { on:false }; renderFriends(); });
+    if(showFriendsPanel) window.overlayAPI.watchLiveFriends(true);
+  }
   myFriendName = cleanFriendName(await storeGet('rebirth-friendName'));
   getEl('friendMyName').value = myFriendName;
   applyReqPanelVisibility();
@@ -3407,11 +3515,13 @@ applyNovaCrystalIcon(); // v1.16.0: the icon for By Rebirth Level's crystal rewa
     }
     // v1.16.0 👥: the friends list, and your own code (it carries your rebirth)
     else if(key === 'rebirth-friends'){ friendCodes = cleanFriendCodes(value); renderFriends(); }
+    else if(key === 'rebirth-liveFriends'){ liveFriends = cleanLiveFriends(value); dropSnapshotsOfLiveFriends(); renderFriends(); } // v1.19.0 🌐
     else if(key === 'rebirth-currentLevel'){ renderFriends(); }
   });
 })();
 </script>
 <script src="node_modules/tesseract.js/dist/tesseract.min.js"></script>
+<script src="ocr-options.js"></script>
 <script src="rebirth-level-detect.js"></script>
 <script src="rebirth-screen-read.js"></script>
 <script src="sounds/good-news-data.js"></script>

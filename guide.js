@@ -132,6 +132,19 @@
         the next one without leaving the game, <b>↶ Undo</b> for 10 minutes after, and <b>🔢 Rebirth level +1 / −1</b>.</p>`
     },
     {
+      // v1.19.0: opens 👥 Friends at the 🌐 Live switch
+      since: '1.19.0', target: '#friendLiveRow',
+      before: ()=>{
+        const panel = document.getElementById('friendsPanel');
+        if(panel && !panel.classList.contains('show')) document.getElementById('friendsPanelToggle').click();
+      },
+      title: '🌐 Live Friends',
+      body: `<p>Switch on <b>🌐 Live</b> and your friend code keeps itself up to date: give friends your short <b>live code</b> once
+        (📋 Copy my live code), and their 👥 Friends panel and HUD follow your progress by themselves. Paste a friend's live code to follow them.</p>
+        <p>It's <b>off</b> until you switch it on. While on, only your friend code (name, cycle, rebirth, logged droids) is saved, when it changes.
+        Switching off deletes it. Snapshot codes still work as before.</p>`
+    },
+    {
       since: '1.0.0', target: '#guideOpenBtn',
       title: "You're all set",
       body: `<p>Your progress saves by itself as you go.</p>

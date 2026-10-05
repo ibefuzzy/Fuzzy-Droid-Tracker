@@ -128,8 +128,8 @@ fix for "I'm sometimes late logging droids": open this screen whenever you
 rebirth (you're already there to click the Rebirth button anyway) and one
 read catches your whole log up.
 
-First time you use it, it needs internet once to download its OCR language
-data (~15MB, cached after that).
+The text recognition (OCR) ships with the app since v1.19.0, so it works offline from the
+first use (before that, its first run downloaded the OCR data from the internet).
 
 Safe to run repeatedly as you keep progressing — it only ever raises
 ownership, never lowers it.
@@ -408,6 +408,47 @@ it can be corrected.
   Leftovers of the in-game "PREVIEW" banner, the card frame and the colored card glow are
   gone.
 
+## 🌐 Live Friends (v1.19.0)
+
+**👥 Friends can now update by themselves.** Open 👥 Friends and switch on **🌐 Live**: your code box
+turns into a short **live code** (`FDTL1.` + 12 letters/digits). Give it to a friend once (📋 Copy my
+live code, or 🔗 Copy link for the website); whenever you mark droids or change your rebirth, their
+panel and their HUD friend view (the 👥 hotkey) catch up within a couple of minutes. Paste a friend's
+live code (or live link) into the same box as before to follow them. A live friend shows a green
+dot and **live · 3 min ago**; **last seen …** means they switched Live off or haven't played lately.
+A friend you follow live replaces their old pasted code. Snapshot codes work exactly as before.
+
+**Privacy: what is sent, where, and when.**
+- **Off by default.** Nothing is sent until you switch 🌐 Live on (or add a friend's live code).
+- While on, the app sends **only your friend code**: the same text 📋 Copy my code gives you
+  (the name you typed, your cycle, rebirth level and which droids you've logged). It goes to the
+  tracker's own small server (a Cloudflare Worker), at most once every 2 minutes and only when it changed,
+  plus once when the app starts.
+- Your code is stored under a random ID together with a fingerprint (hash) of a secret key that never
+  leaves your PC, so nobody else can overwrite it. No accounts, no e-mail, no IP addresses are stored
+  (the server's request logging is switched off).
+- Anyone who has your live code can see your progress, the same as with a snapshot code. Use a nickname.
+- Friends' live codes are read about every 90 seconds, **only while** the 👥 Friends panel or the HUD's
+  friend view is showing.
+- **Switching off deletes your saved code** from the server right away (or at the next launch if you were
+  offline). Codes not saved for 14 days are deleted by themselves.
+- Your random ID stays reserved for you after that (just the ID and the key's fingerprint: no name, no
+  progress), so nobody who knows your live code can take it over; switch back on and the same code works
+  again. An ID unused for a year is freed.
+- The server is on Cloudflare's free plan. If it's ever busy for the day, Live just waits and tries again.
+
+## 🔒 Safer under the hood (v1.19.0)
+
+- **Newer Electron (44).** The app was built on Electron 32, whose built-in browser stopped getting
+  security fixes in March 2025. It now runs on Electron 44 (Chromium 152), which is supported.
+- **Nothing is downloaded from other sites any more.** The text recognition used by 📸 Read Rebirth
+  Screen, the rebirth badge reader and 📡 Spawn Alert used to download its engine and English data
+  from a public code site (jsDelivr) the first time it ran; it now ships inside the app and works
+  offline from the start. The fonts (Rajdhani, IBM Plex Mono, Inter) used to load from Google Fonts on
+  every launch; they ship with the app too.
+- **What the app connects to now:** the once-a-day new-version check (`ibefuzzy.github.io`), and the
+  🌐 Live Friends server only while Live is on or you follow a live friend. Nothing else.
+
 ## 🎯 Next Droids Needed + cycle hotkeys (v1.18.1)
 
 **The HUD is now called 🎯 Next Droids Needed** (it was "Upcoming RB Req's" on the toolbar and
@@ -661,9 +702,8 @@ and shows each new spawn big, wherever you put it:
   (frame, glow and emblem), theme presets, backdrop color, and "Edit colors for: 📡 Spawn
   Alert". Saved looks and share codes include it.
 - It reads the screen you picked for 📸 Read Rebirth Screen (🖥 Change screen switches it)
-  and expects the game's usual layout at 1920×1080 or another 16:9 resolution. The first
-  run needs the internet once to fetch the text recognition data, same as Read Rebirth
-  Screen.
+  and expects the game's usual layout at 1920×1080 or another 16:9 resolution. (Its text
+  recognition ships with the app since v1.19.0; it no longer downloads anything.)
 
 ## ⏱ Kyber timer back to normal (v1.13.1, hotfix)
 
@@ -1182,6 +1222,11 @@ and testing everything above:
   [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), used as SVG paths.
 - Death Star, ghost, pumpkin and spider emblems: [Material Design Icons](https://pictogrammers.com/library/mdi/),
   Apache License 2.0.
+- Fonts (shipped in `fonts/` since v1.19.0): Rajdhani by the Indian Type Foundry, IBM Plex Mono by
+  IBM Corp. and Inter by the Inter Project Authors, all under the
+  [SIL Open Font License 1.1](https://openfontlicense.org) (the licence files are in `fonts/`).
+- Text recognition: [tesseract.js](https://github.com/naptha/tesseract.js) and tesseract.js-core
+  (Apache License 2.0) with the English data from `@tesseract.js-data/eng`, shipped with the app.
 - Star Wars and its insignia are trademarks of Lucasfilm Ltd. This is an unofficial
   fan-made tool, not affiliated with or endorsed by Lucasfilm, Disney or Epic Games.
 
@@ -1244,6 +1289,11 @@ and testing everything above:
   read ownership/cycle progress at all — droid-data.js/requirements.js are
   only loaded for `BORDER_SKINS`/`borderIconSvg`, same as every other
   overlay's script list.
+- `ocr-options.js` (v1.19.0) — where the three text-recognition flows load the OCR engine from:
+  the copies shipped with the app, served by `main.js` on the private `fdt://ocr/` address
+  (a web worker can't read `file://`). `fonts/` — the app's fonts and their licences.
+- `live-sync.js` (v1.19.0) — 🌐 Live Friends' rules (saving, checking, answers); `worker/` holds
+  the Cloudflare Worker it talks to (not packaged).
 - `spawn-alert.html` + `spawn-parse.js` (v1.14.0) — the 📡 Spawn Alert. The page
   captures the screen, cleans up the game's feed box and runs text recognition on it;
   `spawn-parse.js` decides which lines are droid spawns and which are new (tested

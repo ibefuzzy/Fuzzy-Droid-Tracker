@@ -94,7 +94,7 @@
     if(worker || workerFailed) return worker;
     if(typeof Tesseract === 'undefined'){ workerFailed = true; return null; }
     try{
-      worker = await Tesseract.createWorker('eng');
+      worker = await Tesseract.createWorker('eng', 1, ocrWorkerOptions()); // v1.19.0: shipped with the app (ocr-options.js)
       // No digit whitelist: a box that includes the word "Rank" would get its
       // letters coerced into look-alike digits. parseRankText() (requirements.js) picks the number.
       await worker.setParameters({ tessedit_pageseg_mode: '7' });

@@ -990,6 +990,38 @@ function decodeFriendCode(input){
   }
 }
 
+/* ---------------- 🌐 LIVE FRIENDS (v1.19.0) ----------------
+   A live friend is a share ID (12 letters/digits) whose newest friend code sits on the
+   Friends server (worker/live-friends-worker.mjs). Players hand out "FDTL1.<id>" or a
+   LIVE_LINK_BASE link once. 'rebirth-liveFriends' = [{id, code|null, updatedAt|null,
+   state:'new'|'ok'|'gone'}], newest first; only main.js writes it (live-sync.js). */
+const LIVE_CODE_PREFIX = 'FDTL1.';
+const LIVE_LINK_BASE = 'https://ibefuzzy.github.io/tracker/#live=';
+const LIVE_ID_RE = /^[A-Za-z0-9]{12}$/;
+const LIVE_FRIENDS_MAX = 30;
+/** A pasted live code or live link -> the share ID, or null. Never throws. */
+function parseLiveCode(input){
+  let str = String(input || '').trim();
+  const at = str.indexOf('#live=');
+  if(at !== -1) str = str.slice(at + 6);
+  else if(str.startsWith(LIVE_CODE_PREFIX)) str = str.slice(LIVE_CODE_PREFIX.length);
+  else return null;
+  str = str.replace(/\s+/g, '');
+  return LIVE_ID_RE.test(str) ? str : null;
+}
+/** The stored live friends list, cleaned: valid IDs once each, code-shaped codes only. Never throws. */
+function cleanLiveFriends(list){
+  const seen = new Set(), out = [];
+  (Array.isArray(list) ? list : []).forEach(e=>{
+    if(!e || typeof e !== 'object' || typeof e.id !== 'string' || !LIVE_ID_RE.test(e.id) || seen.has(e.id) || out.length >= LIVE_FRIENDS_MAX) return;
+    seen.add(e.id);
+    const code = (typeof e.code === 'string' && e.code.length <= 200 && /^FDTP1\.[A-Za-z0-9_-]+$/.test(e.code)) ? e.code : null;
+    const updatedAt = (typeof e.updatedAt === 'number' && isFinite(e.updatedAt)) ? e.updatedAt : null;
+    out.push({ id: e.id, code, updatedAt, state: ['new', 'ok', 'gone'].includes(e.state) ? e.state : 'new' });
+  });
+  return out;
+}
+
 /* ---------------- MISSION WARNINGS (v1.14.1) ----------------
    settings.missionWarnTimes = seconds BEFORE the next mission to play
    settings.missionWarnSound (⚙ Overlay Settings → Timers). The presets are chips

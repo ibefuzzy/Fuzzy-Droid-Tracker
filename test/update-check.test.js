@@ -65,7 +65,12 @@ test('the only address is the site file; the Download button opens the fixed rel
   assert.match(u.RELEASES_URL, /^https:\/\/github\.com\/ibefuzzy\/Fuzzy-Droid-Tracker\/releases$/);
   const main = read('main.js');
   assert.match(main, /shell\.openExternal\(updateCheck\.RELEASES_URL\)/);
-  assert.strictEqual((main.match(/net\.fetch\(/g) || []).length, 1);
+  // v1.19.0: exactly two network calls in the app: this file, and the 🌐 Live Friends server.
+  // The third net.fetch reads the bundled OCR files from the app's own folder (file://, never the network).
+  const fetches = main.match(/net\.fetch\([^,]+/g) || [];
+  assert.deepStrictEqual(fetches.sort(), ['net.fetch(liveSync.LIVE_SERVER + p', 'net.fetch(pathToFileURL(path.join(__dirname',
+    'net.fetch(updateCheck.UPDATE_URL']);
+  assert.match(main, /net\.fetch\(pathToFileURL\(path\.join\(__dirname, rel\)\)\.toString\(\)\)/);
 });
 
 test('on by default, and the switch turns the read off', () => {

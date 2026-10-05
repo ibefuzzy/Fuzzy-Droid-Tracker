@@ -3,8 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>Fuzzy's Droid Tracker</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="fonts/fonts.css"><!-- v1.19.0: shipped with the app, was Google Fonts -->
 <link rel="stylesheet" href="overlay-theme.css">
 <style>
   :root{
@@ -214,6 +213,8 @@
   html.friend-view .friend-tag{ display:block; }
   html.friend-view .block{ border-left-color:rgba(242,185,94,0.55); }
   html.friend-view .block.current{ border-left-color:#f2b95e; }
+  /* v1.19.0 🌐 a live friend: a green tag (how fresh it is) instead of the code's age */
+  .friend-tag.live{ color:#04140b; background:#5ef2a6; box-shadow:0 0 8px -1px rgba(94,242,166,0.8); }
   .d-name{
     font-size:calc(9.5px * var(--ov-text-scale, 1)); font-weight:700; color:#f2f6f4; text-align:center;
     text-shadow:0 1px 2px rgba(0,0,0,0.9); line-height:1.15;
@@ -289,10 +290,20 @@
   // list is look-only: clicks and the mark keys do nothing while it's showing.
   let friends = [];
   let hudView = 0;
+  let snapshotCodes = [], liveList = []; // v1.19.0 🌐: live friends ('rebirth-liveFriends') first, then pasted codes
   function viewingFriend(){ return hudView > 0 ? (friends[hudView - 1] || null) : null; }
-  function setFriends(codes){
-    friends = (Array.isArray(codes) ? codes : []).map(decodeFriendCode).filter(f => !f.error);
+  function setFriends(codes, live){
+    if(codes !== undefined) snapshotCodes = Array.isArray(codes) ? codes : [];
+    if(live !== undefined) liveList = cleanLiveFriends(live);
+    const lives = liveList.filter(e => e.code).map(e => ({ ...decodeFriendCode(e.code), live: e })).filter(f => !f.error);
+    friends = lives.concat(snapshotCodes.map(decodeFriendCode).filter(f => !f.error));
     if(hudView > friends.length) hudView = 0;
+  }
+  // v1.19.0 🌐: main.js refreshes live friends only while someone looks at one
+  let watchingLive = false;
+  function updateLiveWatch(){
+    const want = !!(viewingFriend() && viewingFriend().live);
+    if(want !== watchingLive && window.overlayAPI.watchLiveFriends){ watchingLive = want; window.overlayAPI.watchLiveFriends(want); }
   }
 
   async function loadIndexData(){
@@ -305,7 +316,7 @@
     currentCycle = (await window.overlayAPI.storeGet('rebirth-activeCycle')) || 1;
     currentLevel = (await window.overlayAPI.storeGet('rebirth-currentLevel')) || 0;
     ownedRankLocal = (await window.overlayAPI.storeGet('rebirth-ownedRank-v2')) || {};
-    setFriends(await window.overlayAPI.storeGet('rebirth-friends'));
+    setFriends(await window.overlayAPI.storeGet('rebirth-friends'), await window.overlayAPI.storeGet('rebirth-liveFriends'));
   }
 
   // v1.16.0: the SELL flag markup for sellFlagFor(this card), or ''
@@ -375,8 +386,12 @@
     const top = upcoming[0] ? upcoming[0].cycle + '-' + upcoming[0].level : '';
     if(top !== shownTop){ if(shownTop) selectedPos = { levelIndex: 0, slot: 0 }; shownTop = top; }
     document.documentElement.classList.toggle('friend-view', !!fr);
-    document.getElementById('friendTag').innerHTML = fr
-      ? ('👥 ' + fr.name.toUpperCase() + '<small>C' + fr.cycle + ' · RB ' + fr.level + ' · ' + friendAgeText(fr.time) + '</small>') : '';
+    const tagEl = document.getElementById('friendTag');
+    tagEl.classList.toggle('live', !!(fr && fr.live && fr.live.state === 'ok'));
+    tagEl.innerHTML = fr
+      ? ('👥 ' + fr.name.toUpperCase() + '<small>C' + fr.cycle + ' · RB ' + fr.level + ' · ' +
+        (fr.live ? (fr.live.state === 'ok' ? '● LIVE · ' : 'last seen ') + friendAgeText(fr.live.updatedAt) : friendAgeText(fr.time)) + '</small>') : '';
+    updateLiveWatch();
 
     blocksEl.innerHTML = readyStripHtml(st.ready) + upcoming.map((u, i)=>{
       const isCurrent = i === 0;
@@ -441,6 +456,7 @@
     else if(key === 'rebirth-currentLevel'){ currentLevel = value || 0; selectedPos = { levelIndex: 0, slot: 0 }; render(); }
     else if(key === 'rebirth-nameMerges' || key === 'rebirth-displayOverrides'){ fullReload(); }
     else if(key === 'rebirth-friends'){ setFriends(value); render(); } // v1.16.0
+    else if(key === 'rebirth-liveFriends'){ setFriends(undefined, value); render(); } // v1.19.0 🌐
   });
 
   function applySettings(settings){
