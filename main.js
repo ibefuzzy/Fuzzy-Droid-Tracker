@@ -339,6 +339,17 @@ const DEFAULT_SETTINGS = {
   // ({name, look} — lookToSettings() applies one).
   themeCompact: null,
   themeTextScale: null,
+  // v1.20.0 panel backgrounds (overlay-backgrounds.js; per-overlay like any theme* key): which one
+  // (null/'none' = none), strength, colour (null natural / 'border' / hex), motion on, motion speed.
+  themeBg: null,
+  themeBgStrength: null,
+  themeBgColor: null,
+  themeBgMotion: null,
+  themeBgSpeed: null,
+  overlayBgLight: false,     // v1.20.0: background motion at 15 fps (less work while gaming)
+  overlayBgPairSkin: true,   // v1.20.0: picking a Halloween background also picks its matching border skin
+  overlayFoil: true,         // v1.20.0: holo foil shine on Stellar + Kyber pictures
+  overlayPrices: true,       // v1.20.0: droid prices on the HUD, Rebirth Reqs + Sneak Preview (a player's request)
   // v1.17.0: 'color' (the picture frame shows the rarity) or 'text' (neutral frame, rarity written under
   // the name) for every droid overlay; see rarityStyleOf() in requirements.js
   overlayRarityStyle: 'color',

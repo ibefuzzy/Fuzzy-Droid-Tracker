@@ -324,3 +324,35 @@ const DROID_RARITY_CLASS = {
   "RIC": "Mythic",
   "LEP": "Mythic"
 };
+
+/* ---------------- DROID PRICES (v1.20.0, a player's request) ----------------
+   What each droid's blueprint costs in credits. The game prices every rarity as a
+   fixed multiple of the droid's Base price, and the multiples depend only on its
+   class (DROID_RARITY_CLASS above): PRICE_LADDER, in RARITY_ORDER (Base, Gold, Diamond,
+   Rainbow, Beskar, Galactic, Stellar, Kyber). A Kyber droid also needs Kyber Crystals
+   to activate (KYBER_ACTIVATION_CRYSTALS). droidPriceFor() in requirements.js is the
+   only lookup.
+   Sources: Base prices from the Droidex value list by Nackz (github.com/n4ckz/droidex,
+   MIT licence, see README Credits), which cross-checks tycoon-tools.com; checked
+   (2026-10-05) against DubTrackr's Droidex (droidex.dubtrackr.win, game 1.33.0): all
+   600 rebirth slots equal, Kyber included. Keyed by a CYCLES spelling, like the table above. */
+const DROID_BASE_PRICES = {
+  // Default (Common)
+  "Mouse": 950, "Pit": 1100, "CB": 2000, "R3": 2000, "R5": 2000, "DRK-1 PROBE": 3000, "Gonk": 3000, "R8": 3000, "ID10": 4000, "B1 Battle": 4000, "IMPERIAL PROBE": 5000,
+  // Rare
+  "BDX Explorer": 25000, "2BB": 30000, "Nav-Ex": 36000, "Bal-Core": 43000, "Vect-Arm": 52000, "Roll-R": 62000, "A-LT": 74000, "ARG": 88000, "SENATE HOVERCAM": 100000, "R4": 110000, "R9": 120000, "B-U4D": 130000, "Hov-R": 140000, "B1 Security": 150000,
+  // Epic
+  "Groundmech": 900000, "BB": 1200000, "Orb Walker": 1500000, "Util-Tec": 1800000, "LO": 2100000, "Haul-R": 2400000, "R6": 2700000, "Trak-R": 3000000, "R2": 3300000, "Opti-Pod": 3600000, "B2 Super": 3900000, "LNG-Shot": 4200000, "B2 Heavy": 4500000, "Sen-Tri": 4800000, "Strike-Orb": 5100000, "Amp Walker": 5400000, "B1 Heavy": 6000000, "Gunrunner": 6300000,
+  // Legendary
+  "Proto Roller": 22000000, "BB9": 28000000, "Mecha Droid": 29000000, "Cyclo-Grav": 30000000, "B2-RP": 31000000, "Mono-Wlkr": 37000000, "R7": 37000000, "Opti-Strk": 37000000,
+  // Mythic
+  "Cyclens": 180000000, "Snow Mouse": 180000000, "RIC": 204000000, "IG": 228000000, "Drft-R": 228000000, "RIC-1200": 228000000, "Tri-Tek": 252000000, "LEP": 252000000, "Mo-Trak": 300000000, "Loadlifter": 300000000, "KX": 300000000
+};
+const PRICE_LADDER = {
+  Default:   [1, 4, 8, 12, 16, 20, 24, 36],
+  Rare:      [1, 4, 8, 12, 16, 20, 24, 36],
+  Epic:      [1, 4, 8, 12, 125, 300, 750, 4500],
+  Legendary: [1, 4, 8, 12, 400, 2400, 14500, 87000],
+  Mythic:    [1, 4, 8, 24, 800, 4700, 28000, 168000]
+};
+const KYBER_ACTIVATION_CRYSTALS = { Default: 1, Rare: 2, Epic: 4, Legendary: 7, Mythic: 10 };

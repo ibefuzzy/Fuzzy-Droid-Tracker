@@ -259,6 +259,7 @@
 <script src="card-icons-data.js"></script>
 <script src="droid-data.js"></script>
 <script src="requirements.js"></script>
+<script src="overlay-backgrounds.js"></script>
 <script>
 (function(){
   if(!window.overlayAPI){
@@ -284,6 +285,7 @@
   let currentCycle = 1;
   let currentLevel = 0; // last rebirth COMPLETED; 0 = none yet
   let ownedRankLocal = {};
+  let showPrices = true; // v1.20.0: Appearance → Effects → 💰 Prices (pricesOn in requirements.js)
   let selectedPos = { levelIndex: 0, slot: 0 }; // v1.10.3: hotkey-based marking — track which level card + droid (0-2)
   // v1.16.0 👥: the friends pasted in the tracker ('rebirth-friends' codes, the readable
   // ones decoded) and whose list the HUD shows: 0 = you, n = friends[n-1]. A friend's
@@ -337,12 +339,16 @@
     const imgTag = src ? ('<img src="' + src + '" alt="' + d.display + '" loading="lazy">') : '';
     const flag = sellFlagFor(d.cycle, d.level, d.slot);
     const sellText = !flag ? '' : flag.kind === 'yellow' ? ' — SELL: not needed again this cycle' : (' — can be sold, needed again at Rebirth ' + flag.next);
-    const title = d.display + ' — need ' + RNAME[d.code] + ' — ' + (ownedCode ? ((friend ? 'they have ' : 'you have ') + RNAME[ownedCode]) : 'not logged yet') + sellText;
+    // v1.20.0: a droid still needed shows its price where "Not owned" / "Have: Gold" would be
+    const price = (showPrices && !d.owned) ? droidPriceFor(d.code, d.nk) : null;
+    const priceText = price ? ' — costs ' + formatCredits(price.credits) + (price.crystals ? ' + ' + price.crystals + ' Kyber Crystals' : '') : '';
+    const title = d.display + ' — need ' + RNAME[d.code] + ' — ' + (ownedCode ? ((friend ? 'they have ' : 'you have ') + RNAME[ownedCode]) : 'not logged yet') + priceText + sellText;
     return '<div class="d-cell' + (d.owned ? ' owned' : '') + '" data-cycle="' + d.cycle + '" data-level="' + d.level + '" data-slot="' + d.slot + '" title="' + title + '">' +
       '<div class="d-icon-wrap" style="--rc:' + reqColor + ';">' + imgTag + sellFlagHtml(flag) + '</div>' +
       '<div class="d-name">' + d.display + '</div>' +
       '<div class="rar-label ' + d.code + '">Need ' + RNAME[d.code] + '</div>' + // shown by 'Written under the name' (v1.17.0)
-      '<div class="d-owned" style="color:' + ownedColor + '">' + haveText + '</div>' +
+      (price ? '<div class="d-owned price">' + droidPriceHtml(price) + '</div>'
+             : '<div class="d-owned" style="color:' + ownedColor + '">' + haveText + '</div>') +
     '</div>';
   }
 
@@ -396,13 +402,18 @@
     blocksEl.innerHTML = readyStripHtml(st.ready) + upcoming.map((u, i)=>{
       const isCurrent = i === 0;
       const cycleTag = u.cycle !== cycle ? (' · Cycle ' + u.cycle) : '';
-      const tag = (isCurrent ? 'NOW · Lvl ' : 'Lvl ') + u.level + cycleTag;
+      // v1.20.0: with prices on, "NOW 36" (was "NOW · Lvl 36") leaves room for the Σ total on the top line
+      const tag = (isCurrent ? (showPrices ? 'NOW ' : 'NOW · Lvl ') : 'Lvl ') + u.level + cycleTag;
+      let sum = 0, kc = 0;
+      if(showPrices) u.droids.forEach(d => { const p = d.owned ? null : droidPriceFor(d.code, d.nk); if(p){ sum += p.credits; kc += p.crystals; } });
+      const totalHtml = sum ? '<span class="price-total" title="The droids you still need for Rebirth ' + u.level + ' cost ' + formatCredits(sum) +
+        (kc ? ' + ' + kc + ' Kyber Crystals' : '') + ' together">Σ' + formatCredits(sum) + '</span>' : '';
       const credits = rebirthCreditsFor(u.cycle, u.level); // v1.15.1
       const creditsHtml = credits === null ? '' : '<span class="credits" title="Credits needed to go through with Rebirth ' + u.level + '">' + formatCredits(credits) + '</span>';
       const crystals = rebirthCrystalsFor(u.cycle, u.level); // v1.16.0
       const crystalsHtml = crystals === null ? '' : '<span class="crystals" title="Nova Crystals for reaching Rebirth ' + u.level + '">+' + crystals + '</span>';
       return '<div class="block' + (isCurrent ? ' current' : '') + '" data-cycle="' + u.cycle + '" data-level="' + u.level + '">' +
-        '<div class="block-head"><span class="tag">' + tag + '</span><span class="head-chips">' + crystalsHtml + creditsHtml + '</span></div>' +
+        '<div class="block-head"><span class="tag">' + tag + '</span>' + totalHtml + '<span class="head-chips">' + crystalsHtml + creditsHtml + '</span></div>' +
         '<div class="d-row">' + u.droids.map(d => cellHtml(d, !!fr)).join('') + '</div>' +
       '</div>';
     }).join('');
@@ -469,6 +480,7 @@
     document.documentElement.style.setProperty('--sw-rgb', skin.rgb);
     const badge = document.getElementById('borderBadge');
     if(badge) badge.innerHTML = borderIconSvg(settings.border || 'jedi', 18);
+    if(pricesOn(settings) !== showPrices){ showPrices = pricesOn(settings); render(); }
   }
   window.overlayAPI.onSettingsChanged(applySettings);
 

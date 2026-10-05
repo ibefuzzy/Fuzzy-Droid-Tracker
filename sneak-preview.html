@@ -204,6 +204,7 @@
 <script src="card-icons-data.js"></script>
 <script src="droid-data.js"></script>
 <script src="requirements.js"></script>
+<script src="overlay-backgrounds.js"></script>
 <script src="overlay-scroll.js"></script>
 <script>
 (function(){
@@ -235,6 +236,7 @@
 
   let currentCycle = 1;
   let ownedRankLocal = {};
+  let showPrices = true; // v1.20.0: Appearance → Effects → 💰 Prices (pricesOn in requirements.js)
   let heldLocal = {};      // 'rebirth-heldMarks': {cycle -> {nk -> rank}}
   let shown = { nextCycle: 2, items: [] }; // what render() last drew, in cell order
   let selectedIndex = 0;
@@ -265,15 +267,20 @@
     const b64 = (typeof CARD_ICONS !== 'undefined' && CARD_ICONS[it.iconKey]) || (typeof ICONS !== 'undefined' && ICONS[it.iconKey]);
     const src = b64 ? 'data:image/webp;base64,' + b64 : '';
     const imgTag = src ? ('<img src="' + src + '" alt="' + it.display + '" loading="lazy">') : '';
+    // v1.20.0: a droid still to get shows its price instead of "Needs …"; "Written under the name" then
+    // names the rarity on its own line (.rar-label, like the HUD), since the price line can't hold both
+    const price = (showPrices && !held && !covered) ? droidPriceFor(it.code, it.nk) : null;
+    const priceText = price ? ' — costs ' + formatCredits(price.credits) + (price.crystals ? ' + ' + price.crystals + ' Kyber Crystals' : '') : '';
     const title = it.display + ' — next cycle needs ' + RNAME[it.code] + ' — ' +
       (held ? ('marked for Cycle ' + nextCycle + ', applied when you switch to it')
-            : ((it.ownedCode ? ('you have ' + RNAME[it.ownedCode]) : 'not logged yet') + (covered ? ' (already covered)' : '')));
+            : ((it.ownedCode ? ('you have ' + RNAME[it.ownedCode]) : 'not logged yet') + (covered ? ' (already covered)' : ''))) + priceText;
     return '<div class="d-cell" data-index="' + i + '" title="' + title + '">' +
       '<div class="d-icon-wrap" style="--rc:' + reqColor + ';">' + imgTag + (held ? '<span class="d-held">✓</span>' : '') + '</div>' +
       '<div class="d-name">' + it.display + '</div>' +
-      // v1.17.0: 'Needs …' is the one state that names the rarity the next cycle asks for; 'Written under
-      // the name' colours it by that rarity (--nc) instead of by what you hold
-      '<div class="d-owned' + ((held || covered) ? '' : ' need') + '" style="color:' + ownedColor + ';--nc:' + reqColor + '">' + statusText + '</div>' +
+      (price ? '<div class="rar-label ' + it.code + '">Need ' + RNAME[it.code] + '</div><div class="d-owned price">' + droidPriceHtml(price) + '</div>'
+        // v1.17.0: 'Needs …' is the one state that names the rarity the next cycle asks for; 'Written under
+        // the name' colours it by that rarity (--nc) instead of by what you hold
+        : '<div class="d-owned' + ((held || covered) ? '' : ' need') + '" style="color:' + ownedColor + ';--nc:' + reqColor + '">' + statusText + '</div>') +
     '</div>';
   }
 
@@ -375,6 +382,7 @@
     document.documentElement.style.setProperty('--sw-rgb', skin.rgb);
     const badge = document.getElementById('borderBadge');
     if(badge) badge.innerHTML = borderIconSvg(settings.sneakBorder || 'rebel', 18);
+    if(pricesOn(settings) !== showPrices){ showPrices = pricesOn(settings); render(); }
   }
   window.overlayAPI.onSettingsChanged(applySettings);
 

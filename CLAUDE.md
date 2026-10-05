@@ -21,6 +21,14 @@ short on purpose so a fresh session can read it in one pass.
   missionWarningsDue), and (v1.16.0) `sellFlagFor` (the coloured SELL flags) + the 👥 friend
   codes (`encodeFriendCode`/`decodeFriendCode`, `friendOwnedFromMine`/`friendOwnedRank`). Loaded by tracker.html, timers.html and every overlay page;
   `grep -l requirements.js *.html` gives the current list.
+- `overlay-backgrounds.js` (v1.20.0) — the 30 panel backgrounds (`OVERLAY_BG`: vector SVG/CSS layers,
+  recolouring that keeps shading, slow motion) + `applyOverlayBackground(theme, skin, {light})`, called by
+  overlay-theme.js (droid overlays + Spawn Alert) and timers.html. Chosen by the theme keys `themeBg*`
+  (per overlay via overlayThemes, in looks/share codes; keys in requirements.js `OVERLAY_BG_KEYS`, never
+  renamed). Painted on `.card/.block/.ready-strip/.banner/.alert` with fixed attachment; size/position
+  must stay non-!important or motion freezes. Designed in dev/overlay-backgrounds-lab.html; end-to-end
+  check: dev/backgrounds-app-check.html. Holo foil (Stellar/Kyber pictures) = `html.ov-foil` CSS in
+  overlay-theme.css (setting `overlayFoil`, default on). test/backgrounds.test.js.
 - `crit-guide-overlay.html` (v1.10.0) — the 5th overlay, ⚡ Optimal Crit Guide: a
   STATIC reference panel (hardcoded purchase-order data for one specific build),
   unlike the other four — no ownership/cycle data, no fullReload(), no
@@ -325,7 +333,27 @@ Stop test copies ONLY by that `--user-data-dir` in the process command line (Win
 never by exe path: the user may be running the app from `release\win-unpacked` too. Tell the
 user before launching; they may be in-game and close stray windows.
 
-## Current state (2026-10-05): v1.19.0 PUBLISHED (Live Friends + bundled OCR/fonts + Electron 44)
+## Current state (2026-10-05): v1.20.0 IN PROGRESS (package.json bumped; uncommitted)
+
+- **v1.20.0 = overlay backgrounds (30, all user-approved in the lab) + motion + per-overlay colour modes +
+  holo foil on Stellar/Kyber** (built, 204 tests pass, checked end to end in dev/backgrounds-app-check.html).
+  The spooky presets now carry their backgrounds. Tutorial step `since:'1.20.0'` (app only: the web has no
+  overlays).
+- **💰 Droid prices (a player's request, also v1.20.0, built + tested):** droid-data.js `DROID_BASE_PRICES` (62, keyed
+  like DROID_RARITY_CLASS) x `PRICE_LADDER` (per class) + `KYBER_ACTIVATION_CRYSTALS`; requirements.js
+  `droidPriceFor(code, nk)` / `droidPriceHtml` / `pricesOn` (setting `overlayPrices`, default ON). A STILL-NEEDED
+  droid's `.d-owned` line becomes the price on the HUD, Rebirth Reqs, Sneak Preview (Sneak adds a `.rar-label` so
+  "Written under the name" keeps the rarity); the HUD adds a `.price-total` Σ chip after the tag and shortens the top
+  tag to "NOW 36" (the badge sits mid-header: the right side had no room). Data: Nackz droidex (MIT, notice in
+  licenses/) = DubTrackr on all 600 slots; test/prices.test.js. Lab: dev/prices-lab.html (its own injected mock,
+  pre-build). Tutorial got a 💰 step, the HUD bullet and the 1.18.1 READY strip.
+- **Built 2026-10-05: `release\next\Fuzzy's Droid Tracker 1.20.0.exe`** (103,619,031 bytes, sha256 AFC0E989...4E211793;
+  asar checked). 210 tests pass. Next: user's in-game test -> move to release\ (1.19.0 to the Recycle Bin) -> snapshot
+  `_backup_v1.20.0_approved/` -> commit + push -> pre-fill the release -> publish -> digest -> bump version.json. Also picked for later (memory
+  project_overlay_customization_next.md): seasonal auto-themes, own picture as background, event effects,
+  panel shapes, overlay fonts, theme packs. Not built yet: the exe, the in-game test (motion CPU cost!).
+
+## Previous: v1.19.0 PUBLISHED (Live Friends + bundled OCR/fonts + Electron 44)
 
 - **v1.19.0 PUBLISHED 2026-10-05**, asset digest verified = sha256 cb877d42...bfc0658 (103,604,388 bytes); version.json =
   1.19.0 (live); website Live Friends live (CORS checked from the real origin). Snapshot `_backup_v1.19.0_approved/`.

@@ -17,7 +17,7 @@ const ROOT = path.join(__dirname, '..', '..');
 
 function loadShared(files = ['droid-data.js', 'requirements.js']) {
   // the browser globals requirements.js uses (share codes, v1.13.0)
-  const ctx = vm.createContext({ console, TextEncoder, TextDecoder, atob, btoa, encodeURIComponent });
+  const ctx = vm.createContext({ console, TextEncoder, TextDecoder, atob, btoa, encodeURIComponent, decodeURIComponent });
   for (const f of files) {
     const src = fs.readFileSync(path.join(ROOT, f), 'utf8');
     vm.runInContext(src, ctx, { filename: f });
@@ -71,6 +71,9 @@ function loadShared(files = ['droid-data.js', 'requirements.js']) {
     decodeFriendCode: run('decodeFriendCode'),
     friendOwnedFromMine: run('friendOwnedFromMine'),
     friendOwnedRank: run('friendOwnedRank'),
+    droidPriceFor: run('droidPriceFor'),              // v1.20.0
+    droidPriceHtml: run('droidPriceHtml'),
+    pricesOn: run('pricesOn'),
     parseLiveCode: run('parseLiveCode'),              // v1.19.0
     cleanLiveFriends: run('cleanLiveFriends'),
     // live views of the mutable module state (re-read after buildIndex())

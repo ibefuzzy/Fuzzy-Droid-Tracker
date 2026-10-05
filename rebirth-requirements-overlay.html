@@ -215,6 +215,7 @@
 <script src="card-icons-data.js"></script>
 <script src="droid-data.js"></script>
 <script src="requirements.js"></script>
+<script src="overlay-backgrounds.js"></script>
 <script src="overlay-scroll.js"></script>
 <script>
 (function(){
@@ -244,6 +245,7 @@
 
   let currentCycle = 1;
   let ownedRankLocal = {};
+  let showPrices = true; // v1.20.0: Appearance → Effects → 💰 Prices (pricesOn in requirements.js)
   let selectedIndex = 0; // v1.10.3: hotkey-based marking — track position in flattened cell list
 
   async function loadIndexData(){
@@ -277,12 +279,16 @@
     const b64 = (typeof CARD_ICONS !== 'undefined' && CARD_ICONS[iconKey]) || (typeof ICONS !== 'undefined' && ICONS[iconKey]);
     const src = b64 ? 'data:image/webp;base64,' + b64 : '';
     const imgTag = src ? ('<img src="' + src + '" alt="' + display + '" loading="lazy">') : '';
-    const title = display + ' — need ' + RNAME[code] + ' — ' + (ownedCode ? ('you have ' + RNAME[ownedCode]) : 'not logged yet');
+    // v1.20.0: every card here is still needed, so with prices on its status line is the price
+    const price = showPrices ? droidPriceFor(code, nk) : null;
+    const priceText = price ? ' — costs ' + formatCredits(price.credits) + (price.crystals ? ' + ' + price.crystals + ' Kyber Crystals' : '') : '';
+    const title = display + ' — need ' + RNAME[code] + ' — ' + (ownedCode ? ('you have ' + RNAME[ownedCode]) : 'not logged yet') + priceText;
     return '<div class="d-cell" data-cycle="' + info.cycle + '" data-level="' + info.level + '" data-slot="' + info.slot + '" title="' + title + '">' +
       '<div class="d-icon-wrap" style="--rc:' + reqColor + ';">' + imgTag + '</div>' +
       '<div class="d-name">' + display + '</div>' +
       '<div class="rar-label ' + code + '">Need ' + RNAME[code] + '</div>' + // shown by 'Written under the name' (v1.17.0)
-      '<div class="d-owned" style="color:' + ownedColor + '">' + haveText + '</div>' +
+      (price ? '<div class="d-owned price">' + droidPriceHtml(price) + '</div>'
+             : '<div class="d-owned" style="color:' + ownedColor + '">' + haveText + '</div>') +
     '</div>';
   }
 
@@ -409,7 +415,8 @@
     document.documentElement.style.setProperty('--sw-rgb', skin.rgb);
     const badge = document.getElementById('borderBadge');
     if(badge) badge.innerHTML = borderIconSvg(settings.rebirthReqBorder || 'mando', 18);
-    let changed = false;
+    let changed = pricesOn(settings) !== showPrices;
+    showPrices = pricesOn(settings);
     Object.keys(TIER_SETTING).forEach(t=>{
       const v = settings[TIER_SETTING[t]] !== false;
       if(tiersOn[t] !== v){ tiersOn[t] = v; changed = true; }

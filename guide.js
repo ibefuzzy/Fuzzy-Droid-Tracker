@@ -39,7 +39,8 @@
       title: 'Overlays: your lists on top of the game',
       body: `<p>Click a tile to put that list on top of the game; its light shows it's on. The main ones:</p>
         <ul>
-          <li><b>🎯 Next Droids Needed</b>: the next 4 rebirth lines you still need droids for, with credit costs and Nova Crystal rewards.</li>
+          <li><b>🎯 Next Droids Needed</b>: the next 4 rebirth lines you still need droids for, with credit costs, Nova Crystal rewards
+            and what each missing droid costs.</li>
           <li><b>🧬 Rebirth Reqs</b>: every droid this cycle needs.</li>
           <li><b>♻ Safe to Retire</b>: what you can let go of.</li>
           <li><b>⏱ Timers</b> and <b>📡 Spawn Alert</b>: countdowns, and each new spawn shown big.</li>
@@ -127,7 +128,8 @@
       },
       title: '🎯 Next Droids Needed + cycle keys',
       body: `<p>The HUD is now called <b>🎯 Next Droids Needed</b> and moves on by itself: once every droid of its top line is marked,
-        it shows the next line you still need. It never jumps past a line that's missing a droid, and it starts from your rebirth level.</p>
+        it shows the next line you still need. It never jumps past a line that's missing a droid, and it starts from your rebirth level.
+        Lines you've fully marked fold into one slim <b>✓ READY</b> strip with the next rebirth's credit cost.</p>
         <p>New keys here: <b>🔄 Next / Previous cycle</b>, <b>🏁 Finish cycle</b> (press it twice) to clear this cycle's marks and start
         the next one without leaving the game, <b>↶ Undo</b> for 10 minutes after, and <b>🔢 Rebirth level +1 / −1</b>.</p>`
     },
@@ -143,6 +145,38 @@
         (📋 Copy my live code), and their 👥 Friends panel and HUD follow your progress by themselves. Paste a friend's live code to follow them.</p>
         <p>It's <b>off</b> until you switch it on. While on, only your friend code (name, cycle, rebirth, logged droids) is saved, when it changes.
         Switching off deletes it. Snapshot codes still work as before.</p>`
+    },
+    {
+      // v1.20.0: opens ⚙ Overlay Settings on Appearance, at the background gallery
+      since: '1.20.0', target: '#themeBgRow',
+      before: ()=>{
+        const panel = document.getElementById('overlaySettingsPanel');
+        if(panel && panel.hidden) document.getElementById('overlaySettingsBtn').click();
+        const tab = document.getElementById('setTab-borders');
+        if(tab) tab.click();
+        const row = document.getElementById('themeBgRow');
+        if(row) row.scrollIntoView({ block: 'center' });
+      },
+      title: '🌌 Overlay backgrounds',
+      body: `<p>Put a picture behind your overlays: <b>30 backgrounds</b>, Star Wars (hyperspace, the trench run, Kyber crystals, TIEs…)
+        and Halloween. <b>Edit colors for</b> gives each overlay its own; <b>Background look</b> sets strength, colour and optional slow motion.</p>
+        <p>Stellar and Kyber droids also get a <b>holo foil</b> shine in their own colour (switch it under <b>Effects</b>). <b>Off</b> keeps the plain backdrop.</p>`
+    },
+    {
+      // v1.20.0 (a player's request): opens ⚙ Overlay Settings on Appearance, at the Effects switches
+      since: '1.20.0', target: '#overlayFxRow',
+      before: ()=>{
+        const panel = document.getElementById('overlaySettingsPanel');
+        if(panel && panel.hidden) document.getElementById('overlaySettingsBtn').click();
+        const tab = document.getElementById('setTab-borders');
+        if(tab) tab.click();
+        const row = document.getElementById('overlayFxRow');
+        if(row) row.scrollIntoView({ block: 'center' });
+      },
+      title: '💰 Droid prices',
+      body: `<p>Every droid you still need now shows what it costs, right under its name on the 🎯 HUD, 🧬 Rebirth Reqs and 🔮 Sneak Preview,
+        where it used to say "Not owned". Kyber droids show their credits <b>+ Kyber Crystals</b> to activate them.</p>
+        <p>On the HUD, each level's <b>Σ</b> chip adds up everything you still need for that rebirth. Don't want them? Untick <b>💰 Prices</b> here.</p>`
     },
     {
       since: '1.0.0', target: '#guideOpenBtn',

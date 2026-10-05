@@ -70,7 +70,9 @@ test("one overlay's own colours go on top of the all-overlays values", () => {
 
 test('a look survives settings -> look -> settings unchanged', () => {
   const settings = { ...DEFAULT_BORDERS, border: 'grogu', timersBorder: 'sith', themeBackdrop: '#0f1a0f', themeBackdropAlpha: 0.7, themeBox: null,
-    themeBoxAlpha: null, themeHighlight: '#b8ff8a', themeCompact: null, themeTextScale: 1.1, overlayThemes: { timers: { themeBackdrop: '#000000' } } };
+    themeBoxAlpha: null, themeHighlight: '#b8ff8a', themeCompact: null, themeTextScale: 1.1,
+    themeBg: 'hyperspace', themeBgStrength: 0.6, themeBgColor: 'border', themeBgMotion: true, themeBgSpeed: 1.4,
+    overlayThemes: { timers: { themeBackdrop: '#000000', themeBg: 'none' } } };
   assert.deepEqual(plain(lookToSettings(lookFromSettings(settings))), settings);
 });
 

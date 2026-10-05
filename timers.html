@@ -181,6 +181,7 @@
 
 <script src="droid-data.js"></script>
 <script src="requirements.js"></script>
+<script src="overlay-backgrounds.js"></script>
 <script src="sounds/good-news-data.js"></script>
 <script src="alert-sound.js"></script>
 <script>
@@ -479,9 +480,15 @@
       document.getElementById('timersBadge').innerHTML = borderIconSvg(skinKey, 12);
     }
     shownSkin = skin ? skinKey : null;
+    // v1.20.0: panel background behind the banners (overlay-backgrounds.js)
+    const bgKey = JSON.stringify([t.themeBg, t.themeBgStrength, t.themeBgColor, t.themeBgMotion, t.themeBgSpeed, skinKey, settings.overlayBgLight]);
+    if(bgKey !== shownBg){
+      shownBg = bgKey;
+      applyOverlayBackground(t, skin ? skinKey : null, { light: settings.overlayBgLight === true });
+    }
     if(refit) fitWindow();
   }
-  let shownSkin = null;
+  let shownSkin = null, shownBg = null;
   function rgbOf(hex){
     const m = /^#([0-9a-f]{6})$/i.exec(hex || '');
     if(!m) return null;

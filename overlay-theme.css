@@ -92,3 +92,41 @@ html.rarity-text .d-owned.has{ text-transform:uppercase; font-weight:700; }
 html.rarity-text .have-word{ display:inline; }
 html.ov-compact .rar-label{ display:none !important; } /* Compact = icons only */
 @keyframes ov-mark-flash{ 50%{ transform:scale(1.2); filter:brightness(1.4); } }
+
+/* v1.20.0 Holo foil (Appearance → Foil shine; html.ov-foil from overlay-theme.js): a slow foil sheen on
+   Stellar + Kyber pictures, in that rarity's colour (named directly: "Written under the name" turns --rc
+   white). ::before paints over the picture but under the ✓ mark and SELL flag (positioned, later in the
+   frame). Picked in dev/card-foil-lab.html. Cards start at different points so a row doesn't flash together. */
+html.ov-foil .d-icon-wrap[style*="--r-stellar"]{ --foil:var(--r-stellar, #e08a3c); }
+html.ov-foil .d-icon-wrap[style*="--r-kyber"]{ --foil:var(--r-kyber, #50c878); }
+html.ov-foil .d-icon-wrap[style*="--r-stellar"]::before,
+html.ov-foil .d-icon-wrap[style*="--r-kyber"]::before{
+  content:""; position:absolute; inset:0; pointer-events:none; border-radius:inherit; opacity:.8;
+  background:
+    linear-gradient(125deg, transparent 5%, color-mix(in srgb, var(--foil) 65%, transparent) 24%, rgba(255,255,255,.5) 33%, transparent 42%,
+      color-mix(in srgb, var(--foil) 55%, transparent) 58%, rgba(255,255,255,.35) 66%, transparent 78%),
+    repeating-linear-gradient(45deg, rgba(255,255,255,.09) 0 1px, transparent 1px 3px);
+  background-size:300% 300%, auto; background-position:30% 30%, 0 0;
+  mix-blend-mode:color-dodge;
+}
+@media (prefers-reduced-motion:no-preference){
+  html.ov-foil .d-icon-wrap[style*="--r-stellar"]::before,
+  html.ov-foil .d-icon-wrap[style*="--r-kyber"]::before{ animation:ov-foil 6s ease-in-out infinite alternate; }
+  html.ov-foil .d-cell:nth-child(3n+2) .d-icon-wrap::before{ animation-delay:-2s; }
+  html.ov-foil .d-cell:nth-child(3n) .d-icon-wrap::before{ animation-delay:-4s; }
+}
+@keyframes ov-foil{ from{ background-position:0% 0%, 0 0; } to{ background-position:100% 100%, 0 0; } }
+
+/* v1.20.0 Droid prices (Appearance → Effects → 💰 Prices; requirements.js droidPriceFor/droidPriceHtml). A droid you
+   still need shows its price in its status line (the credit coin + amount; Kyber + its activation Kyber Crystals);
+   the HUD adds a Σ total per level right after the level tag (the middle stays free for the border badge). */
+:root{ --pr-coin:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22r%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%23e2a93a%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%236b4306%22%2F%3E%3C%2FlinearGradient%3E%3ClinearGradient%20id%3D%22f%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%23fff0a8%22%2F%3E%3Cstop%20offset%3D%22.45%22%20stop-color%3D%22%23f5bf3a%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23c6860f%22%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Cpolygon%20points%3D%2231%2C16%2023.5%2C29%208.5%2C29%201%2C16%208.5%2C3%2023.5%2C3%22%20fill%3D%22url(%23r)%22%2F%3E%3Cpolygon%20points%3D%2228%2C16%2022%2C26.4%2010%2C26.4%204%2C16%2010%2C5.6%2022%2C5.6%22%20fill%3D%22url(%23f)%22%2F%3E%3Cpath%20d%3D%22M11.4%209.6V21.8M8%2013.4H13.4M8%2017H13.4M11.4%209.6H22L16%2023%22%20fill%3D%22none%22%20stroke%3D%22%237a4a06%22%20stroke-width%3D%222.6%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E"); --pr-kc:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2016%2016%22%3E%3Cpath%20d%3D%22M8%20.5%20L12.5%204.5%20L12.5%2011.5%20L8%2015.5%20L3.5%2011.5%20L3.5%204.5Z%22%20fill%3D%22%2350c878%22%20stroke%3D%22%230b2a17%22%20stroke-width%3D%22.8%22%2F%3E%3Cpath%20d%3D%22M8%20.5%20V15.5%20M3.5%204.5%20L8%207%20L12.5%204.5%22%20stroke%3D%22%23d6ffe6%22%20stroke-width%3D%22.8%22%20fill%3D%22none%22%20opacity%3D%22.8%22%2F%3E%3C%2Fsvg%3E"); }
+.d-owned.price{ color:#ffd84a !important; font-weight:700; white-space:nowrap; text-transform:none !important; letter-spacing:0; }
+.pr-ic{ display:inline-block; width:1.2em; height:1.2em; vertical-align:-.25em; margin-right:1px; background:var(--pr-coin) center/contain no-repeat; filter:drop-shadow(0 1px 1px rgba(0,0,0,.8)); }
+.pr-ic.kc{ background-image:var(--pr-kc); margin:0 0 0 1px; }
+.price-total{
+  font-family:'Rajdhani',sans-serif; font-style:italic; font-weight:700; font-size:calc(13px * var(--ov-text-scale, 1)); line-height:1.25;
+  color:#ffd84a; text-shadow:-1px -1px 0 #2a1d02, 1px -1px 0 #2a1d02, -1px 1px 0 #2a1d02, 1px 1px 0 #2a1d02, 0 2px 3px rgba(0,0,0,.9);
+  display:inline-flex; align-items:center; white-space:nowrap; margin:-3px auto -2px 4px; padding:0 5px;
+  background:rgba(26,18,2,.75); border:1px solid rgba(255,216,74,.55); border-radius:999px; box-shadow:0 0 6px -2px rgba(255,216,74,.6);
+}

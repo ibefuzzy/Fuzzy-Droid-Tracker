@@ -75,6 +75,7 @@ function buildIndex(){
   // instead of keeping stale post-rename entries for the rest of this
   // window's lifetime.
   RARITY_CLASS_BY_NK = null;
+  BASE_PRICE_BY_NK = null; // v1.20.0 droidPriceFor(): keyed by the merged names too
   SELL_NEEDS_CACHE = {}; // v1.16.0 sellFlagFor(): keyed by the merged names too
 }
 
@@ -323,6 +324,30 @@ function formatCredits(n){
   while(i < CREDIT_SUFFIXES.length - 1 && n >= 1000){ n /= 1000; i++; }
   return String(Number(n.toFixed(2))) + CREDIT_SUFFIXES[i];
 }
+/* Droid prices (v1.20.0, DROID_BASE_PRICES in droid-data.js). Looked up by the post-rename
+   key like getDroidRarityClass(); the cache is cleared by buildIndex(). */
+let BASE_PRICE_BY_NK = null;
+/** What droid `nk` costs at rarity `code`: {credits, crystals} (crystals = Kyber activation, else 0), or null if unknown. */
+function droidPriceFor(code, nk){
+  if(typeof DROID_BASE_PRICES === 'undefined') return null;
+  if(!BASE_PRICE_BY_NK){
+    BASE_PRICE_BY_NK = {};
+    Object.keys(DROID_BASE_PRICES).forEach(raw => { BASE_PRICE_BY_NK[normKey(canonicalName(raw))] = DROID_BASE_PRICES[raw]; });
+  }
+  const base = BASE_PRICE_BY_NK[nk];
+  const cls = getDroidRarityClass(nk);
+  const i = RARITY_ORDER.indexOf(code);
+  const ladder = PRICE_LADDER[cls];
+  if(typeof base !== 'number' || !ladder || i < 0) return null;
+  return { credits: base * ladder[i], crystals: code === 'Y' ? (KYBER_ACTIVATION_CRYSTALS[cls] || 0) : 0 };
+}
+/** Prices on the overlays (setting overlayPrices, default on). */
+function pricesOn(s){ return !s || s.overlayPrices !== false; }
+/** A price as overlay markup: the credit coin + amount, and for Kyber "+ n" Kyber Crystals (overlay-theme.css .pr-ic). */
+function droidPriceHtml(p){
+  if(!p) return '';
+  return '<span class="pr-ic"></span>' + formatCredits(p.credits) + (p.crystals ? ' + ' + p.crystals + '<span class="pr-ic kc"></span>' : '');
+}
 /** Get all Mythic droids in the next cycle at their ceiling rarity. Returns {nextCycle, items: [{nk, display, rank, code, ownedCode, iconKey}]} sorted highest-needed first. */
 function getSneakPreview(cycle, ownedRank){
   const next = nextCycleOf(cycle);
@@ -427,9 +452,9 @@ const THEME_PRESETS = [
   { name: 'Death Star',        skin: 'deathstar',  theme: { themeBackdrop: '#0c1016', themeBackdropAlpha: 0.78, themeBox: '#8fa6ba', themeBoxAlpha: 0.08, themeHighlight: '#7dff5a' }, appLook: 'deathstar' },
   { name: 'Tatooine',          skin: 'tatooine',   theme: { themeBackdrop: '#2a1a0c', themeBackdropAlpha: 0.62, themeBox: '#e08a3c', themeBoxAlpha: 0.09, themeHighlight: '#ffe29a' }, appLook: 'tatooine' },
   // v1.18.0 spooky season
-  { name: 'Force Ghost',       skin: 'forceghost',  theme: { themeBackdrop: '#07141c', themeBackdropAlpha: 0.62, themeBox: '#9fe8ff', themeBoxAlpha: 0.1,  themeHighlight: '#e6fbff' }, appLook: 'forceghost' },
-  { name: 'Sith Harvest',      skin: 'harvest',     theme: { themeBackdrop: '#150a1c', themeBackdropAlpha: 0.78, themeBox: '#ff8a1f', themeBoxAlpha: 0.1,  themeHighlight: '#ffb347' }, appLook: 'harvest' },
-  { name: 'Nightsister',       skin: 'nightsister', theme: { themeBackdrop: '#07120a', themeBackdropAlpha: 0.8,  themeBox: '#7dff3a', themeBoxAlpha: 0.09, themeHighlight: '#c58cff' }, appLook: 'nightsister' }
+  { name: 'Force Ghost',       skin: 'forceghost',  theme: { themeBackdrop: '#07141c', themeBackdropAlpha: 0.62, themeBox: '#9fe8ff', themeBoxAlpha: 0.1,  themeHighlight: '#e6fbff', themeBg: 'ghosts' }, appLook: 'forceghost' },
+  { name: 'Sith Harvest',      skin: 'harvest',     theme: { themeBackdrop: '#150a1c', themeBackdropAlpha: 0.78, themeBox: '#ff8a1f', themeBoxAlpha: 0.1,  themeHighlight: '#ffb347', themeBg: 'pumpkins' }, appLook: 'harvest' },
+  { name: 'Nightsister',       skin: 'nightsister', theme: { themeBackdrop: '#07120a', themeBackdropAlpha: 0.8,  themeBox: '#7dff3a', themeBoxAlpha: 0.09, themeHighlight: '#c58cff', themeBg: 'brew' }, appLook: 'nightsister' }
 ];
 
 /* App looks (v1.15.0): colour sets for the tracker window itself, picked in
@@ -569,7 +594,15 @@ function borderIconSvg(key, size){
    name. One setting for every droid overlay (settings.overlayRarityStyle); anything else = 'color'. */
 function rarityStyleOf(v){ return v === 'text' ? 'text' : 'color'; }
 
-const THEME_KEYS = ['themeBackdrop', 'themeBackdropAlpha', 'themeBox', 'themeBoxAlpha', 'themeHighlight', 'themeCompact', 'themeTextScale'];
+/* Panel backgrounds (v1.20.0): drawn by overlay-backgrounds.js (OVERLAY_BACKGROUNDS has one entry
+   per key here, in this order; test/backgrounds.test.js checks). 'none' = no background, the look
+   before v1.20.0. Keys never change: saved settings, looks and share codes hold them. */
+const OVERLAY_BG_KEYS = ['none',
+  'stars', 'hyperspace', 'targeting', 'twinsuns', 'sabers', 'nebula', 'ties', 'kyber', 'holocron', 'beskar',
+  'carbonite', 'blueprint', 'droids', 'holomap', 'hoth', 'jawas', 'readout', 'mesh', 'emblems',
+  'batmoon', 'pumpkins', 'webs', 'graveyard', 'candycorn', 'bones', 'brew', 'damask', 'ghosts', 'jack', 'bloodmoon'];
+const THEME_KEYS = ['themeBackdrop', 'themeBackdropAlpha', 'themeBox', 'themeBoxAlpha', 'themeHighlight', 'themeCompact', 'themeTextScale',
+  'themeBg', 'themeBgStrength', 'themeBgColor', 'themeBgMotion', 'themeBgSpeed'];
 const THEMED_OVERLAYS = ['overlay', 'declutter', 'rebirthReq', 'sneak', 'critGuide', 'timers', 'spawnAlert'];
 // Each overlay's border-skin settings key, and its default (main.js DEFAULT_SETTINGS
 // agrees; test/skins.test.js checks). The timers had no skin before v1.13.0: null.
@@ -577,15 +610,16 @@ const THEMED_OVERLAYS = ['overlay', 'declutter', 'rebirthReq', 'sneak', 'critGui
 // spawnAlertBorder, and sanitizeLook() gives it the default.
 const DEFAULT_BORDERS = { border: 'jedi', declutterBorder: 'grogu', rebirthReqBorder: 'mando', sneakBorder: 'rebel', critGuideBorder: 'tatooine', timersBorder: null, spawnAlertBorder: 'jedi' };
 const OVERLAY_BORDER_KEY = { overlay: 'border', declutter: 'declutterBorder', rebirthReq: 'rebirthReqBorder', sneak: 'sneakBorder', critGuide: 'critGuideBorder', timers: 'timersBorder', spawnAlert: 'spawnAlertBorder' };
-const THEME_RANGES = { themeBackdropAlpha: [0.2, 0.95], themeBoxAlpha: [0, 0.5], themeTextScale: [0.8, 1.4] };
+const THEME_RANGES = { themeBackdropAlpha: [0.2, 0.95], themeBoxAlpha: [0, 0.5], themeTextScale: [0.8, 1.4], themeBgStrength: [0.3, 1], themeBgSpeed: [0.5, 2] };
 
 /** True if `v` is an allowed value for theme key `key` (null = "use the default"). */
 function validThemeValue(key, v){
   if(v === null) return true;
   switch(key){
     case 'themeBackdrop': case 'themeBox': return typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v);
-    case 'themeHighlight': return v === 'border' || (typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v));
-    case 'themeCompact': return typeof v === 'boolean';
+    case 'themeHighlight': case 'themeBgColor': return v === 'border' || (typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v));
+    case 'themeCompact': case 'themeBgMotion': return typeof v === 'boolean';
+    case 'themeBg': return OVERLAY_BG_KEYS.includes(v);
     default: {
       const r = THEME_RANGES[key];
       return !!r && typeof v === 'number' && Number.isFinite(v) && v >= r[0] && v <= r[1];

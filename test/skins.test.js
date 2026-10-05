@@ -41,7 +41,8 @@ test("players' saved skins and main.js's defaults still exist (keys never change
 });
 
 test('theme presets point at real skins and valid colours', () => {
-  const THEME_KEYS = ['themeBackdrop', 'themeBackdropAlpha', 'themeBox', 'themeBoxAlpha', 'themeHighlight'];
+  const THEME_KEYS = ['themeBackdrop', 'themeBackdropAlpha', 'themeBox', 'themeBoxAlpha', 'themeHighlight', 'themeBg'];
+  const BG_KEYS = s.run('OVERLAY_BG_KEYS');
   assert.equal(new Set(PRESETS.map((p) => p.name)).size, PRESETS.length, 'duplicate preset name');
   assert.ok(PRESETS.some((p) => p.skin === null && Object.keys(p.theme).length === 0), 'a "back to default" preset');
   for (const p of PRESETS) {
@@ -53,6 +54,7 @@ test('theme presets point at real skins and valid colours', () => {
       // the same ranges as the Appearance tab's sliders
       if (k === 'themeBackdropAlpha') assert.ok(v >= 0.2 && v <= 0.95, `${p.name}.${k}`);
       if (k === 'themeBoxAlpha') assert.ok(v >= 0 && v <= 0.5, `${p.name}.${k}`);
+      if (k === 'themeBg') assert.ok(BG_KEYS.includes(v) && v !== 'none', `${p.name}.${k}: no background ${v}`);
     }
   }
 });

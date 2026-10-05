@@ -1,7 +1,7 @@
 'use strict';
 /* ---------------------------------------------------------------------------
    overlay-theme.js — shared by the five droid overlays (v1.10.14), loaded
-   after each page's own script. Four jobs (3 and 4 added in v1.11.1, below):
+   after each page's own script. Five jobs (3 and 4 added in v1.11.1, 5 in v1.20.0, below):
 
    1. Corner resize grip. Shown only while the overlay is unlocked (the same
       body.unlocked class that shows the drag bar). Dragging it reports the
@@ -135,6 +135,25 @@
   }
   window.overlayAPI.getSettings().then(applyRarityStyle);
   window.overlayAPI.onSettingsChanged(applyRarityStyle);
+
+  /* 5. Panel background + foil (v1.20.0, ⚙ Overlay Settings → Appearance). The background
+     follows this overlay's effective theme and its border skin (overlay-backgrounds.js);
+     html.ov-foil turns on the holo shine on Stellar + Kyber pictures (overlay-theme.css). */
+  let lastBg = null;
+  function applyBackground(s){
+    s = s || {};
+    const t = effectiveTheme(s, ovName);
+    const skin = s[OVERLAY_BORDER_KEY[ovName]] || null;
+    const light = s.overlayBgLight === true;
+    const key = JSON.stringify([t.themeBg, t.themeBgStrength, t.themeBgColor, t.themeBgMotion, t.themeBgSpeed, skin, light]);
+    if(key !== lastBg){
+      lastBg = key;
+      applyOverlayBackground(t, skin, { light });
+    }
+    root.classList.toggle('ov-foil', s.overlayFoil !== false);
+  }
+  window.overlayAPI.getSettings().then(applyBackground);
+  window.overlayAPI.onSettingsChanged(applyBackground);
 
   /* 4. Mark-key target (v1.11.1). A list page (<html data-mark-list="name">)
      shows its selection glow only while the rebirthMark* keys drive it, plus a

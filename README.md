@@ -408,6 +408,54 @@ it can be corrected.
   Leftovers of the in-game "PREVIEW" banner, the card frame and the colored card glow are
   gone.
 
+## 🌌 Overlay backgrounds + holo foil (v1.20.0)
+
+**Put a picture behind your overlays.** ⚙ Overlay Settings → Appearance → **Background** has 30 to pick from,
+each drawn to fit any overlay size (no image files, so the app didn't grow):
+
+- **Star Wars (19):** Starfield, Hyperspace, Targeting Computer, Twin Suns, Lightsaber Duel, Nebula, TIE Squadron,
+  Kyber Crystals, Holocron Lattice, Beskar Plate, Carbonite, Battle Station Blueprint, Droid Schematics, Holo-Map,
+  Hoth Snowfall, Jawa Eyes, Data Readout, Durasteel Mesh and Emblem Lattice (your border's own emblem, tiled).
+- **Halloween (11):** Bat Moon, Pumpkin Patch, Spider Webs, Graveyard Fog, Candy Corn, Bone Yard, Nightsister Brew,
+  Haunted Wallpaper, Ghost Drift, Jack-o'-Lantern Glow and Blood Moon. Picking one also switches to its matching border
+  (Nightsister, Sith Harvest or Force Ghost); untick that under **Effects** if you'd rather keep yours.
+- **Off** is the plain backdrop, the look before v1.20.0 and still the default.
+
+**Each overlay can have its own.** Backgrounds follow **Edit colors for**: pick *All overlays* or one overlay, then a
+background. The timers and the 📡 Spawn Alert take one too.
+
+**Background look:**
+- **Strength:** how faint it is.
+- **Colour:** *Natural* (as designed; the Star Wars ones follow the border's colour), *Border colour*, or *Custom*.
+  Recoloured backgrounds keep their light and dark shading, and black details stay black.
+- **Motion** (off by default): bats fly past, snow falls, the targeting computer flies you down the trench, mists breathe.
+  It's slow and sits behind the text. *Speed* goes from very slow to fast. **Effects → 🐢 Light motion** runs it at 15
+  frames a second to save PC work while you play. With animations turned off in Windows, nothing moves.
+
+**Holo foil:** Stellar and Kyber droids in the HUD, Rebirth Requirements and Sneak Preview get a slow holographic
+shine in their own colour (Stellar orange, Kyber emerald), like a foil trading card. It's on by default; switch it
+under **Effects → ✨ Holo foil**.
+
+Backgrounds are part of a look, so **saved looks and share codes carry them**, and the **Force Ghost**, **Sith Harvest**
+and **Nightsister** presets now come with Ghost Drift, Pumpkin Patch and Nightsister Brew.
+
+### 💰 Droid prices (v1.20.0, a player's request)
+
+Every droid you **still need** shows what it costs, on the 🎯 HUD, 🧬 Rebirth Requirements and 🔮 Sneak Preview. It sits
+where "Not owned" / "Have: Gold" used to be, so no overlay got any taller. The price is for the rarity that rebirth asks for,
+shown the way the game writes it (900K, 1.08B, 50.4T). Droids you already have keep their usual line.
+
+- **Kyber** droids show the blueprint's credits **+ the Kyber Crystals** it takes to activate them (1 for a Common up to 10 for
+  a Mythic), e.g. "900K + 2".
+- **The HUD's Σ chip**, right after each level's tag, adds up everything you still need for that rebirth (its tooltip includes the
+  Kyber Crystals). To make room on the top line, its tag reads "NOW 36" instead of "NOW · Lvl 36".
+- With **Written under the name**, the rarity ("NEED KYBER") stays on its own line above the price.
+- On by default; untick **⚙ Overlay Settings → Appearance → Effects → 💰 Prices** to hide them.
+
+The game prices every rarity as a fixed multiple of the droid's Base price, the same for every droid of its class (Common/Rare,
+Epic, Legendary, Mythic). The app keeps the 62 Base prices and that table (see Credits), and all 600 rebirth slots were checked
+against a second, independent source: every one matched.
+
 ## 🌐 Live Friends (v1.19.0)
 
 **👥 Friends can now update by themselves.** Open 👥 Friends and switch on **🌐 Live**: your code box
@@ -1227,6 +1275,11 @@ and testing everything above:
   [SIL Open Font License 1.1](https://openfontlicense.org) (the licence files are in `fonts/`).
 - Text recognition: [tesseract.js](https://github.com/naptha/tesseract.js) and tesseract.js-core
   (Apache License 2.0) with the English data from `@tesseract.js-data/eng`, shipped with the app.
+- Droid prices (v1.20.0): the Base prices come from the Droidex value list by Nackz
+  ([droidex.nackz.dev](https://droidex.nackz.dev/value-list/), [github.com/n4ckz/droidex](https://github.com/n4ckz/droidex)),
+  MIT License, Copyright (c) 2026 Nackz (full notice in `licenses/droidex-prices-MIT.txt`), which cross-checks [tycoon-tools.com](https://tycoon-tools.com/). Every price,
+  Kyber included, was checked against DubTrackr's Droidex ([droidex.dubtrackr.win](https://droidex.dubtrackr.win/droid-tycoon-droidex/)).
+  Thanks to all three for mapping the game's numbers.
 - Star Wars and its insignia are trademarks of Lucasfilm Ltd. This is an unofficial
   fan-made tool, not affiliated with or endorsed by Lucasfilm, Disney or Epic Games.
 
@@ -1261,7 +1314,10 @@ and testing everything above:
   crit-guide-overlay.html.
 - `preload.js` — the only bridge between the pages and Node/IPC.
 - `overlay-theme.css` / `overlay-theme.js` — the droid overlays' shared look:
-  theme colors, the corner resize grip and zoom, and the ⌨ KEYS mark-key tag.
+  theme colors, the corner resize grip and zoom, the ⌨ KEYS mark-key tag, and (v1.20.0) the
+  background + holo foil switches.
+- `overlay-backgrounds.js` (v1.20.0) — the 30 panel backgrounds (vector SVG/CSS layers), their
+  recolouring and slow motion; `applyOverlayBackground()` puts one on a page.
 - `overlay-drag.js` / `overlay-snap.js` — moving overlays (always wholly on one
   monitor) and the snap / match-size math.
 - `game-toast.html` — the click-through in-game notice (Read Rebirth Screen results).

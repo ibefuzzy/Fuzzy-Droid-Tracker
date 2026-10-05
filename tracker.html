@@ -960,6 +960,17 @@
   .compact-check{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;color:var(--text);cursor:pointer;}
   .compact-check input{accent-color:var(--accent);}
   .color-row.is-hidden{display:none;}
+  /* v1.20.0 panel backgrounds: a gallery of still previews (overlay-backgrounds.js), on the overlays' own dark panel */
+  .color-row.bg-row{flex-wrap:wrap;}
+  .bg-grid{flex:1 1 100%;display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:7px;max-height:300px;overflow-y:auto;padding:2px 4px 2px 0;}
+  .bg-group{grid-column:1/-1;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);margin-top:4px;}
+  .bg-tile{display:flex;flex-direction:column;padding:0;border-radius:8px;overflow:hidden;cursor:pointer;border:1px solid var(--holo-line);background:rgba(0,0,0,.25);color:var(--text);font:inherit;text-align:left;transition:border-color .12s,box-shadow .12s;}
+  .bg-tile:hover{border-color:rgba(var(--holo-rgb),.5);}
+  .bg-tile.active{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset,0 0 10px -3px var(--accent);}
+  .bg-swatch{height:52px;background-color:rgba(10,14,12,.86);border-bottom:1px solid var(--holo-line);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--text-dim);}
+  .bg-tile span{font-size:11.5px;padding:4px 7px 5px;line-height:1.2;}
+  .theme-ctrls select{font:inherit;font-size:12px;padding:4px 6px;border-radius:6px;border:1px solid var(--holo-line);background:rgba(0,0,0,.3);color:var(--text);}
+  .fx-checks{flex-direction:column;align-items:flex-start;gap:6px;}
   .swatch.none-swatch{font-size:15px;font-weight:700;}
   .sound-grid{display:grid;grid-template-columns:max-content minmax(0,260px) max-content;gap:6px 10px;align-items:center;max-width:460px;}
   .sound-grid label{font-size:13px;color:var(--text);}
@@ -1517,11 +1528,37 @@
               <button class="btn theme-default-btn" type="button" id="themeCardDefaultBtn">Default</button>
             </div>
           </div>
+          <div class="color-row bg-row" id="themeBgRow">
+            <div class="color-row-label"><b>Background</b><small>A picture behind the panel, drawn to fit any size: Star Wars or Halloween. Off = the plain backdrop.</small></div>
+            <div class="theme-ctrls"><button class="btn theme-default-btn" type="button" id="themeBgDefaultBtn">Default</button></div>
+            <div class="bg-grid" id="themeBgGrid"></div>
+          </div>
+          <div class="color-row" id="themeBgLookRow">
+            <div class="color-row-label"><b>Background look</b><small>Strength, colour (as designed, the border's colour, or your own; shading is kept) and slow motion.</small></div>
+            <div class="theme-ctrls">
+              <input type="range" id="themeBgStrength" min="0.3" max="1" step="0.05" value="0.75" aria-label="Background strength">
+              <span class="theme-alpha" id="themeBgStrengthVal">75%</span>
+              <select id="themeBgColorSel" aria-label="Background colour"><option value="natural">Natural</option><option value="border">Border colour</option><option value="custom">Custom</option></select>
+              <input type="color" id="themeBgColorPick" value="#ff4fd8" aria-label="Custom background colour">
+              <label class="compact-check"><input type="checkbox" id="themeBgMotionCheck"> Motion</label>
+              <select id="themeBgSpeedSel" aria-label="Motion speed"><option value="2">Very slow</option><option value="1.4">Slow</option><option value="1">Normal</option><option value="0.6">Fast</option></select>
+              <button class="btn theme-default-btn" type="button" id="themeBgLookDefaultBtn">Default</button>
+            </div>
+          </div>
           <div class="color-row" id="rarityStyleRow">
             <div class="color-row-label"><b>Rarity on each droid</b><small>Picture color: the frame shows the rarity. Written under the name: a neutral frame and the rarity spelled out in its color (NEED STELLAR, HAVE GOLD). Applies to every droid overlay.</small></div>
             <div class="theme-ctrls">
               <button class="btn" type="button" id="rarityStyleColorBtn" data-rarity-style="color">🎨 Picture color</button>
               <button class="btn" type="button" id="rarityStyleTextBtn" data-rarity-style="text">🔤 Written under the name</button>
+            </div>
+          </div>
+          <div class="color-row" id="overlayFxRow">
+            <div class="color-row-label"><b>Effects</b><small>For every overlay. Players with animations turned off in Windows get no motion either way.</small></div>
+            <div class="theme-ctrls fx-checks">
+              <label class="compact-check"><input type="checkbox" id="overlayPricesCheck"> 💰 Prices: what each droid you still need costs, and a Σ total per level on the HUD</label>
+              <label class="compact-check"><input type="checkbox" id="overlayFoilCheck"> ✨ Holo foil on Stellar &amp; Kyber droids</label>
+              <label class="compact-check"><input type="checkbox" id="overlayBgLightCheck"> 🐢 Light motion (15 fps, easier on your PC)</label>
+              <label class="compact-check"><input type="checkbox" id="overlayBgPairCheck"> 🎃 Halloween backgrounds switch to their matching border</label>
             </div>
           </div>
           <div class="pos-actions" style="margin:6px 0 16px"><button class="btn" type="button" id="themeResetBtn">↺ Reset all colors</button></div>
@@ -1940,6 +1977,7 @@
 <script src="card-icons-data.js"></script>
 <script src="droid-data.js"></script>
 <script src="requirements.js"></script>
+<script src="overlay-backgrounds.js"></script>
 <script>
 /* ---------------- DATA ---------------- */
 const COSTS = ["10K","150K","975K","2.95M","5.35M","9.85M","14.5M","36M","89M","220M",

@@ -231,6 +231,7 @@ const ARITY_CHECKED = [
   'getLevelRequirements', 'cycleCeilings', 'cycleLastNeededLevel', 'borderIconSvg',
   'cycleRealLevelCount', 'cycleRealSlotCount', 'mergeHeldMarks', 'isRetired',
   'rebirthCreditsFor', 'nextNeededLevel', 'cleanCycleMarks', 'parseRankText',
+  'droidPriceFor', 'droidPriceHtml', 'pricesOn',
 ];
 const PROJECT_JS_AND_HTML = fs.readdirSync(ROOT).filter((f) => {
   if (!(f.endsWith('.js') || f.endsWith('.html'))) return false;

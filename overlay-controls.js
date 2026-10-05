@@ -491,7 +491,8 @@
   // so quick edits to one overlay never build on a stale copy
   let pendingOverlayThemes = null;
   const themeTarget = () => themeTargetSel.value;
-  function setTheme(partial, soon){
+  // extra = non-theme settings saved in the same write (v1.20.0: a background's matching border skin)
+  function setTheme(partial, soon, extra){
     const t = themeTarget();
     let out = partial;
     if(t){
@@ -502,6 +503,7 @@
       pendingOverlayThemes = ot;
       out = { overlayThemes: ot };
     }
+    if(extra) out = { ...out, ...extra };
     if(soon) setSettingsSoon(out); else setSettingsNow(out);
   }
   function applyLook(name, look, verb, extra){
@@ -697,6 +699,106 @@
   // one overlay can opt OUT of an all-overlays Compact, so it stores false there
   themeCompactCheck.addEventListener('change', ()=> setTheme({ themeCompact: themeCompactCheck.checked ? true : (themeTarget() ? false : null) }));
   themeCardDefaultBtn.addEventListener('click', ()=> setTheme({ themeTextScale: null, themeCompact: null }));
+
+  /* v1.20.0 panel backgrounds (overlay-backgrounds.js). themeBg* are theme keys, so "Edit colors for"
+     applies: All overlays, or one overlay's own. A gallery of still previews, drawn with the chosen
+     strength/colour and the target's border skin; one Off tile ('none' when one overlay opts out). */
+  const themeBgGrid = document.getElementById('themeBgGrid');
+  const themeBgStrength = document.getElementById('themeBgStrength');
+  const themeBgStrengthVal = document.getElementById('themeBgStrengthVal');
+  const themeBgColorSel = document.getElementById('themeBgColorSel');
+  const themeBgColorPick = document.getElementById('themeBgColorPick');
+  const themeBgMotionCheck = document.getElementById('themeBgMotionCheck');
+  const themeBgSpeedSel = document.getElementById('themeBgSpeedSel');
+  const overlayFoilCheck = document.getElementById('overlayFoilCheck');
+  const overlayPricesCheck = document.getElementById('overlayPricesCheck'); // v1.20.0
+  const overlayBgLightCheck = document.getElementById('overlayBgLightCheck');
+  const overlayBgPairCheck = document.getElementById('overlayBgPairCheck');
+  const BG_GROUPS = [['off', ''], ['sw', 'Star Wars'], ['halloween', 'Halloween']];
+  const bgTiles = [];
+  BG_GROUPS.forEach(([group, title]) => {
+    if(title){
+      const h = document.createElement('div');
+      h.className = 'bg-group';
+      h.textContent = title;
+      themeBgGrid.appendChild(h);
+    }
+    OVERLAY_BG_KEYS.filter(key => OVERLAY_BG.byKey[key].group === group).forEach(key => {
+      const c = OVERLAY_BG.byKey[key];
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'bg-tile';
+      b.dataset.bg = key;
+      const sk = c.skin && BORDER_SKINS[c.skin];
+      b.title = c.label + ': ' + c.sub + (sk ? ' (goes with the ' + sk.label + ' border)' : '');
+      const sw = document.createElement('div');
+      sw.className = 'bg-swatch';
+      if(key === 'none') sw.textContent = 'plain';
+      const label = document.createElement('span');
+      label.textContent = c.label;
+      b.append(sw, label);
+      b.addEventListener('click', ()=>{
+        const t = themeTarget();
+        let extra = null;
+        if(c.skin && BORDER_SKINS[c.skin] && lastSettings.overlayBgPairSkin !== false){
+          extra = {};
+          (t ? [OVERLAY_BORDER_KEY[t]] : Object.keys(DEFAULT_BORDERS)).forEach(k => { extra[k] = c.skin; });
+        }
+        setTheme({ themeBg: key === 'none' ? (t ? 'none' : null) : key }, false, extra);
+      });
+      themeBgGrid.appendChild(b);
+      bgTiles.push({ el: b, sw, key });
+    });
+  });
+  let bgPreviewKey = null;
+  function paintBgTiles(v, skin){
+    const key = JSON.stringify([v.themeBgStrength, v.themeBgColor, skin]);
+    if(key === bgPreviewKey) return;
+    bgPreviewKey = key;
+    bgTiles.forEach(({ sw, key: k }) => { if(k !== 'none') Object.assign(sw.style, OVERLAY_BG.preview(k, v, skin)); });
+  }
+  themeBgStrength.addEventListener('input', ()=>{
+    const v = parseFloat(themeBgStrength.value);
+    themeBgStrengthVal.textContent = pct(v);
+    setTheme({ themeBgStrength: v }, true);
+  });
+  themeBgColorSel.addEventListener('change', ()=>{
+    const m = themeBgColorSel.value;
+    setTheme({ themeBgColor: m === 'border' ? 'border' : m === 'custom' ? themeBgColorPick.value : null });
+  });
+  themeBgColorPick.addEventListener('input', ()=>{
+    themeBgColorSel.value = 'custom';
+    setTheme({ themeBgColor: themeBgColorPick.value }, true);
+  });
+  themeBgMotionCheck.addEventListener('change', ()=> setTheme({ themeBgMotion: themeBgMotionCheck.checked ? true : (themeTarget() ? false : null) }));
+  themeBgSpeedSel.addEventListener('change', ()=> setTheme({ themeBgSpeed: parseFloat(themeBgSpeedSel.value) }));
+  document.getElementById('themeBgDefaultBtn').addEventListener('click', ()=> setTheme({ themeBg: null }));
+  document.getElementById('themeBgLookDefaultBtn').addEventListener('click', ()=> setTheme({ themeBgStrength: null, themeBgColor: null, themeBgMotion: null, themeBgSpeed: null }));
+  overlayFoilCheck.addEventListener('change', ()=> setSettingsNow({ overlayFoil: overlayFoilCheck.checked }));
+  overlayPricesCheck.addEventListener('change', ()=> setSettingsNow({ overlayPrices: overlayPricesCheck.checked }));
+  overlayBgLightCheck.addEventListener('change', ()=> setSettingsNow({ overlayBgLight: overlayBgLightCheck.checked }));
+  overlayBgPairCheck.addEventListener('change', ()=> setSettingsNow({ overlayBgPairSkin: overlayBgPairCheck.checked }));
+  function renderBackgroundUI(s, v, isOwnDefault, t){
+    const skin = s[OVERLAY_BORDER_KEY[t || 'overlay']] || null;
+    paintBgTiles(v, skin);
+    const cur = v.themeBg || 'none';
+    bgTiles.forEach(({ el, key }) => el.classList.toggle('active', key === cur));
+    const k = typeof v.themeBgStrength === 'number' ? v.themeBgStrength : 0.75;
+    if(document.activeElement !== themeBgStrength){ themeBgStrength.value = k; themeBgStrengthVal.textContent = pct(k); }
+    const col = v.themeBgColor;
+    if(document.activeElement !== themeBgColorSel) themeBgColorSel.value = col === 'border' ? 'border' : col ? 'custom' : 'natural';
+    if(col && col !== 'border' && document.activeElement !== themeBgColorPick) themeBgColorPick.value = col;
+    themeBgMotionCheck.checked = v.themeBgMotion === true;
+    const sp = typeof v.themeBgSpeed === 'number' ? v.themeBgSpeed : 1;
+    themeBgSpeedSel.value = ['2', '1.4', '1', '0.6'].reduce((best, o) => Math.abs(o - sp) < Math.abs(best - sp) ? o : best, '1');
+    document.getElementById('themeBgRow').classList.toggle('is-default', isOwnDefault('themeBg'));
+    document.getElementById('themeBgLookRow').classList.toggle('is-default',
+      ['themeBgStrength', 'themeBgColor', 'themeBgMotion', 'themeBgSpeed'].every(isOwnDefault));
+    overlayFoilCheck.checked = s.overlayFoil !== false;
+    overlayPricesCheck.checked = pricesOn(s);
+    overlayBgLightCheck.checked = s.overlayBgLight === true;
+    overlayBgPairCheck.checked = s.overlayBgPairSkin !== false;
+  }
   // v1.17.0: Rarity on each droid, applied by overlay-theme.js in every overlay
   document.querySelectorAll('[data-rarity-style]').forEach(b=>{
     b.addEventListener('click', ()=> setSettingsNow({ overlayRarityStyle: rarityStyleOf(b.dataset.rarityStyle) }));
@@ -1057,6 +1159,7 @@
     themeCompactCheck.checked = v.themeCompact === true;
     themeCardRow.classList.toggle('is-default', isOwnDefault('themeTextScale') && isOwnDefault('themeCompact'));
     themeHighlightBorderBtn.classList.toggle('on', v.themeHighlight === 'border');
+    renderBackgroundUI(s, v, isOwnDefault, t);
     // what applies to the chosen overlay
     const backdropOnly = t === 'timers' || t === 'spawnAlert'; // v1.14.0: the Spawn Alert has no boxes or selection
     ['themeBoxRow', 'themeHighlightRow'].forEach(id => document.getElementById(id).classList.toggle('is-hidden', backdropOnly));
@@ -1064,8 +1167,8 @@
     THEME_ROWS[0].alpha.disabled = t === 'overlay';
     themeTargetHint.textContent = !t ? 'Every overlay, unless one has its own colors.'
       : 'Only this one. Default follows All overlays.' + (t === 'overlay' ? ' Its backdrop opacity is under Layout.' : '')
-        + (t === 'timers' ? ' The timers use the backdrop only.' : '') + (t === 'spawnAlert' ? ' The Spawn Alert uses the backdrop only.' : '');
-    themeResetBtn.textContent = t ? '↺ Reset this overlay' : '↺ Reset all colors';
+        + (t === 'timers' ? ' The timers use the backdrop and background only.' : '') + (t === 'spawnAlert' ? ' The Spawn Alert uses the backdrop and background only.' : '');
+    themeResetBtn.textContent = t ? '↺ Reset this overlay' : '↺ Reset all colors + backgrounds';
     renderPresets(s);
     renderAppLook(s);
     overlaySnapCheckbox.checked = s.overlaySnap !== false;
