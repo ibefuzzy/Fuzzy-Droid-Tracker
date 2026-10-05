@@ -325,7 +325,12 @@ Stop test copies ONLY by that `--user-data-dir` in the process command line (Win
 never by exe path: the user may be running the app from `release\win-unpacked` too. Tell the
 user before launching; they may be in-game and close stray windows.
 
-## Current state (2026-10-05): v1.19.0 (🌐 Live Friends) built, E2E-tested, security-reviewed; exe in release\next, waiting for the in-game test
+## Current state (2026-10-05): v1.19.0 PUBLISHED (Live Friends + bundled OCR/fonts + Electron 44)
+
+- **v1.19.0 PUBLISHED 2026-10-05**, asset digest verified = sha256 cb877d42...bfc0658 (103,604,388 bytes); version.json =
+  1.19.0 (live); website Live Friends live (CORS checked from the real origin). Snapshot `_backup_v1.19.0_approved/`.
+  **Still to do: remind the user to turn on 2FA for the Cloudflare account.** Next: move the v1.19.0 detail below into
+  CLAUDE_HISTORY.md.
 
 - **v1.19.0 in progress (uncommitted, package.json = 1.19.0).** The user picked D1 (not KV: 1k writes/day total),
   90 s refresh, web view + publish, and layout **A** (switch line above your code) from dev/live-friends-mockup.html.
