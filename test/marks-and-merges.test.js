@@ -18,11 +18,12 @@ test('cleanCycleMarks keeps valid marks and drops everything else', () => {
   const s = loadShared();
   assert.deepStrictEqual(plain(s.cleanCycleMarks({ 2: { lo: 4, r6: 6 }, 3: { gonk: 0 } })), { 2: { lo: 4, r6: 6 }, 3: { gonk: 0 } });
   assert.deepStrictEqual(plain(s.cleanCycleMarks({
-    0: { lo: 1 }, 6: { lo: 1 }, x: { lo: 1 },              // not a cycle 1-5
+    0: { lo: 1 }, 7: { lo: 1 }, x: { lo: 1 }, '06': { lo: 1 }, // not a real cycle (1-6 since v1.21.0)
+    6: { kt: 2 },                                           // Cycle 6 (v1.21.0) is kept
     1: { lo: -1, r6: 99, kx: 2.5, ig: '3', bb: null },     // not a rank
     4: 'nope', 5: [1, 2],                                   // not a per-droid object
     2: { r9: 1 },
-  })), { 2: { r9: 1 } });
+  })), { 2: { r9: 1 }, 6: { kt: 2 } });
   assert.deepStrictEqual(plain(s.cleanCycleMarks({})), {});
 });
 

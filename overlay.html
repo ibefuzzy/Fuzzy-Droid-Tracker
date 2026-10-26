@@ -404,9 +404,11 @@
       const cycleTag = u.cycle !== cycle ? (' · Cycle ' + u.cycle) : '';
       // v1.20.0: with prices on, "NOW 36" (was "NOW · Lvl 36") leaves room for the Σ total on the top line
       const tag = (isCurrent ? (showPrices ? 'NOW ' : 'NOW · Lvl ') : 'Lvl ') + u.level + cycleTag;
-      let sum = 0, kc = 0;
-      if(showPrices) u.droids.forEach(d => { const p = d.owned ? null : droidPriceFor(d.code, d.nk); if(p){ sum += p.credits; kc += p.crystals; } });
-      const totalHtml = sum ? '<span class="price-total" title="The droids you still need for Rebirth ' + u.level + ' cost ' + formatCredits(sum) +
+      // v1.21.0: a still-needed droid with no known price (Cycle 6's new droids until their prices
+      // are in droid-data.js) means no Σ at all, rather than a total that silently leaves it out
+      let sum = 0, kc = 0, unpriced = false;
+      if(showPrices) u.droids.forEach(d => { if(d.owned) return; const p = droidPriceFor(d.code, d.nk); if(p){ sum += p.credits; kc += p.crystals; } else unpriced = true; });
+      const totalHtml = (sum && !unpriced) ? '<span class="price-total" title="The droids you still need for Rebirth ' + u.level + ' cost ' + formatCredits(sum) +
         (kc ? ' + ' + kc + ' Kyber Crystals' : '') + ' together">Σ' + formatCredits(sum) + '</span>' : '';
       const credits = rebirthCreditsFor(u.cycle, u.level); // v1.15.1
       const creditsHtml = credits === null ? '' : '<span class="credits" title="Credits needed to go through with Rebirth ' + u.level + '">' + formatCredits(credits) + '</span>';

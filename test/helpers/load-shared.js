@@ -47,6 +47,8 @@ function loadShared(files = ['droid-data.js', 'requirements.js']) {
     nextCycleOf: run('nextCycleOf'),
     getSneakPreview: run('getSneakPreview'),
     cycleRealLevelCount: run('cycleRealLevelCount'),
+    cycleTotal: run('cycleTotal'),
+    isCycleKey: run('isCycleKey'),
     cycleRealSlotCount: run('cycleRealSlotCount'),
     cycleCoveredCount: run('cycleCoveredCount'),
     cycleDroidKeys: run('cycleDroidKeys'),

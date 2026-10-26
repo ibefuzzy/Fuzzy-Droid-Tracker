@@ -9,6 +9,11 @@ const { loadShared, ROOT } = require('./helpers/load-shared');
 const s = loadShared();
 const read = (f) => fs.readFileSync(path.join(ROOT, f), 'utf8');
 const price = (code, name) => s.droidPriceFor(code, s.normKey(s.canonicalName(name)));
+/* v1.21.0: Cycle 6's seven new droids have no price yet (DubTrackr's droid pages have them; this
+   session couldn't open them). The HUD shows no price for them and no Σ for a line that needs one.
+   When a price goes into DROID_BASE_PRICES, take that droid off this list (a test below insists). */
+const PRICE_PENDING = new Set(['EG-58', 'EGL', 'KT', 'MPH', 'JO9-4MN', 'PLNK', 'ECG'].map((n) => s.normKey(n)));
+const pending = (name) => PRICE_PENDING.has(s.normKey(s.canonicalName(name)));
 
 test('every droid every rebirth asks for has a price, at every rarity it is asked for', () => {
   let slots = 0;
@@ -16,18 +21,23 @@ test('every droid every rebirth asks for has a price, at every rarity it is aske
     s.CYCLES[cycle].forEach((row, li) => row.forEach(([code, name]) => {
       if (code === '?') return;
       slots++;
+      if (pending(name)) return;
       const p = price(code, name);
       assert.ok(p && p.credits > 0, `cycle ${cycle} rebirth ${li + 1}: ${name} ${code} has no price`);
       assert.equal(p.crystals > 0, code === 'Y', `${name} ${code}: Kyber Crystals only for Kyber`);
     }));
   }
-  assert.equal(slots, 600);
+  assert.equal(slots, 720);
+});
+
+test('the droids still waiting for a price really have none (take them off PRICE_PENDING once priced)', () => {
+  for (const nk of PRICE_PENDING) assert.equal(s.droidPriceFor('B', nk), null, `${nk} has a price now: remove it from PRICE_PENDING`);
 });
 
 test('the price table lists exactly the CYCLES droids, once each', () => {
   const base = s.run('DROID_BASE_PRICES');
   const nks = new Set();
-  Object.keys(s.CYCLES).forEach((c) => s.CYCLES[c].forEach((r) => r.forEach(([code, n]) => { if (code !== '?') nks.add(s.normKey(s.canonicalName(n))); })));
+  Object.keys(s.CYCLES).forEach((c) => s.CYCLES[c].forEach((r) => r.forEach(([code, n]) => { if (code !== '?' && !pending(n)) nks.add(s.normKey(s.canonicalName(n))); })));
   const keys = Object.keys(base).map((n) => s.normKey(s.canonicalName(n)));
   assert.equal(new Set(keys).size, keys.length, 'a droid listed twice');
   assert.deepEqual([...keys].sort(), [...nks].sort());

@@ -62,6 +62,7 @@ function loadSharedFunctions(){
     friendOwnedFromMine: run('friendOwnedFromMine'),
     cleanFriendName: run('cleanFriendName'),
     cycleRealLevelCount: run('cycleRealLevelCount'),
+    isCycleKey: run('isCycleKey'), // v1.21.0: 1..cycleTotal() (6 cycles since Cycle 6), never a literal 5
     cleanLiveFriends: run('cleanLiveFriends'),
     LIVE_CODE_PREFIX: run('LIVE_CODE_PREFIX'),
     LIVE_ID_RE: run('LIVE_ID_RE'),
@@ -1821,7 +1822,7 @@ function liveIdentity(){
 function myFriendCodeAt(time){
   shared.setNameMerges(storeData['rebirth-nameMerges']);
   const c = storeData['rebirth-activeCycle'];
-  const cycle = (Number.isInteger(c) && c >= 1 && c <= 5) ? c : 1;
+  const cycle = (Number.isInteger(c) && shared.isCycleKey(c)) ? c : 1;
   const level = Math.max(0, Math.min(parseInt(storeData['rebirth-currentLevel'], 10) || 0, shared.cycleRealLevelCount(cycle)));
   return shared.encodeFriendCode({ name: shared.cleanFriendName(storeData['rebirth-friendName']) || 'Friend', cycle, level,
     owned: shared.friendOwnedFromMine(storeData['rebirth-ownedRank-v2'] || {}), time });
@@ -2009,7 +2010,7 @@ function wireIpc(){
   // overlay:markDroid — mark a single droid as obtained from overlay click
   ipcMain.handle('overlay:markDroid', (evt, data)=>{
     const { cycle, level, slot } = data;
-    if(cycle < 1 || cycle > 5 || level < 1 || level > (shared.CYCLES[cycle] ? shared.CYCLES[cycle].length : 0) || slot < 0 || slot > 2) return false;
+    if(!Number.isInteger(cycle) || !shared.isCycleKey(cycle) || level < 1 || level > (shared.CYCLES[cycle] ? shared.CYCLES[cycle].length : 0) || slot < 0 || slot > 2) return false;
     const row = shared.CYCLES[cycle][level-1];
     if(!row || !row[slot]) return false;
     const [code, rawName] = row[slot];
@@ -2034,7 +2035,7 @@ function wireIpc(){
   // overlay:markLevel — mark all 3 droids in a rebirth level as obtained from overlay click
   ipcMain.handle('overlay:markLevel', (evt, data)=>{
     const { cycle, level } = data;
-    if(cycle < 1 || cycle > 5 || level < 1 || level > (shared.CYCLES[cycle] ? shared.CYCLES[cycle].length : 0)) return false;
+    if(!Number.isInteger(cycle) || !shared.isCycleKey(cycle) || level < 1 || level > (shared.CYCLES[cycle] ? shared.CYCLES[cycle].length : 0)) return false;
     const row = shared.CYCLES[cycle][level-1];
     if(!row) return false;
     const ownedRank = storeData['rebirth-ownedRank-v2'] || {};
@@ -2060,7 +2061,7 @@ function wireIpc(){
   // has the player's name merges loaded and this process doesn't.
   ipcMain.handle('overlay:holdNextCycleMark', (evt, data)=>{
     const { cycle, nk, rank } = data;
-    if(!(cycle >= 1 && cycle <= 5) || typeof nk !== 'string' || !nk || !Number.isInteger(rank) || rank < 0 || rank >= shared.RARITY_ORDER.length) return false;
+    if(!Number.isInteger(cycle) || !shared.isCycleKey(cycle) || typeof nk !== 'string' || !nk || !Number.isInteger(rank) || rank < 0 || rank >= shared.RARITY_ORDER.length) return false;
     const held = storeData['rebirth-heldMarks'] || {};
     const marks = held[cycle] || {};
     const decision = shared.decideOwnedUpdate(marks[nk], rank);
@@ -2081,7 +2082,7 @@ function wireIpc(){
   // requirements.js. `rank` is the droid's currently logged rank.
   ipcMain.handle('overlay:toggleRetired', (evt, data)=>{
     const { cycle, nk, rank } = data;
-    if(!(cycle >= 1 && cycle <= 5) || typeof nk !== 'string' || !nk || !Number.isInteger(rank) || rank < 0 || rank >= shared.RARITY_ORDER.length) return false;
+    if(!Number.isInteger(cycle) || !shared.isCycleKey(cycle) || typeof nk !== 'string' || !nk || !Number.isInteger(rank) || rank < 0 || rank >= shared.RARITY_ORDER.length) return false;
     const retired = storeData['rebirth-retired'] || {};
     const marks = retired[cycle] || {};
     if(shared.isRetired(marks[nk], rank)) delete marks[nk];

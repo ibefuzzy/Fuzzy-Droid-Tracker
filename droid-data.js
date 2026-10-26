@@ -4,7 +4,8 @@ const RCOLOR = {B:"var(--r-base)",G:"var(--r-gold)",D:"var(--r-diamond)",R:"rain
 const RNAME = {B:"Base",G:"Gold",D:"Diamond",R:"Rainbow",K:"Beskar",X:"Galactic",S:"Stellar",Y:"Kyber"};
 const RCLASS = {B:"rarity-base",G:"rarity-gold",D:"rarity-diamond",R:"rarity-rainbow",K:"rarity-beskar",X:"rarity-galactic",S:"rarity-stellar",Y:"rarity-kyber"};
 
-// each cycle: array of 40 levels, each level = array of 3 [rarityCode, name]
+// each cycle: array of 40 levels, each level = array of 3 [rarityCode, name]. Six cycles since
+// v1.21.0; code reads the count with cycleTotal() (requirements.js), never a literal.
 const CYCLES = {
 1:[
 [["B","CB"],["B","Pit"],["B","DRK-1 PROBE"]],
@@ -215,6 +216,51 @@ const CYCLES = {
 [["Y","LO"],["Y","Trak-R"],["Y","Mecha Droid"]],
 [["Y","Cyclo-Grav"],["Y","Opti-Strk"],["Y","RIC"]],
 [["Y","Loadlifter"],["Y","LEP"],["Y","RIC-1200"]],
+],
+// Cycle 6 (Path 6, added with the Iconic Gonk weekend, 2026-10-10): DubTrackr Droidex (game
+// 1.36.0) slot order, cross-checked level by level against tycoon-tools.com (same 120 droids
+// and tiers, 2026-10-25). Seven droids are new: EG-58, EGL, KT, MPH, JO9-4MN, PLNK, ECG.
+6:[
+[["B","Gonk"],["B","Mouse"],["B","ID10"]],
+[["B","Pit"],["B","EG-58"],["B","2BB"]],
+[["B","R3"],["B","R4"],["B","Roll-R"]],
+[["G","EG-58"],["G","R9"],["G","B1 Security"]],
+[["G","Gonk"],["G","R5"],["G","Vect-Arm"]],
+[["B","EGL"],["D","EG-58"],["D","2BB"]],
+[["B","KT"],["D","R4"],["D","R9"]],
+[["B","MPH"],["D","B1 Security"],["D","Nav-Ex"]],
+[["D","Gonk"],["G","EGL"],["G","Strike-Orb"]],
+[["B","Groundmech"],["B","Trak-R"],["B","Amp Walker"]],
+[["B","B2 Super"],["B","Haul-R"],["B","R2"]],
+[["R","Gonk"],["G","Groundmech"],["G","Trak-R"]],
+[["G","KT"],["G","MPH"],["B","Proto Roller"]],
+[["D","EGL"],["G","B2 Super"],["B","B2-RP"]],
+[["B","JO9-4MN"],["D","KT"],["D","MPH"]],
+[["B","PLNK"],["B","BB9"],["G","R7"]],
+[["R","EGL"],["G","JO9-4MN"],["B","Mecha Droid"]],
+[["R","KT"],["R","MPH"],["G","PLNK"]],
+[["D","JO9-4MN"],["G","Proto Roller"],["D","R7"]],
+[["R","PLNK"],["R","Mecha Droid"],["R","B2-RP"]],
+[["K","Gonk"],["K","EGL"],["K","Haul-R"]],
+[["K","KT"],["K","Groundmech"],["K","R2"]],
+[["K","MPH"],["K","JO9-4MN"],["K","BB9"]],
+[["K","PLNK"],["K","Proto Roller"],["B","ECG"]],
+[["K","R7"],["B","IG"],["B","Loadlifter"]],
+[["G","Mo-Trak"],["G","ECG"],["D","Drft-R"]],
+[["R","Cyclens"],["R","Snow Mouse"],["K","Tri-Tek"]],
+[["X","EGL"],["X","JO9-4MN"],["X","BB9"]],
+[["X","KT"],["X","PLNK"],["K","IG"]],
+[["X","MPH"],["X","B2-RP"],["X","Drft-R"]],
+[["S","EGL"],["K","EG-58"],["K","Snow Mouse"]],
+[["X","ECG"],["X","Trak-R"],["K","Cyclens"]],
+[["S","KT"],["X","Cyclo-Grav"],["X","Tri-Tek"]],
+[["S","MPH"],["S","Haul-R"],["X","IG"]],
+[["S","JO9-4MN"],["S","PLNK"],["S","ECG"]],
+[["Y","Gonk"],["Y","EG-58"],["Y","Roll-R"]],
+[["Y","EGL"],["Y","R2"],["Y","B2 Super"]],
+[["Y","KT"],["Y","MPH"],["Y","Snow Mouse"]],
+[["Y","JO9-4MN"],["Y","Cyclo-Grav"],["Y","Tri-Tek"]],
+[["Y","PLNK"],["Y","ECG"],["Y","Drft-R"]],
 ]
 };
 
@@ -322,7 +368,14 @@ const DROID_RARITY_CLASS = {
   "KX": "Mythic",
   "Tri-Tek": "Mythic",
   "RIC": "Mythic",
-  "LEP": "Mythic"
+  "LEP": "Mythic",
+  // v1.21.0: the seven droids new in Cycle 6. DubTrackr Droidex lists every droid with its
+  // class; it agrees with this table on all 55 older droids Cycle 6 uses, and on these
+  // seven with btroyer2011/DroidTycoonTracker (read from the Path 6 poster).
+  "EG-58": "Rare",
+  "EGL": "Epic", "KT": "Epic", "MPH": "Epic",
+  "JO9-4MN": "Legendary", "PLNK": "Legendary",
+  "ECG": "Mythic"
 };
 
 /* ---------------- DROID PRICES (v1.20.0, a player's request) ----------------
@@ -335,7 +388,10 @@ const DROID_RARITY_CLASS = {
    Sources: Base prices from the Droidex value list by Nackz (github.com/n4ckz/droidex,
    MIT licence, see README Credits), which cross-checks tycoon-tools.com; checked
    (2026-10-05) against DubTrackr's Droidex (droidex.dubtrackr.win, game 1.33.0): all
-   600 rebirth slots equal, Kyber included. Keyed by a CYCLES spelling, like the table above. */
+   600 rebirth slots equal, Kyber included. Keyed by a CYCLES spelling, like the table above.
+   v1.21.0: Cycle 6's seven new droids (EG-58, EGL, KT, MPH, JO9-4MN, PLNK, ECG) have no price
+   yet. Add them here from DubTrackr's droid pages and take them off PRICE_PENDING in
+   test/prices.test.js; until then they show no price and no Σ on a line that needs one. */
 const DROID_BASE_PRICES = {
   // Default (Common)
   "Mouse": 950, "Pit": 1100, "CB": 2000, "R3": 2000, "R5": 2000, "DRK-1 PROBE": 3000, "Gonk": 3000, "R8": 3000, "ID10": 4000, "B1 Battle": 4000, "IMPERIAL PROBE": 5000,

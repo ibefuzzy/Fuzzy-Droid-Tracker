@@ -42,13 +42,17 @@ async function ensureSchema(db){
   schemaReady.add(db);
 }
 
-/** A friend code's shape (no droid data here, so not its contents): version 1, checksum, cycle 1-5, name length. */
+/* The Worker has no droid data, so it can't know how many cycles the game has. v1.21.0 (Cycle 6)
+   raised the cap from 5 with headroom, so the next cycle doesn't need a redeploy; the app and the
+   website still refuse a cycle their droid-data.js doesn't have when they read the code. */
+const MAX_CYCLE = 12;
+/** A friend code's shape (no droid data here, so not its contents): version 1, checksum, cycle 1..MAX_CYCLE, name length. */
 export function isWellFormedCode(code){
   if(typeof code !== 'string' || !CODE_RE.test(code)) return false;
   let b;
   try{ b = Uint8Array.from(atob(code.slice(6).replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0)); }
   catch(e){ return false; }
-  if(b.length < 12 || b[0] !== 1 || b[3] < 1 || b[3] > 5 || b[9] > 24 || 10 + b[9] >= b.length - 1) return false;
+  if(b.length < 12 || b[0] !== 1 || b[3] < 1 || b[3] > MAX_CYCLE || b[9] > 24 || 10 + b[9] >= b.length - 1) return false;
   let sum = 0;
   for(let i = 0; i < b.length - 1; i++) sum = (sum + b[i]) & 255;
   return sum === b[b.length - 1];

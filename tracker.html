@@ -1036,6 +1036,7 @@
       <option value="3">Cycle 3</option>
       <option value="4">Cycle 4</option>
       <option value="5">Cycle 5</option>
+      <option value="6">Cycle 6</option>
     </select>
     <span class="cycle-progress-label" id="cycleProgress"></span>
   </div>
@@ -1199,11 +1200,11 @@
           <div class="kb-group" id="cycleKeysGroup">
             <div class="kb-group-title">🔄 Cycle &amp; rebirth level</div>
             <div class="kb-row">
-              <div class="kb-label"><b>🔄 Next cycle</b><small>Switches the tracker and every overlay to the next cycle (5 goes back to 1). Nothing is cleared.</small></div>
+              <div class="kb-label"><b>🔄 Next cycle</b><small>Switches the tracker and every overlay to the next cycle (the last cycle goes back to 1). Nothing is cleared.</small></div>
               <button class="btn kb-key" id="cycleNextHotkeyBtn">(none set)</button>
             </div>
             <div class="kb-row">
-              <div class="kb-label"><b>🔄 Previous cycle</b><small>Switches back one cycle (1 goes to 5). Nothing is cleared.</small></div>
+              <div class="kb-label"><b>🔄 Previous cycle</b><small>Switches back one cycle (1 goes to the last cycle). Nothing is cleared.</small></div>
               <button class="btn kb-key" id="cyclePrevHotkeyBtn">(none set)</button>
             </div>
             <div class="kb-row danger">
@@ -1763,6 +1764,7 @@
               <option value="3">Cycle 3</option>
               <option value="4">Cycle 4</option>
               <option value="5">Cycle 5</option>
+              <option value="6">Cycle 6</option>
             </select>
 
             <label style="display: block; font-size: 12px; margin-bottom: 5px;"><b>Level:</b></label>
@@ -1821,6 +1823,7 @@
           <option value="3">Cycle 3</option>
           <option value="4">Cycle 4</option>
           <option value="5">Cycle 5</option>
+          <option value="6">Cycle 6</option>
         </select>
       </div>
       <p class="rebirth-sub">Every droid this cycle calls for, grouped low to high (Base → Stellar) — the highest variety needed per droid. Tap one to log it (marks every lower variety of that droid in the list on the left too).</p>
@@ -2123,7 +2126,7 @@ async function markRowObtained(row, opts){
    cycle's droids and then either roll over to the next one ("Next Cycle")
    or open the Sneak Preview ("Sneak Preview") — never on an unmark, and
    never again just from re-rendering an already-105 cycle (the
-   coveredBefore !== 105 guard below). Cycles wrap 5 -> 1.
+   coveredBefore !== 105 guard below). The last cycle wraps to 1 (cycleTotal(), v1.21.0).
 
    v1.18.1: "Next Cycle" (and the 🏁 Finish cycle hotkey, setupCycleHotkeys below) also
    sets rebirth-currentLevel back to 0. Before, the new cycle kept the old cycle's level
@@ -2135,8 +2138,8 @@ async function markRowObtained(row, opts){
    isValidImportPayload now live in requirements.js (moved 2026-09-25 so
    they're testable) — do not redeclare them here. */
 
-function cycleAfter(cycle){ return (cycle >= 5) ? 1 : cycle + 1; }
-function cycleBefore(cycle){ return (cycle <= 1) ? 5 : cycle - 1; } // v1.18.1 (Previous cycle key)
+function cycleAfter(cycle){ return (cycle >= cycleTotal()) ? 1 : cycle + 1; }
+function cycleBefore(cycle){ return (cycle <= 1) ? cycleTotal() : cycle - 1; } // v1.18.1 (Previous cycle key)
 
 async function clearCycleMarks(cycle){
   ownedRank = removeCycleMarks(cycle, ownedRank);
@@ -2282,7 +2285,7 @@ async function migrate(){
   const legacyOwned = (await storeGet('rebirth-owned')) || {};
   const legacyOverrides = (await storeGet('rebirth-overrides')) || {};
   const rank = {};
-  for(let c=1;c<=5;c++){
+  for(let c=1;c<=5;c++){ // frozen: v1 saves only ever had cycles 1-5 x 35 levels
     for(let l=1;l<=35;l++){
       const row = CYCLES[c][l-1];
       row.forEach((d,i)=>{
@@ -3294,7 +3297,7 @@ document.getElementById('bgDimRange').addEventListener('change', async (e)=>{
     off.width = REF_SIZE; off.height = REF_SIZE;
     const octx = off.getContext('2d', {willReadFrequently:true});
     const thumbs = [];
-    for(let c=1;c<=5;c++){
+    for(let c=1;c<=cycleTotal();c++){
       const maxLevel = cycleRealLevelCount(c);
       for(let l=1;l<=maxLevel;l++){
         const row = CYCLES[c][l-1];
@@ -3508,14 +3511,14 @@ applyNovaCrystalIcon(); // v1.16.0: the icon for By Rebirth Level's crystal rewa
   sortMode = (await storeGet('rebirth-sortMode')) || 'alpha';
   {
     // Every other place activeCycle gets set (the cycle <select>, or
-    // resetCycleAndAdvance's 1-5 wraparound) already keeps it in range --
+    // resetCycleAndAdvance's wraparound) already keeps it in range --
     // this initial load is the only path that takes whatever the store
-    // handed back on faith. A value outside 1-5 (corrupted/hand-edited
+    // handed back on faith. A value outside 1..cycleTotal() (corrupted/hand-edited
     // store) would make every CYCLES[activeCycle] lookup throw on
     // undefined the moment anything tries to render, so fall back to 1
     // instead of trusting it blindly.
     const loadedCycle = await storeGet('rebirth-activeCycle');
-    activeCycle = (Number.isInteger(loadedCycle) && loadedCycle >= 1 && loadedCycle <= 5) ? loadedCycle : 1;
+    activeCycle = (Number.isInteger(loadedCycle) && isCycleKey(loadedCycle)) ? loadedCycle : 1;
   }
   bgImageData = await storeGet('rebirth-bgImage');
   bgDim = (await storeGet('rebirth-bgDim'));

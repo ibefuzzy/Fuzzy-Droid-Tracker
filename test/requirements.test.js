@@ -37,7 +37,7 @@ test('every cycle has 40 real levels of exactly 3 valid [rarity, name] slots', (
   // regression test below for the placeholder-skipping mechanism itself,
   // now exercised with synthetic data since the live data no longer has any).
   const s = fresh();
-  for (let c = 1; c <= 5; c++) {
+  for (let c = 1; c <= s.cycleTotal(); c++) {
     assert.equal(s.CYCLES[c].length, 40, `cycle ${c} level count`);
     assert.equal(s.cycleRealLevelCount(c), 40, `cycle ${c} should have no placeholder levels left`);
     s.CYCLES[c].forEach((row, i) => {
@@ -52,7 +52,7 @@ test('every cycle has 40 real levels of exactly 3 valid [rarity, name] slots', (
 
 test('no real level asks for the same droid twice', () => {
   const s = fresh();
-  for (let c = 1; c <= 5; c++) {
+  for (let c = 1; c <= s.cycleTotal(); c++) {
     s.CYCLES[c].forEach((row, i) => {
       if (row[0][0] === '?') return; // placeholder level — all 3 slots share the same "????" sentinel by design
       const nks = row.map(([, name]) => s.normKey(name));
@@ -61,7 +61,8 @@ test('no real level asks for the same droid twice', () => {
   }
 });
 
-test('all 62 droids have an explicit rarity class (11 Default / 14 Rare / 18 Epic / 8 Legendary / 11 Mythic)', () => {
+test('all 69 droids have an explicit rarity class (11 Default / 15 Rare / 21 Epic / 10 Legendary / 12 Mythic)', () => {
+  // v1.21.0: 62 + Cycle 6's seven new droids (EG-58 Rare; EGL, KT, MPH Epic; JO9-4MN, PLNK Legendary; ECG Mythic)
   const s = fresh();
   const table = {};
   for (const raw of Object.keys(s.DROID_RARITY_CLASS)) table[s.normKey(raw)] = s.DROID_RARITY_CLASS[raw];
@@ -69,10 +70,10 @@ test('all 62 droids have an explicit rarity class (11 Default / 14 Rare / 18 Epi
   for (const nk of nks) {
     assert.ok(table[nk], `"${nk}" has no DROID_RARITY_CLASS entry and would silently fall back to Default`);
   }
-  assert.equal(nks.length, 62);
+  assert.equal(nks.length, 69);
   const counts = {};
   for (const nk of nks) counts[table[nk]] = (counts[table[nk]] || 0) + 1;
-  assert.deepEqual(counts, { Default: 11, Rare: 14, Epic: 18, Legendary: 8, Mythic: 11 });
+  assert.deepEqual(counts, { Default: 11, Rare: 15, Epic: 21, Legendary: 10, Mythic: 12 });
 });
 
 /* ---------------- ceilings vs last-needed level ---------------- */
@@ -96,13 +97,14 @@ test('cycleLastNeededLevel records the LAST level a droid is needed at any rarit
   assert.equal(s.cycleLastNeededLevel(1).protoroller, 39);
 });
 
-test('8 of the 238 droid/cycle pairs are needed again after first hitting their ceiling', () => {
-  // 44 + 47 + 48 + 48 + 51 droids across cycles 1-5, after the 2026-09-27
+test('8 of the 278 droid/cycle pairs are needed again after first hitting their ceiling', () => {
+  // 44 + 47 + 48 + 48 + 51 droids across cycles 1-5, + 40 in Cycle 6 (v1.21.0, none of
+  // them reappears, so still 8), after the 2026-09-27
   // real level 36-40 data (was 224 pairs / 13 reappearing with the old
   // 35-level data; README said 223 until 2026-09-24 before that).
   const s = fresh();
   let pairs = 0, reappear = 0;
-  for (let c = 1; c <= 5; c++) {
+  for (let c = 1; c <= s.cycleTotal(); c++) {
     const last = s.cycleLastNeededLevel(c);
     const ceil = s.cycleCeilings(c);
     for (const nk of Object.keys(last)) {
@@ -110,7 +112,7 @@ test('8 of the 238 droid/cycle pairs are needed again after first hitting their 
       if (last[nk] > ceil[nk].level) reappear++;
     }
   }
-  assert.equal(pairs, 238);
+  assert.equal(pairs, 278);
   assert.equal(reappear, 8);
 });
 
@@ -120,7 +122,7 @@ test('SELL rule: each droid has exactly one last-needed occurrence per cycle, an
   // this pins the property it relies on.
   const s = fresh();
   let sellTags = 0;
-  for (let c = 1; c <= 5; c++) {
+  for (let c = 1; c <= s.cycleTotal(); c++) {
     const last = s.cycleLastNeededLevel(c);
     const occ = occurrences(s, c);
     for (const nk of Object.keys(last)) {
@@ -130,7 +132,7 @@ test('SELL rule: each droid has exactly one last-needed occurrence per cycle, an
     }
     sellTags += occ.filter((o) => last[o.nk] === o.level).length;
   }
-  assert.equal(sellTags, 238, 'one SELL tag per droid per cycle');
+  assert.equal(sellTags, 278, 'one SELL tag per droid per cycle (238 in cycles 1-5 + 40 in Cycle 6)');
 });
 
 /* ---------------- level requirements ---------------- */
@@ -190,11 +192,15 @@ test('getUpcomingLevels returns NOW plus the next levels, wrapping into the next
   assert.deepEqual(plain(cycles(40)), [2, 2, 2, 2]);
 });
 
-test('getUpcomingLevels wraps cycle 5 back to cycle 1', () => {
+test('getUpcomingLevels goes from cycle 5 into cycle 6, and wraps the last cycle back to cycle 1', () => {
   const s = fresh();
-  const entries = s.getUpcomingLevels(5, 40, {}, 4);
-  assert.deepEqual(plain(entries.map((b) => b.cycle)), [1, 1, 1, 1]);
-  assert.deepEqual(plain(entries.map((b) => b.level)), [1, 2, 3, 4]);
+  assert.equal(s.cycleTotal(), 6);
+  const into6 = s.getUpcomingLevels(5, 40, {}, 4);
+  assert.deepEqual(plain(into6.map((b) => b.cycle)), [6, 6, 6, 6]);
+  assert.deepEqual(plain(into6.map((b) => b.level)), [1, 2, 3, 4]);
+  const wrap = s.getUpcomingLevels(6, 40, {}, 4);
+  assert.deepEqual(plain(wrap.map((b) => b.cycle)), [1, 1, 1, 1]);
+  assert.deepEqual(plain(wrap.map((b) => b.level)), [1, 2, 3, 4]);
 });
 
 test('getUpcomingLevels wraps to the next cycle at the last REAL level, not the raw array length', () => {
@@ -270,14 +276,14 @@ test('spelling variants in the data resolve to one droid', () => {
 
 /* ---------------- Sneak Preview ---------------- */
 
-test('nextCycleOf wraps cycle 5 back to cycle 1', () => {
+test('nextCycleOf wraps the last cycle (6 since v1.21.0) back to cycle 1', () => {
   const s = fresh();
-  assert.deepEqual([1, 2, 3, 4, 5].map(s.nextCycleOf), [2, 3, 4, 5, 1]);
+  assert.deepEqual([1, 2, 3, 4, 5, 6].map(s.nextCycleOf), [2, 3, 4, 5, 6, 1]);
 });
 
 test('Sneak Preview shows only Mythic droids from the next cycle at that cycle\'s ceiling', () => {
   const s = fresh();
-  for (let c = 1; c <= 5; c++) {
+  for (let c = 1; c <= s.cycleTotal(); c++) {
     const { nextCycle, items } = s.getSneakPreview(c, {});
     assert.equal(nextCycle, s.nextCycleOf(c));
     assert.ok(items.length > 0, `cycle ${c} preview is empty`);

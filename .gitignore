@@ -66,3 +66,6 @@ Thumbs.db
 /droid-data.backup.js
 *.traineddata
 /.ignore
+
+# source pictures for tools/card-icons.js (local-only; the tool itself is tracked)
+/card-sources/

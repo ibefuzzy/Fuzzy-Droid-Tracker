@@ -32,7 +32,7 @@ let RAW_GROUPS = {};
 /** Build the global DROID_INDEX from CYCLES. Called once at startup and whenever a name merge changes. Updates DROID_INDEX and invalidates the rarity-class cache. */
 function buildIndex(){
   const groups = {};
-  for(let c=1;c<=5;c++){
+  for(let c=1;c<=cycleTotal();c++){
     const cycleLen = CYCLES[c] ? CYCLES[c].length : 0;
     for(let l=1;l<=cycleLen;l++){
       const row = CYCLES[c][l-1];
@@ -152,7 +152,7 @@ function getLevelRequirements(cycle, level, ownedRank){
    what's coming in the next one, same idea as Sneak Preview. Each entry
    carries its own `cycle` (not just `level`) so a caller spanning the wrap
    can tell which levels belong to the next cycle without re-deriving it. */
-/** Get next `count` rebirth levels starting after currentLevel. Wraps cycle 5→1. Returns [{cycle, level, droids: [...]}]. Each entry carries its own cycle for wrap detection. */
+/** Get next `count` rebirth levels starting after currentLevel. Wraps the last cycle back to 1. Returns [{cycle, level, droids: [...]}]. Each entry carries its own cycle for wrap detection. */
 function getUpcomingLevels(cycle, currentLevel, ownedRank, count){
   const out = [];
   let workingCycle = cycle;
@@ -291,9 +291,9 @@ function getDeclutterList(cycle, currentLevel, ownedRank){
    just finished a cycle (and picked "Sneak Preview" in the cycle-complete
    prompt) can see what to start hunting before flipping over. Returns
    [{nk, display, rank, code, ownedCode, iconKey}] sorted highest required
-   variety first, then name. `cycle` is the CURRENT cycle; 5 wraps to 1. */
-/** Wrap cycle number: cycle 5 to 1, all others increment by 1. */
-function nextCycleOf(cycle){ return cycle >= 5 ? 1 : cycle + 1; }
+   variety first, then name. `cycle` is the CURRENT cycle; the last one wraps to 1. */
+/** Wrap cycle number: the last cycle (cycleTotal()) to 1, all others increment by 1. */
+function nextCycleOf(cycle){ return cycle >= cycleTotal() ? 1 : cycle + 1; }
 
 /* Rebirth credit cost (v1.15.1): REBIRTH_CREDITS in droid-data.js, the same in
    every cycle as far as known. Take the cycle anyway, so a per-cycle table only
@@ -833,7 +833,7 @@ function parseRankText(text, maxLevel){
 /* v1.18.1: Export/Import also carry the per-cycle marks that aren't ownership: Sneak Preview
    "held" marks ('rebirth-heldMarks') and Safe to Retire marks ('rebirth-retired'), both
    {cycle -> {normKey -> rank}}. A file's copy goes through this before it's stored: only
-   cycles 1-5, only valid ranks, everything else dropped. null = the file has no such field
+   real cycles (1..cycleTotal()), only valid ranks, everything else dropped. null = the file has no such field
    (an export from before v1.18.1), so the caller keeps what it has. */
 /** Clean a {cycle -> {nk -> rank}} marks object from an import file; null when it isn't an object. */
 function cleanCycleMarks(marks){
@@ -841,7 +841,7 @@ function cleanCycleMarks(marks){
   if(!isObj(marks)) return null;
   const out = {};
   for(const [c, perDroid] of Object.entries(marks)){
-    if(!/^[1-5]$/.test(c) || !isObj(perDroid)) continue;
+    if(!isCycleKey(c) || !isObj(perDroid)) continue;
     const clean = {};
     for(const [nk, r] of Object.entries(perDroid)){
       if(typeof nk === 'string' && nk && Number.isInteger(r) && r >= 0 && r < RARITY_ORDER.length) clean[nk] = r;
@@ -850,6 +850,15 @@ function cleanCycleMarks(marks){
   }
   return out;
 }
+
+/* v1.21.0: the number of cycles comes from droid-data.js, not a literal 5. Cycle 6 arrived
+   with the 2026-10-10 Gonk weekend; every wrap (5 -> 1 before) and every "is this a real
+   cycle?" check reads these two, so the next cycle is a data-only change.
+   test/cycles.test.js checks CYCLES' keys run 1..cycleTotal() with no gaps. */
+/** How many cycles the game has (CYCLES' keys run 1..this). */
+function cycleTotal(){ return Object.keys(CYCLES).length; }
+/** True for a real cycle number, as a number or a store/JSON key ("6"). */
+function isCycleKey(c){ const n = Number(c); return /^[1-9][0-9]*$/.test(String(c)) && n >= 1 && n <= cycleTotal(); }
 
 /** Returns the count of real (non-placeholder) levels in a cycle. Stops at the first `"?"` placeholder. */
 function cycleRealLevelCount(cycle){
@@ -915,7 +924,7 @@ function sellFlagFor(cycle, level, slot){
      [1][fingerprint hi][fingerprint lo][cycle][rebirth][minutes since 2026-01-01, 4 bytes]
      [name length][name UTF-8][every droid's logged rarity, 2 per byte: 0 = none, rank+1][checksum]
    Droids are listed by their RAW droid-data.js name in first-seen order (cycle 1
-   -> 5), never by a player's renames/merges, so both sides agree whatever either
+   -> the last), never by a player's renames/merges, so both sides agree whatever either
    one renamed. The fingerprint hashes that list: a code made with a different
    droid-data.js (a game patch, an out-of-date app or website) is refused instead
    of read wrong. Friend data lives in its own store key ('rebirth-friends', the
@@ -925,7 +934,7 @@ const FRIEND_LINK_BASE = 'https://ibefuzzy.github.io/tracker/#friend=';
 const FRIEND_EPOCH_MIN = Date.UTC(2026, 0, 1) / 60000;
 const FRIEND_DROIDS = (function(){ // [{key, names:[raw names]}], first-seen order
   const out = [], byKey = {};
-  for(let c=1;c<=5;c++) (CYCLES[c] || []).forEach(row => row.forEach(d=>{
+  for(let c=1;c<=cycleTotal();c++) (CYCLES[c] || []).forEach(row => row.forEach(d=>{
     if(d[0] === '?') return;
     const k = normKey(d[1]);
     if(!byKey[k]){ byKey[k] = { key:k, names:[] }; out.push(byKey[k]); }
@@ -1007,7 +1016,7 @@ function decodeFriendCode(input){
     const name = cleanFriendName(new TextDecoder().decode(b.slice(10, 10 + n))) || 'Friend';
     if(((b[1] << 8) | b[2]) !== FRIEND_FINGERPRINT) return { error:'That code is from a different version of the app or website. One of you needs to update.', name };
     const cycle = b[3], level = b[4];
-    if(!(cycle >= 1 && cycle <= 5) || level > cycleRealLevelCount(cycle)) return bad;
+    if(!isCycleKey(cycle) || level > cycleRealLevelCount(cycle)) return bad;
     if(b.length !== 10 + n + Math.ceil(FRIEND_DROIDS.length / 2) + 1) return bad;
     const owned = {};
     let pos = 10 + n;

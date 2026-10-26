@@ -20,7 +20,7 @@ test('every rebirth level has a credit cost, written the way the game writes it'
 });
 
 test('the credit costs cover every real level of every cycle and only go up', () => {
-  for (let c = 1; c <= 5; c++) {
+  for (let c = 1; c <= s.cycleTotal(); c++) {
     for (let l = 1; l <= s.cycleRealLevelCount(c); l++) assert.ok(s.rebirthCreditsFor(c, l) > 0, `cycle ${c} level ${l} has no cost`);
   }
   s.REBIRTH_CREDITS.forEach((n, i) => { if (i) assert.ok(n > s.REBIRTH_CREDITS[i - 1], `Rebirth ${i + 1} costs less than Rebirth ${i}`); });

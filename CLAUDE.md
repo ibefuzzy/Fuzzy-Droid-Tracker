@@ -6,7 +6,8 @@ version history; this file is architecture + rules + current state only, kept
 short on purpose so a fresh session can read it in one pass.
 
 ## Layout that matters
-- `droid-data.js` — CYCLES (5 cycles x 35 levels x 3 [rarityCode, name]),
+- `droid-data.js` — CYCLES (6 cycles since v1.21.0 x 40 levels x 3 [rarityCode, name]; code reads the
+  count with requirements.js `cycleTotal()` / `isCycleKey()`, never a literal),
   RARITY_ORDER, DROID_RARITY_CLASS, REBIRTH_CREDITS (v1.15.1: credits per rebirth 1-40,
   same every cycle; read it only through requirements.js `rebirthCreditsFor(cycle, level)`
   + `formatCredits()`, which the HUD uses). Loaded as a classic `<script>` by every window.
@@ -104,8 +105,11 @@ short on purpose so a fresh session can read it in one pass.
   on first use; click-through, never focused, top-centre of the capture screen). Only
   the tracker sends it (`toast:show`); rebirth-screen-read.js uses it while the tracker
   isn't focused. Not an OVERLAY_WINDOWS entry: it never moves.
-- `build-kyber-card-icons.js` (v1.11.0, not in the exe) — regenerates card-icons-data.js's
-  75 Kyber slots as transparent cut-outs from the local Droidex screenshots.
+- `tools/card-icons.js` (v1.21.0, tracked in git, `!tools/**` keeps it out of the exe) — the droid picture
+  tool: `status` lists missing droid + rarity pictures, `add <folder>` cuts sources out to the 96x96
+  transparent WebP every slot uses and appends them to card-icons-data.js (see Tools). It replaces the
+  local-only build-gonk-icons.js / build-kyber-card-icons.js / build-missing-card-icons.js, which were
+  lost with the PC in October 2026. Source pictures go in the local-only `card-sources/`.
 - `release/` holds only the latest build (the user asked; older exes go to the Recycle Bin,
   never deleted). Published exes live on GitHub Releases.
 - `_backup_*` folders — source snapshots taken before big changes (current list under
@@ -225,11 +229,13 @@ short on purpose so a fresh session can read it in one pass.
   user closes the running app before launching a new build.
 
 ## Tests
-`npm test` runs Node's built-in test runner over `test/**/*.test.js` (210 tests as of v1.20.0; plain
+`npm test` runs Node's built-in test runner over `test/**/*.test.js` (225 tests as of v1.21.0; plain
 `node --test` also sweeps _backup_* and the static server, so use npm test;
 test/sell-flags.test.js + test/friends.test.js cover v1.16.0; test/rarity-style.test.js covers v1.17.0;
 test/update-check.test.js + test/card-icons.test.js cover v1.18.0 (every slot has its own picture, one per
 droid + rarity, never shared by two droids);
+test/cycles.test.js covers v1.21.0 (cycle count from the data, every cycle picker, no "5" literals, Cycle 6
+against a second source, Cycle 6 friend codes incl. the Worker); test/card-icons-tool.test.js the picture tool;
 test/rebirth-credits.test.js checks all 40 credit costs display exactly as the game chart writes them;
 test/app-looks.test.js checks the app looks and bans default-colour literals in tracker.html's CSS;
 test/skins.test.js checks every skin/preset, test/appearance.test.js the looks and
@@ -283,21 +289,18 @@ site of a shared requirements.js function passes the right number of arguments.
   the OCR gets; `?cut=&blob=&up=&q=` try other settings. Expect 6 alerts (Galactic C,
   Diamond C, Beskar C, Rainbow C x2, Galactic E). Canvas captureStream goes through the same
   YUV video path as a real capture, which is why an offline-only (sharp/PNG) test misled once.
-- **Rebuild the Kyber card icons:** `node build-kyber-card-icons.js`. Use it when Kyber
-  art changes or the game adds a droid. It needs the LOCAL-ONLY folders
-  `droidex-card-screenshots/KYBER/` (6 in-game Droidex screenshots) and
-  `droid-cards/rebirth/<VARIANT>/` (from `extract-droid-cards.js`), and rewrites ONLY the
-  75 Kyber slots of `card-icons-data.js`. Back that file up first, then eyeball a
-  contact sheet (recipe in COMMON_TASKS.md → "Regenerating Kyber card icons").
+- **Droid pictures:** `node tools/card-icons.js status` (what's missing + the file name for each source) and
+  `node tools/card-icons.js add card-sources --sheet <scratch>/sheet.png` (then `--dry-run` off). Sources are
+  `<Droid>__<Rarity>.png` or `<Rarity>/<Droid>.png`; a transparent source keeps its alpha, otherwise the background
+  is grown in from the edges (`--tol/--step/--hole`, `--crop` for a batch of same-layout screenshots). It fills every
+  slot of that droid + rarity, never rewrites existing bytes, and `--replace` swaps existing ones. ALWAYS look at
+  the contact sheet: pictures are keyed by POSITION. Then npm test, and copy CARD_ICONS into the website's
+  tracker/icons-data.js ICONS (same keys) + bump its ?v= stamps. The old pipeline's sources (gonk.tools portraits,
+  in-game Droidex screenshots, droid-cards/) were local-only and are gone; gonk.tools + DubTrackr still have art.
 - **version.json after a release:** `node dev/bump-version-json.js "<one-line note>"` (v1.18.1; `--check` shows both versions), then commit + push dev/web-tracker.
-- **Fill a slot that has no picture:** `node build-missing-card-icons.js` (v1.18.0, local-only, needs
-  `droid-cards/rebirth/`). It cuts the droid out of its own Droidex card for that rarity, exactly like the
-  Kyber builder (it imports that script's cut-out steps), and never touches an existing slot. Use it when
-  test/card-icons.test.js reports a missing slot (a new droid gonk.tools lacks; LO was the first). Then copy
-  card-icons-data.js's CARD_ICONS into the website's tracker/icons-data.js ICONS (same keys) and bump its stamps.
-  **Picture-identity check:** a contact sheet of every slot's picture over the Droidex card of the same droid
-  and rarity (sharp) is how the 2026-10-04 audit was done; a picture is keyed by POSITION, so an off-by-one
-  crop shows the neighbouring droid.
+- **Picture-identity check:** a contact sheet of every slot's picture over the Droidex card of the same droid and
+  rarity (sharp) is how the 2026-10-04 audit was done; a picture is keyed by POSITION, so an off-by-one crop shows
+  the neighbouring droid.
 - **Prove a CSS refactor changes nothing:** snapshot every element's computed style
   before, edit, snapshot after, diff (recipe in TEST_WITHOUT_ELECTRON.md → "Computed-style
   parity"). Used to prove v1.11.0's theme refactor was pixel-identical (853 elements).
@@ -333,23 +336,38 @@ Stop test copies ONLY by that `--user-data-dir` in the process command line (Win
 never by exe path: the user may be running the app from `release\win-unpacked` too. Tell the
 user before launching; they may be in-game and close stray windows.
 
-## Current state (2026-10-05): v1.20.0 PUBLISHED — project paused, pick up another time
+## Current state (2026-10-25): v1.21.0 Cycle 6, HOMEBREW on a branch (not released)
 
-- **v1.20.0 PUBLISHED 2026-10-05 07:17 UTC** (main eea0f18; asset digest = sha256 afc0e989…4e211793, 103,619,031 bytes);
-  version.json 1.20.0 live ("30 overlay backgrounds, holo foil and droid prices"). Contents: 30 overlay backgrounds (+ motion,
-  colour modes, per overlay), holo foil on Stellar/Kyber, 💰 droid prices (a player's request), tutorial steps (+ the 1.18.1
-  READY strip). User tested in-game: "No issues!". `release\` = 1.20.0 only; snapshots `_backup_v1.19.0_approved/` +
-  `_backup_v1.20.0_approved/`. Both repos clean and level with origin (the web only got version.json).
-  The detailed v1.17.0–v1.20.0 notes (incl. the Live Friends Worker + its security review) are in CLAUDE_HISTORY.md.
-- **Next (the user's picks, none started):** seasonal auto-themes (Oct Halloween, Dec Hoth, May 4th), your own picture as a
-  background, event effects (cycle done / mark / level up; mock them in a lab first: distraction + CPU), panel shapes,
-  bundled overlay fonts (OFL), theme packs (all of it as one shareable preset). Bump package.json first (1.21.0).
-  Deferred until the community grows: leaderboards/stats, Discord/Slack webhooks.
+- **The user's PC died (Oct 2026).** Everything on GitHub survived (both repos, this file, README); everything
+  local-only is gone: CLAUDE_HISTORY.md, GOTCHAS_AND_CONSTRAINTS.md, COMMON_TASKS.md, TEST_WITHOUT_ELECTRON.md,
+  the memory notes, dev/ (labs, spawn-alert frames), _backup_* snapshots, droid-cards/ + droidex-card-screenshots/
+  and the old picture scripts. Where this file points at those, rebuild from the description here when needed.
+- **v1.21.0 (built in a cloud session 2026-10-25, branch `claude/cycle-6`):** Cycle 6 / Path 6 (Gonk weekend,
+  2026-10-10) in droid-data.js from DubTrackr Droidex (game 1.36.0, its slot order = the order cycles 1-5 use),
+  cross-checked against tycoon-tools.com (test/cycles.test.js embeds it). 7 new droids + classes (EG-58 Rare; EGL,
+  KT, MPH Epic; JO9-4MN, PLNK Legendary; ECG Mythic). Every "5 cycles" literal now reads cycleTotal()/isCycleKey()
+  (requirements.js, main.js, tracker.html; the v1 save migration's `c<=5` is frozen on purpose). 62 Cycle 6 slots
+  reuse the existing droid + rarity picture. Worker cap raised to MAX_CYCLE 12. HUD shows no Σ when a still-needed
+  droid has no price. tools/card-icons.js rebuilt + tested. 224/225 tests pass in the cloud (the failing one only
+  needs node_modules); real pages rendered on Cycle 6 in headless Chromium with a mock overlayAPI.
+- **Before releasing v1.21.0 (in order):** (1) on the PC: `git pull`, npm test, build, test in-game. (2) The 58 droid
+  + rarity pictures (`node tools/card-icons.js status`; CYCLE6_NEW_ART_PENDING in test/card-icons.test.js goes back
+  to false once done). (3) The 7 new droids' base prices from DubTrackr's droid pages (droidex.dubtrackr.win/droids/
+  kt/ etc.) into DROID_BASE_PRICES; empty PRICE_PENDING in test/prices.test.js. (4) Confirm JO9-4MN (letter O, as
+  DubTrackr) against the game. (5) Redeploy the Live Friends Worker (worker/, the MAX_CYCLE change) BEFORE the
+  release, or a Cycle 6 player's live code is refused. (6) Port Cycle 6 to the website in the same release
+  (droid-data.js, icons-data.js ICONS = CARD_ICONS, its cycle pickers/wraps, ?v= stamps): friend codes carry a
+  fingerprint of the droid list, so app 1.21 and a 5-cycle website can't read each other's codes. (7) Maybe a
+  guide.js "What's new" step (`since: '1.21.0'`) so updaters notice Cycle 6.
+- **Next after that (the user's picks, none started):** seasonal auto-themes (Oct Halloween, Dec Hoth, May 4th),
+  your own picture as a background, event effects (mock them in a lab first: distraction + CPU), panel shapes,
+  bundled overlay fonts (OFL), theme packs. Deferred until the community grows: leaderboards/stats, webhooks.
+- **v1.20.0** is the last published release (2026-10-05, main eea0f18): overlay backgrounds, holo foil, droid prices.
 - **Live Friends server:** Cloudflare Worker https://fdt-live.ibefuzzy.workers.dev + D1 `fdt-live` (worker/, steps in
   worker/SETUP-STEPS.md). The user does every dashboard step; Workers Logs off; 2FA on the Cloudflare account is ON (2026-10-05).
 - **Prices:** if the game changes a price or adds a droid, update DROID_BASE_PRICES / PRICE_LADDER /
-  KYBER_ACTIVATION_CRYSTALS (droid-data.js) and re-check against DubTrackr's public game-data file (memory
-  project_droid_prices_idea.md has where + how). The web tracker has no prices or backgrounds (optional future port).
+  KYBER_ACTIVATION_CRYSTALS (droid-data.js) and re-check against DubTrackr (each droid's page has its economy
+  table: droidex.dubtrackr.win/droids/<slug>/; the old memory note on its game-data file was lost with the PC). The web tracker has no prices or backgrounds (optional future port).
 - **Labs from this release:** dev/overlay-backgrounds-lab.html, dev/card-foil-lab.html, dev/prices-lab.html,
   dev/backgrounds-app-check.html (the real tracker + overlays sharing one mock settings store: a tracker click reaches the
   overlays), dev/bg-gif-stage.html + dev/record-bg-gif.js (shareable GIFs: headless Chrome over CDP + sharp's animated GIF
@@ -423,8 +441,8 @@ user before launching; they may be in-game and close stray windows.
   fixed `MISSION_NAME_EPOCH_MS` (+ the player's "Sync mission timer"). A limited-time event
   schedule needs its own start/end window (the 2026-09-26 Kyber event had one; removed in
   v1.13.1). Expiry is detected by the countdown wrapping back up, never `remaining <= 0`.
-- **Never hardcode level/slot/tier counts:** use `cycleRealLevelCount()`,
-  `cycleRealSlotCount()` and `RARITY_ORDER` (hardcoded 35/105/"rank<=6" silently dropped
+- **Never hardcode level/slot/tier/cycle counts:** use `cycleRealLevelCount()`,
+  `cycleRealSlotCount()`, `RARITY_ORDER` and (v1.21.0) `cycleTotal()` / `isCycleKey()` (hardcoded 35/105/"rank<=6" silently dropped
   Kyber once; test/pages.test.js guards the CSS side).
 - **Kyber colour `#50c878`** is copied in tracker.html (`--r-kyber`, `.rarity-kyber`),
   timers.html (`--kyber`) and each droid overlay's own `--r-kyber`; change them together.

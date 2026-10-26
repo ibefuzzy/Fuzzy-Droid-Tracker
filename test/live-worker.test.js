@@ -29,7 +29,10 @@ const s = loadShared();
 const CODE = s.encodeFriendCode({ name: 'Kaz', cycle: 3, level: 21, owned: {}, time: Date.UTC(2026, 9, 4) });
 const CODE2 = s.encodeFriendCode({ name: 'Kaz', cycle: 3, level: 22, owned: {}, time: Date.UTC(2026, 9, 4, 1) });
 const ID = 'k7Qm2xZp9RaB', ID2 = 'Zz9yX8wV7uT6';
-const KEY = 'A'.repeat(43), KEY2 = 'B'.repeat(43);
+// Not 'A'.repeat(43): an empty friend code is mostly zero bytes, which base64 writes as A's, and
+// with Cycle 6's 69 droids (v1.21.0) that run is 46 long, so "the key is never stored" below
+// matched the stored CODE instead of a key. K's can't come from a code's zero bytes.
+const KEY = 'K'.repeat(43), KEY2 = 'B'.repeat(43);
 
 test.before(async () => {
   const mod = await import(pathToFileURL(path.join(__dirname, '..', 'worker', 'live-friends-worker.mjs')).href);

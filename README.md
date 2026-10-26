@@ -204,15 +204,15 @@ rules as every other click-to-mark control in this app.
 
 ## 🎉 Cycle complete: reset & move to the next
 
-Once every one of a cycle's 105 slots (35 levels x 3 droids) is covered,
+Once every one of a cycle's 120 slots (40 levels x 3 droids) is covered,
 the app asks: **"Would you like to reset progress for this cycle and open
 the next?"**
 
 - **Yes** — clears the ownership you've logged for every droid that
   cycle's own requirement table needed (only those droids — anything
   logged for a droid that only ever showed up in a *different* cycle is
-  left alone), then switches you straight to the next cycle (Cycle 5 wraps
-  back around to Cycle 1).
+  left alone), then switches you straight to the next cycle (the last cycle,
+  Cycle 6 since v1.21.0, wraps back around to Cycle 1).
 - **No** — leaves everything exactly as it is: the cycle stays fully
   marked, on the same cycle, nothing cleared.
 
@@ -407,6 +407,29 @@ it can be corrected.
 - **Kyber droid icons** are now clean transparent cut-outs like every other colorway.
   Leftovers of the in-game "PREVIEW" banner, the card frame and the colored card glow are
   gone.
+
+## 🌀 Cycle 6 (v1.21.0, homebrew build, not released yet)
+
+**Path 6 is in.** The Iconic Gonk weekend (October 10) added a sixth rebirth cycle, with seven
+new droids: **EG-58** (Rare), **EGL**, **KT** and **MPH** (Epic), **JO9-4MN** and **PLNK** (Legendary)
+and **ECG** (Mythic).
+
+- Pick **Cycle 6** anywhere you pick a cycle. Finishing Cycle 5 now moves on to Cycle 6, and
+  Cycle 6 wraps back to Cycle 1 (the Next / Previous cycle keys too). Sneak Preview on Cycle 5
+  shows what Cycle 6 needs, and the HUD runs on into Cycle 6 at the end of Cycle 5.
+- Safe to Retire, the tier filter, SELL flags and the HUD cover the new droids like any other.
+- **Pictures:** every Cycle 6 slot whose droid and rarity already had a picture shows it. The
+  seven new droids, and a few older ones at a rarity no earlier cycle asked for (Gonk from Gold
+  up, Base Amp Walker / Haul-R / R2, Diamond Nav-Ex, Rainbow Cyclens), show an empty frame until
+  their pictures are made.
+- **Prices:** the seven new droids have no price yet. A HUD line that still needs one of them
+  shows no Σ total, rather than a total that quietly leaves it out.
+- **Friends:** friend codes now carry the new droids, so a code from v1.20.0 or older reads as
+  "from a different version of the app or website" until both of you update. The same goes for
+  the website until it gets Cycle 6 too.
+- Where the data comes from: DubTrackr's Droidex (game 1.36.0), in its slot order (the order this
+  app has always used), cross-checked level by level against tycoon-tools.com: the same 120 droids
+  and rarities. DubTrackr spells **JO9-4MN** with the letter O; tycoon-tools writes "J09-4MN".
 
 ## 🌌 Overlay backgrounds + holo foil (v1.20.0)
 
@@ -1089,7 +1112,7 @@ old defaults are in the last column.
 | Tier Filter: Toggle Default / Rare / Epic / Legendary / Mythic | Show or hide that one tier in both the Safe to Retire and Rebirth Requirements overlays | *(unbound, one each)* |
 | Switch Mark Keys to the Next Open List | With two or more of 🧬 Rebirth Requirements / ♻ Safe to Retire / 🔮 Sneak Preview open, moves the mark & navigate keys to the next one (v1.11.1) | *(unbound)* |
 | Read Rebirth Screen: Apply / Cancel | Accept the rank it just read, or close the reader without changing anything (v1.11.1) | *(unbound, one each)* |
-| Next Cycle / Previous Cycle | Switch the tracker and every overlay one cycle up or down (5 → 1, 1 → 5); nothing is cleared (v1.18.1) | *(unbound, one each)* |
+| Next Cycle / Previous Cycle | Switch the tracker and every overlay one cycle up or down (6 → 1, 1 → 6 since Cycle 6 arrived in v1.21.0); nothing is cleared (v1.18.1) | *(unbound, one each)* |
 | Finish Cycle (press twice) | Press twice within 3 s: clears this cycle's marks, moves to the next cycle and sets the rebirth level to 0, like "Cycle complete → Next Cycle" (v1.18.1) | *(unbound)* |
 
 Unbound hotkeys have no key combo until you set one; they only appear on the on-screen hotkey list once you have.
@@ -1369,7 +1392,7 @@ and testing everything above:
   see the Declutter list section above), `getDeclutterList` (the list's
   full filter logic, so it can be verified once against the real data
   instead of duplicated in declutter.html), and `getSneakPreview` (next
-  cycle's Mythic-only ceiling requirements, 5→1 wrap — the Sneak Preview
+  cycle's Mythic-only ceiling requirements, last cycle → 1 wrap — the Sneak Preview
   overlay's data), and (v1.10.0) `BORDER_SKINS`/`BORDER_SKIN_ORDER`/
   `borderIconSvg` — the seven illustrated border skins every overlay picks
   from in ⚙ Overlay Settings → Borders (replaces the old flat

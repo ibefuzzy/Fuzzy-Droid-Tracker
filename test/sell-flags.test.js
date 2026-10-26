@@ -13,7 +13,7 @@ function flagOf(s, cycle, name, level){
 test('yellow SELL is exactly the old "last needed this cycle" rule, in every cycle', () => {
   const s = loadShared();
   s.buildIndex();
-  for (let c = 1; c <= 5; c++) {
+  for (let c = 1; c <= s.cycleTotal(); c++) {
     const last = s.cycleLastNeededLevel(c);
     s.CYCLES[c].forEach((row, i) => row.forEach((d, slot) => {
       if (d[0] === '?') return;

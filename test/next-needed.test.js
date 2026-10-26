@@ -41,7 +41,7 @@ test('fully marked lines at the top are skipped, up to the first one still missi
 
 test("a finished later line never lets the list jump past an unfinished earlier one (rb25 done, rb15 not)", () => {
   const s = fresh();
-  for (let c = 1; c <= 5; c++) {
+  for (let c = 1; c <= s.cycleTotal(); c++) {
     const owned = marking(s, c, [25]);
     assert.ok(complete(s, c, 25, owned));
     // marking rb25's droids can also cover a line before it, so the expected top is the first
