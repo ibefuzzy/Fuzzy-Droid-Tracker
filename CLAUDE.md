@@ -336,12 +336,17 @@ Stop test copies ONLY by that `--user-data-dir` in the process command line (Win
 never by exe path: the user may be running the app from `release\win-unpacked` too. Tell the
 user before launching; they may be in-game and close stray windows.
 
-## Current state (2026-10-25): v1.21.0 Cycle 6, HOMEBREW on a branch (not released)
+## Current state (2026-11-02): Cycle 6 LIVE on the website; app v1.21.0 on this branch, not released
 
-- **The user's PC died (Oct 2026).** Everything on GitHub survived (both repos, this file, README); everything
-  local-only is gone: CLAUDE_HISTORY.md, GOTCHAS_AND_CONSTRAINTS.md, COMMON_TASKS.md, TEST_WITHOUT_ELECTRON.md,
-  the memory notes, dev/ (labs, spawn-alert frames), _backup_* snapshots, droid-cards/ + droidex-card-screenshots/
-  and the old picture scripts. Where this file points at those, rebuild from the description here when needed.
+- **Start here on the main PC:** `memory/cycle-6-web-handoff.md` in the website repo lists what changed, the fallbacks and what to
+  compare against the local folders. Report differences to the user before changing anything.
+- **The user's PC had a dead PSU (Oct 2026).** The local-only files may still be on its drive, but nobody had read it as of 2026-11-02:
+  CLAUDE_HISTORY.md, GOTCHAS_AND_CONSTRAINTS.md, COMMON_TASKS.md, TEST_WITHOUT_ELECTRON.md, the memory notes, dev/ (labs, spawn-alert
+  frames), _backup_* snapshots, droid-cards/ + droidex-card-screenshots/ and the old picture scripts. Wherever this file calls them
+  lost or gone, check the drive. If it did not survive, rebuild from the descriptions here.
+- **Website 1.21.0 is live with Cycle 6 (2026-11-01, website commit b01df26), ahead of the app.** App v1.20.0 is unchanged and version.json
+  stays 1.20.0. Friend codes stay compatible with v1.20.0 through `FRIEND_DROIDS_V5` in the website's tracker/index.html. Fallback: branch
+  `backup/before-cycle-6` in both repos.
 - **v1.21.0 (built in a cloud session 2026-10-25, branch `claude/cycle-6`):** Cycle 6 / Path 6 (Gonk weekend,
   2026-10-10) in droid-data.js from DubTrackr Droidex (game 1.36.0, its slot order = the order cycles 1-5 use),
   cross-checked against tycoon-tools.com (test/cycles.test.js embeds it). 7 new droids + classes (EG-58 Rare; EGL,
@@ -350,15 +355,15 @@ user before launching; they may be in-game and close stray windows.
   reuse the existing droid + rarity picture. Worker cap raised to MAX_CYCLE 12. HUD shows no Σ when a still-needed
   droid has no price. tools/card-icons.js rebuilt + tested. 224/225 tests pass in the cloud (the failing one only
   needs node_modules); real pages rendered on Cycle 6 in headless Chromium with a mock overlayAPI.
-- **Before releasing v1.21.0 (in order):** (1) on the PC: `git pull`, npm test, build, test in-game. (2) The 58 droid
-  + rarity pictures (`node tools/card-icons.js status`; CYCLE6_NEW_ART_PENDING in test/card-icons.test.js goes back
-  to false once done). (3) The 7 new droids' base prices from DubTrackr's droid pages (droidex.dubtrackr.win/droids/
-  kt/ etc.) into DROID_BASE_PRICES; empty PRICE_PENDING in test/prices.test.js. (4) Confirm JO9-4MN (letter O, as
-  DubTrackr) against the game. (5) Redeploy the Live Friends Worker (worker/, the MAX_CYCLE change) BEFORE the
-  release, or a Cycle 6 player's live code is refused. (6) Port Cycle 6 to the website in the same release
-  (droid-data.js, icons-data.js ICONS = CARD_ICONS, its cycle pickers/wraps, ?v= stamps): friend codes carry a
-  fingerprint of the droid list, so app 1.21 and a 5-cycle website can't read each other's codes. (7) Maybe a
-  guide.js "What's new" step (`since: '1.21.0'`) so updaters notice Cycle 6.
+- **Before releasing v1.21.0 (in order):** (1) on the PC: `git pull`, build and test in-game after steps 2-4. (2) Add the 58 droid + rarity
+  pictures: `cycle-6-sources/new-card-icons.json` on the website repo's branch `backup/cycle-6-picture-sources`, same keys as CARD_ICONS, then
+  CYCLE6_NEW_ART_PENDING in test/card-icons.test.js goes back to false. (3) Add the 7 base prices to DROID_BASE_PRICES and empty PRICE_PENDING in
+  test/prices.test.js (DubTrackr, 2026-11-01): EG-58 160K, EGL 2.7M, KT 4.2M, MPH 6.6M, JO9-4MN 28M, PLNK 31M, ECG 240M. (4) Port the website's
+  `FRIEND_DROIDS_V5` change, or 1.21 will refuse codes from v1.20.0 players. (5) Check the Live Friends Worker has the higher cycle cap: until it does,
+  Cycle 6 live saves are refused (this branch has MAX_CYCLE 12; the user was given a one-line dashboard edit). (6) Maybe a guide.js "What's new" step
+  (`since: '1.21.0'`) so updaters notice Cycle 6. Bump version.json only when the release is published.
+- **Pictures:** tools/card-icons.js trims and fits to 92 px, but the shipped non-Kyber pictures are gonk.tools portraits scaled straight to 96x96, so it
+  won't match them until fixed. The user has the gonk.tools owner's permission. Kyber pictures come from in-game screenshots.
 - **Next after that (the user's picks, none started):** seasonal auto-themes (Oct Halloween, Dec Hoth, May 4th),
   your own picture as a background, event effects (mock them in a lab first: distraction + CPU), panel shapes,
   bundled overlay fonts (OFL), theme packs. Deferred until the community grows: leaderboards/stats, webhooks.
